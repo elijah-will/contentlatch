@@ -158,6 +158,8 @@ final class AuditFindingQueryTest extends TestCase
         $recent  = $service->listRecentRuns(20);
 
         $this->assertSame(array(3, 2, 1), array_map(static fn (AuditRun $run): int => $run->id, $recent));
+        $this->assertSame(3, $service->countRuns());
+        $this->assertSame(array(2, 1), array_map(static fn (AuditRun $run): int => $run->id, $service->listRecentRuns(2, 1)));
         $this->assertSame(1, $service->getLatestCompleteRun()?->id);
         $this->assertSame(3, $service->getLatestRun()?->id);
     }

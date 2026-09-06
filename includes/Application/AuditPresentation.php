@@ -104,6 +104,28 @@ final class AuditPresentation
         return 'Findings pagination';
     }
 
+    public static function historyRangeLabel(int $paged, int $pageSize, int $total): string
+    {
+        if ($total <= 0 || $pageSize <= 0) {
+            return 'Showing 0 of 0 audits';
+        }
+
+        $page = max(1, $paged);
+        $from = (($page - 1) * $pageSize) + 1;
+        $to   = min($page * $pageSize, $total);
+        if ($from > $total) {
+            $from = $total;
+            $to   = $total;
+        }
+
+        return sprintf('Showing %d–%d of %d audits', $from, $to, $total);
+    }
+
+    public static function historyPaginationLabel(): string
+    {
+        return 'Audit history pagination';
+    }
+
     public static function issuesCountLabel(int $count): string
     {
         return $count === 1 ? '1 issue' : sprintf('%d issues', $count);
@@ -194,7 +216,7 @@ final class AuditPresentation
 
     public static function firstRunText(): string
     {
-        return 'Run an audit to check your published and private content against your active ContentGuard rules.';
+        return 'Run an audit to see whether your existing content follows your active rules.';
     }
 
     public static function doesNotModifyContent(): string
@@ -244,7 +266,7 @@ final class AuditPresentation
     public static function allClearText(int $scanned): string
     {
         return $scanned > 0
-            ? 'No active rule violations were found in the audited content.'
+            ? 'No issues were found in this audit.'
             : 'This audit completed with no eligible content and no issues.';
     }
 
@@ -276,6 +298,68 @@ final class AuditPresentation
     public static function historicalNotice(): string
     {
         return 'This is not the current content health result.';
+    }
+
+    public static function viewingResultsFrom(string $date): string
+    {
+        return $date !== ''
+            ? sprintf('Viewing results from %s', $date)
+            : 'Viewing historical audit results';
+    }
+
+    public static function backToLatestLabel(): string
+    {
+        return 'Back to latest audit';
+    }
+
+    public static function currentAuditLabel(): string
+    {
+        return 'Current';
+    }
+
+    public static function viewingAuditLabel(): string
+    {
+        return 'Viewing';
+    }
+
+    public static function viewResultsLabel(): string
+    {
+        return 'View results';
+    }
+
+    public static function historyHeading(): string
+    {
+        return 'Audit History';
+    }
+
+    public static function historyEmptyText(): string
+    {
+        return 'No audit history yet.';
+    }
+
+    public static function contentItemsCheckedLabel(int $scanned): string
+    {
+        return self::progressLabel($scanned, 0);
+    }
+
+    public static function historyContentOutcomeLabel(int $failed, int $warned): string
+    {
+        return sprintf('%d need attention · %d need review', $failed, $warned);
+    }
+
+    public static function severityFilterLabel(): string
+    {
+        return 'Severity';
+    }
+
+    public static function ruleFilterLabel(): string
+    {
+        return 'Rule';
+    }
+
+    public static function contentTypeFilterLabel(): string
+    {
+        return 'Content type';
     }
 
     public static function severityLabel(RuleSeverity $severity): string

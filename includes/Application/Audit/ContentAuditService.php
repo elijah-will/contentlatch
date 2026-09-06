@@ -273,9 +273,14 @@ final class ContentAuditService
     /**
      * @return AuditRun[]
      */
-    public function listRecentRuns(int $limit = 20): array
+    public function listRecentRuns(int $limit = 20, int $offset = 0): array
     {
-        return $this->store->findRecentRuns(max(1, $limit));
+        return $this->store->findRecentRuns(max(1, $limit), max(0, $offset));
+    }
+
+    public function countRuns(): int
+    {
+        return $this->store->countRuns();
     }
 
     private function processBatchUnsafe(AuditRun $run): AuditRun

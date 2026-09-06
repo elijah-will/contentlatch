@@ -385,14 +385,15 @@ WHERE id = %d";
     /**
      * @return AuditRun[]
      */
-    public function findRecentRuns(int $limit): array
+    public function findRecentRuns(int $limit, int $offset = 0): array
     {
         global $wpdb;
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::runsTable() . ' ORDER BY id DESC LIMIT %d',
-                max(1, $limit)
+                'SELECT * FROM ' . AuditSchema::runsTable() . ' ORDER BY id DESC LIMIT %d OFFSET %d',
+                max(1, $limit),
+                max(0, $offset)
             ),
             ARRAY_A
         );
@@ -409,6 +410,13 @@ WHERE id = %d";
         }
 
         return $runs;
+    }
+
+    public function countRuns(): int
+    {
+        global $wpdb;
+
+        return (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . AuditSchema::runsTable());
     }
 
     /**

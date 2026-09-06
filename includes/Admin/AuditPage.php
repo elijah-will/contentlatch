@@ -21,9 +21,10 @@ use ContentGuard\Infrastructure\WordPress\Capabilities;
 
 final class AuditPage
 {
-    public const SLUG      = 'contentguard-audit';
-    public const PAGE_SIZE = AuditFindingQuery::DEFAULT_LIMIT;
-    public const HISTORY   = 20;
+    public const SLUG              = 'contentguard-audit';
+    public const PAGE_SIZE         = AuditFindingQuery::DEFAULT_LIMIT;
+    public const HISTORY_PAGE_SIZE = 10;
+    public const HISTORY_PAGED_ARG = 'hpaged';
 
     public function __construct(private ContentAuditService $audit, private RuleRepositoryInterface $rules)
     {
@@ -218,7 +219,7 @@ final class AuditPage
      * @param array<string, mixed> $request
      * @return array<string, string>
      */
-    public static function filterArgs(array $request, ?int $runId = null): array
+    public static function filterArgs(array $request, ?int $runId = null, int $historyPage = 0): array
     {
         $args = array('page' => self::SLUG);
 
@@ -239,6 +240,56 @@ final class AuditPage
         $postType = self::requestPostType($request);
         if ($postType !== '') {
             $args[AuditAdminRequest::TYPE_QUERY_ARG] = $postType;
+        }
+
+        $historyPage = $historyPage > 0 ? $historyPage : self::requestedHistoryPage($request);
+        if ($historyPage > 1) {
+            $args[self::HISTORY_PAGED_ARG] = (string) $historyPage;
+        }
+
+        return $args;
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    public static function requestedHistoryPage(array $request): int
+    {
+        $page = isset($request[self::HISTORY_PAGED_ARG]) ? (int) $request[self::HISTORY_PAGED_ARG] : 1;
+
+        return $page < 1 ? 1 : $page;
+    }
+
+    public static function clampPage(int $page, int $totalPages): int
+    {
+        return min(max(1, $page), max(1, $totalPages));
+    }
+
+    /**
+     * @param array<string, string> $filterArgs
+     * @return array<string, string>
+     */
+    public static function historyPaginationArgs(array $filterArgs, int $findingsPage): array
+    {
+        $args = $filterArgs;
+        unset($args[self::HISTORY_PAGED_ARG]);
+        if ($findingsPage > 1) {
+            $args['paged'] = (string) $findingsPage;
+        }
+
+        return $args;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function clearFilterArgs(?int $runId, int $historyPage = 1): array
+    {
+        $args = $runId !== null && $runId > 0
+            ? array('page' => self::SLUG, 'run' => (string) $runId)
+            : array('page' => self::SLUG);
+        if ($historyPage > 1) {
+            $args[self::HISTORY_PAGED_ARG] = (string) $historyPage;
         }
 
         return $args;
@@ -302,10 +353,17 @@ final class AuditPage
         $ruleImpacts    = $resultsRun !== null ? $this->audit->countFindingsByRule($resultsRun->id) : array();
         $ruleNames      = $this->ruleNames($findings, $ruleImpacts);
         $fieldLabels    = $this->fieldLabels($findings);
-        $history        = $this->audit->listRecentRuns(self::HISTORY);
+        $historyTotal      = $this->audit->countRuns();
+        $historyTotalPages = self::totalPages($historyTotal, self::HISTORY_PAGE_SIZE);
+        $historyPaged      = self::clampPage(self::requestedHistoryPage($_GET), $historyTotalPages);
+        $history           = $this->audit->listRecentRuns(
+            self::HISTORY_PAGE_SIZE,
+            ($historyPaged - 1) * self::HISTORY_PAGE_SIZE
+        );
         $paged          = $query !== null ? self::currentPage($query) : 1;
         $totalPages     = $query !== null ? self::totalPages($findingTotal, $query->limit) : 1;
-        $filterArgs     = self::filterArgs($_GET, $viewingHistory ? $resultsRun?->id : null);
+        $filterArgs     = self::filterArgs($_GET, $viewingHistory ? $resultsRun?->id : null, $historyPaged);
+        $historyArgs    = self::historyPaginationArgs($filterArgs, $paged);
 
         $view = CONTENTGUARD_DIR . 'admin/views/audit.php';
         require $view;

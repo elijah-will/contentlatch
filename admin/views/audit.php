@@ -22,6 +22,10 @@
  * @var array<string, string> $ruleNames
  * @var array<string, string> $fieldLabels
  * @var \ContentGuard\Application\Audit\AuditRun[] $history
+ * @var int $historyTotal
+ * @var int $historyPaged
+ * @var int $historyTotalPages
+ * @var array<string, string> $historyArgs
  * @var int $paged
  * @var int $totalPages
  * @var array<string, string> $filterArgs
@@ -49,6 +53,11 @@ $canStart    = AuditPage::canStart($active, $postTypes);
 $isFirstRun  = AuditPage::isFirstRun($resultsRun, $active);
 $isRunning   = $active !== null;
 $progressPct = $active !== null ? $active->progressPercent() : null;
+$history          = isset($history) && is_array($history) ? $history : array();
+$historyTotal     = isset($historyTotal) ? (int) $historyTotal : count($history);
+$historyPaged     = isset($historyPaged) ? (int) $historyPaged : 1;
+$historyTotalPages = isset($historyTotalPages) ? (int) $historyTotalPages : AuditPage::totalPages($historyTotal, AuditPage::HISTORY_PAGE_SIZE);
+$historyArgs      = isset($historyArgs) && is_array($historyArgs) ? $historyArgs : array('page' => AuditPage::SLUG);
 $typeNames   = array();
 foreach ($postTypes as $type) {
     $typeNames[] = AdminPresentation::postTypeLabel($type);
@@ -217,15 +226,15 @@ foreach ($postTypes as $type) {
         <?php endif; ?>
     <?php else : ?>
         <?php if ($viewingHistory) : ?>
-            <div class="notice notice-warning contentguard-history-banner">
-                <p>
-                    <strong><?php echo esc_html__('Previous audit', 'contentguard'); ?></strong>
-                    <?php if ($completedAt !== '') : ?>
-                        — <?php echo esc_html($completedAt); ?>.
-                    <?php endif; ?>
-                    <?php echo esc_html(AuditPresentation::historicalNotice()); ?>
+            <div class="contentguard-history-banner" role="status">
+                <p class="contentguard-history-banner__kicker"><?php echo esc_html__('Previous audit', 'contentguard'); ?></p>
+                <p class="contentguard-history-banner__title">
+                    <?php echo esc_html(AuditPresentation::viewingResultsFrom($completedAt)); ?>
+                </p>
+                <p class="contentguard-history-banner__notice"><?php echo esc_html(AuditPresentation::historicalNotice()); ?></p>
+                <p class="contentguard-history-banner__action">
                     <a class="button button-primary" href="<?php echo esc_url($auditUrl(AuditPage::latestResultsArgs())); ?>">
-                        <?php echo esc_html__('Back to latest audit', 'contentguard'); ?>
+                        <?php echo esc_html(AuditPresentation::backToLatestLabel()); ?>
                     </a>
                 </p>
             </div>
@@ -334,21 +343,58 @@ foreach ($postTypes as $type) {
             ?>
         <?php else : ?>
             <h2 id="contentguard-findings-heading"><?php echo esc_html(AuditPresentation::findingsHeading()); ?></h2>
-            <form method="get" class="contentguard-filters" action="<?php echo esc_url(admin_url('admin.php')); ?>">
+            <?php
+            $severityFilter = $query !== null ? (string) $query->severity : '';
+            $historyPaged   = isset($historyPaged) ? (int) $historyPaged : 1;
+            $clearFilters   = $auditUrl(
+                AuditPage::clearFilterArgs($viewingHistory ? (int) $resultsRun->id : null, $historyPaged)
+            ) . '#contentguard-findings-heading';
+            ?>
+            <form method="get" class="contentguard-filters" action="<?php echo esc_url(admin_url('admin.php')); ?>#contentguard-findings-heading">
                 <input type="hidden" name="page" value="<?php echo esc_attr(AuditPage::SLUG); ?>">
                 <?php if ($viewingHistory) : ?>
                     <input type="hidden" name="run" value="<?php echo esc_attr((string) $resultsRun->id); ?>">
                 <?php endif; ?>
-                <label>
-                    <span><?php echo esc_html__('Severity', 'contentguard'); ?></span>
-                    <select name="severity">
-                        <option value=""><?php echo esc_html__('All', 'contentguard'); ?></option>
-                        <option value="fail" <?php selected($query !== null && $query->severity === 'fail'); ?>><?php echo esc_html__('Blocking', 'contentguard'); ?></option>
-                        <option value="warning" <?php selected($query !== null && $query->severity === 'warning'); ?>><?php echo esc_html__('Warnings', 'contentguard'); ?></option>
-                    </select>
-                </label>
-                <label>
-                    <span><?php echo esc_html__('Rule', 'contentguard'); ?></span>
+                <?php if ($historyPaged > 1) : ?>
+                    <input type="hidden" name="<?php echo esc_attr(AuditPage::HISTORY_PAGED_ARG); ?>" value="<?php echo esc_attr((string) $historyPaged); ?>">
+                <?php endif; ?>
+                <?php if ($severityFilter === 'fail' || $severityFilter === 'warning') : ?>
+                    <input type="hidden" name="severity" value="<?php echo esc_attr($severityFilter); ?>">
+                <?php endif; ?>
+                <div class="contentguard-filters__severity" role="group" aria-labelledby="contentguard-filter-severity-label">
+                    <span class="contentguard-filters__label" id="contentguard-filter-severity-label"><?php echo esc_html(AuditPresentation::severityFilterLabel()); ?></span>
+                    <div class="contentguard-filter-chips">
+                        <button
+                            type="submit"
+                            name="severity"
+                            value=""
+                            class="contentguard-filter-chip<?php echo $severityFilter === '' ? ' is-selected' : ''; ?>"
+                            aria-pressed="<?php echo $severityFilter === '' ? 'true' : 'false'; ?>"
+                        >
+                            <?php echo esc_html__('All', 'contentguard'); ?>
+                        </button>
+                        <button
+                            type="submit"
+                            name="severity"
+                            value="fail"
+                            class="contentguard-filter-chip<?php echo $severityFilter === 'fail' ? ' is-selected' : ''; ?>"
+                            aria-pressed="<?php echo $severityFilter === 'fail' ? 'true' : 'false'; ?>"
+                        >
+                            <?php echo esc_html__('Blocking', 'contentguard'); ?>
+                        </button>
+                        <button
+                            type="submit"
+                            name="severity"
+                            value="warning"
+                            class="contentguard-filter-chip<?php echo $severityFilter === 'warning' ? ' is-selected' : ''; ?>"
+                            aria-pressed="<?php echo $severityFilter === 'warning' ? 'true' : 'false'; ?>"
+                        >
+                            <?php echo esc_html__('Warning', 'contentguard'); ?>
+                        </button>
+                    </div>
+                </div>
+                <label class="contentguard-filters__field">
+                    <span class="contentguard-filters__label"><?php echo esc_html(AuditPresentation::ruleFilterLabel()); ?></span>
                     <select name="rule">
                         <option value=""><?php echo esc_html__('All rules', 'contentguard'); ?></option>
                         <?php foreach ($ruleImpacts as $impact) : ?>
@@ -358,8 +404,8 @@ foreach ($postTypes as $type) {
                         <?php endforeach; ?>
                     </select>
                 </label>
-                <label>
-                    <span><?php echo esc_html__('Post type', 'contentguard'); ?></span>
+                <label class="contentguard-filters__field">
+                    <span class="contentguard-filters__label"><?php echo esc_html(AuditPresentation::contentTypeFilterLabel()); ?></span>
                     <select name="<?php echo esc_attr(AuditAdminRequest::TYPE_QUERY_ARG); ?>">
                         <option value=""><?php echo esc_html__('All types', 'contentguard'); ?></option>
                         <?php foreach ($resultsRun->postTypes as $type) : ?>
@@ -369,11 +415,19 @@ foreach ($postTypes as $type) {
                         <?php endforeach; ?>
                     </select>
                 </label>
-                <button type="submit" class="button"><?php echo esc_html__('Filter', 'contentguard'); ?></button>
+                <div class="contentguard-filters__actions">
+                    <button type="submit" class="button button-primary"><?php echo esc_html__('Filter', 'contentguard'); ?></button>
+                    <a class="contentguard-button--link contentguard-filters__clear" href="<?php echo esc_url($clearFilters); ?>">
+                        <?php echo esc_html__('Clear filters', 'contentguard'); ?>
+                    </a>
+                </div>
             </form>
+            <?php if ($findingTotal > 0) : ?>
+                <p class="contentguard-filters__range"><?php echo esc_html(AuditPresentation::findingsRangeLabel($paged, AuditPage::PAGE_SIZE, $findingTotal)); ?></p>
+            <?php endif; ?>
 
             <?php if ($query !== null && $query->hasFilters()) : ?>
-                <p>
+                <p class="contentguard-filters__summary">
                     <?php
                     echo esc_html(
                         sprintf(
@@ -384,9 +438,6 @@ foreach ($postTypes as $type) {
                         )
                     );
                     ?>
-                    <a href="<?php echo esc_url($auditUrl($viewingHistory ? array('page' => AuditPage::SLUG, 'run' => (string) $resultsRun->id) : array('page' => AuditPage::SLUG))); ?>">
-                        <?php echo esc_html__('Clear filters', 'contentguard'); ?>
-                    </a>
                 </p>
             <?php endif; ?>
 
@@ -395,8 +446,12 @@ foreach ($postTypes as $type) {
                 AdminView::partial(
                     'empty-state',
                     array(
-                        'heading' => AuditPresentation::filteredEmptyHeading(),
-                        'text'    => AuditPresentation::filteredEmptyText(),
+                        'heading'   => AuditPresentation::filteredEmptyHeading(),
+                        'text'      => AuditPresentation::filteredEmptyText(),
+                        'secondary' => array(
+                            'label' => __('Clear filters', 'contentguard'),
+                            'href'  => $clearFilters,
+                        ),
                     )
                 );
                 ?>
@@ -441,7 +496,7 @@ foreach ($postTypes as $type) {
             <?php endif; ?>
 
             <?php if ($totalPages > 1) : ?>
-                <nav class="contentguard-pagination" aria-label="<?php echo esc_attr(AuditPresentation::paginationLabel()); ?>">
+                <nav class="contentguard-pagination contentguard-pagination--findings" aria-label="<?php echo esc_attr(AuditPresentation::paginationLabel()); ?>" aria-describedby="contentguard-pagination-status">
                     <p class="contentguard-pagination__status" id="contentguard-pagination-status">
                         <?php echo esc_html(AuditPresentation::findingsRangeLabel($paged, AuditPage::PAGE_SIZE, $findingTotal)); ?>
                     </p>
@@ -474,53 +529,97 @@ foreach ($postTypes as $type) {
         <?php endif; ?>
     <?php endif; ?>
 
-    <h2><?php echo esc_html__('Audit History', 'contentguard'); ?></h2>
-    <?php if ($history === array()) : ?>
-        <p><?php echo esc_html__('No audit history yet.', 'contentguard'); ?></p>
-    <?php else : ?>
-        <table class="widefat striped">
-            <thead>
-                <tr>
-                    <th><?php echo esc_html__('Date', 'contentguard'); ?></th>
-                    <th><?php echo esc_html__('Scanned', 'contentguard'); ?></th>
-                    <th><?php echo esc_html__('Failed', 'contentguard'); ?></th>
-                    <th><?php echo esc_html__('Warnings', 'contentguard'); ?></th>
-                    <th><?php echo esc_html__('Status', 'contentguard'); ?></th>
-                    <th><?php echo esc_html__('Actions', 'contentguard'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <section class="contentguard-history contentguard-history--wide" aria-labelledby="contentguard-history-heading">
+        <h2 id="contentguard-history-heading"><?php echo esc_html(AuditPresentation::historyHeading()); ?></h2>
+        <?php if ($history === array()) : ?>
+            <p class="contentguard-history__empty"><?php echo esc_html(AuditPresentation::historyEmptyText()); ?></p>
+        <?php else : ?>
+            <ol class="contentguard-history__list">
                 <?php foreach ($history as $run) : ?>
                     <?php
-                    $statusKey = StatusPresentation::fromAuditRunStatus($run->status);
+                    $statusKey   = StatusPresentation::fromAuditRunStatus($run->status);
                     $isLatest    = $latestComplete !== null && $run->id === $latestComplete->id;
                     $viewingThis = $viewingHistory && $resultsRun !== null && $run->id === $resultsRun->id;
+                    $isComplete  = $run->status === AuditRunStatus::Complete;
+                    $actionLabel = '';
+                    $actionUrl   = '';
+                    if ($isComplete && !$viewingThis) {
+                        $actionLabel = AuditPresentation::viewResultsLabel();
+                        $actionArgs  = $isLatest
+                            ? AuditPage::latestResultsArgs()
+                            : array('page' => AuditPage::SLUG, 'run' => (string) $run->id);
+                        if ($historyPaged > 1) {
+                            $actionArgs[AuditPage::HISTORY_PAGED_ARG] = (string) $historyPaged;
+                        }
+                        $actionUrl = $auditUrl($actionArgs);
+                    }
+                    $outcome = '';
+                    $detail  = '';
+                    if ($isComplete && ($run->postsFailed > 0 || $run->postsWarned > 0)) {
+                        $outcome = AuditPresentation::historyContentOutcomeLabel($run->postsFailed, $run->postsWarned);
+                    } elseif ($run->status === AuditRunStatus::Failed) {
+                        $detail = $run->errorMessage !== null && $run->errorMessage !== ''
+                            ? $run->errorMessage
+                            : AuditPresentation::failedFallbackMessage();
+                    } elseif ($run->status === AuditRunStatus::Cancelled) {
+                        $detail = AuditPresentation::cancelledText();
+                    }
                     ?>
-                    <tr<?php echo $viewingThis ? ' class="contentguard-history-row--viewing"' : ''; ?>>
-                        <td><?php echo esc_html(AuditPage::formatRunTime($run->finishedAt ?? $run->startedAt)); ?></td>
-                        <td><?php echo esc_html((string) $run->postsScanned); ?></td>
-                        <td><?php echo esc_html((string) $run->postsFailed); ?></td>
-                        <td><?php echo esc_html((string) $run->postsWarned); ?></td>
-                        <td>
-                            <?php AdminView::partial('status-pill', array('status' => $statusKey)); ?>
-                            <?php if ($isLatest) : ?>
-                                <span class="description"><?php echo esc_html__('(current)', 'contentguard'); ?></span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if ($run->status === AuditRunStatus::Complete && $viewingThis) : ?>
-                                <?php echo esc_html__('Viewing', 'contentguard'); ?>
-                            <?php elseif ($run->status === AuditRunStatus::Complete) : ?>
-                                <a href="<?php echo esc_url($auditUrl(array('page' => AuditPage::SLUG, 'run' => (string) $run->id))); ?>">
-                                    <?php echo esc_html__('View', 'contentguard'); ?>
-                                </a>
-                            <?php else : ?>
-                                &mdash;
-                            <?php endif; ?>
-                        </td>
-                    </tr>
+                    <li>
+                        <?php
+                        AdminView::partial(
+                            'audit-history-item',
+                            array(
+                                'date'         => AuditPage::formatRunTime($run->finishedAt ?? $run->startedAt),
+                                'status'       => $statusKey,
+                                'isCurrent'    => $isLatest,
+                                'isViewing'    => $viewingThis,
+                                'checkedLabel' => AuditPresentation::contentItemsCheckedLabel($run->postsScanned),
+                                'outcome'      => $outcome,
+                                'detail'       => $detail,
+                                'actionLabel'  => $actionLabel,
+                                'actionUrl'    => $actionUrl,
+                            )
+                        );
+                        ?>
+                    </li>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+            </ol>
+            <?php if ($historyTotalPages > 1) : ?>
+                <nav
+                    class="contentguard-pagination contentguard-pagination--history"
+                    aria-label="<?php echo esc_attr(AuditPresentation::historyPaginationLabel()); ?>"
+                    aria-describedby="contentguard-history-pagination-status"
+                >
+                    <p class="contentguard-pagination__status" id="contentguard-history-pagination-status">
+                        <?php echo esc_html(AuditPresentation::historyRangeLabel($historyPaged, AuditPage::HISTORY_PAGE_SIZE, $historyTotal)); ?>
+                    </p>
+                    <div class="contentguard-pagination__controls">
+                        <?php if ($historyPaged <= 1) : ?>
+                            <span class="contentguard-pagination__disabled" aria-disabled="true"><?php echo esc_html__('Previous', 'contentguard'); ?></span>
+                        <?php endif; ?>
+                        <?php
+                        $historyPagination = '';
+                        if (function_exists('paginate_links')) {
+                            $historyPagination = (string) paginate_links(
+                                array(
+                                    'base'      => $auditUrl($historyArgs) . '&' . AuditPage::HISTORY_PAGED_ARG . '=%#%',
+                                    'format'    => '',
+                                    'current'   => $historyPaged,
+                                    'total'     => $historyTotalPages,
+                                    'prev_text' => __('Previous', 'contentguard'),
+                                    'next_text' => __('Next', 'contentguard'),
+                                )
+                            );
+                        }
+                        echo wp_kses_post($historyPagination);
+                        ?>
+                        <?php if ($historyPaged >= $historyTotalPages) : ?>
+                            <span class="contentguard-pagination__disabled" aria-disabled="true"><?php echo esc_html__('Next', 'contentguard'); ?></span>
+                        <?php endif; ?>
+                    </div>
+                </nav>
+            <?php endif; ?>
+        <?php endif; ?>
+    </section>
 </div>

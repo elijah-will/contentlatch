@@ -66,5 +66,7 @@ interface AuditStoreInterface
     /**
      * @return AuditRun[]
      */
-    public function findRecentRuns(int $limit): array;
+    public function findRecentRuns(int $limit, int $offset = 0): array;
+
+    public function countRuns(): int;
 }

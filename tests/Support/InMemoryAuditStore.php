@@ -254,7 +254,7 @@ final class InMemoryAuditStore implements AuditStoreInterface
     /**
      * @return AuditRun[]
      */
-    public function findRecentRuns(int $limit): array
+    public function findRecentRuns(int $limit, int $offset = 0): array
     {
         $runs = array_values($this->runs);
         usort(
@@ -262,7 +262,12 @@ final class InMemoryAuditStore implements AuditStoreInterface
             static fn (AuditRun $left, AuditRun $right): int => $right->id <=> $left->id
         );
 
-        return array_slice($runs, 0, max(1, $limit));
+        return array_slice($runs, max(0, $offset), max(1, $limit));
+    }
+
+    public function countRuns(): int
+    {
+        return count($this->runs);
     }
 
     /**

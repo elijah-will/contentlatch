@@ -150,7 +150,9 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('Previous audit', $html);
         $this->assertStringContainsString(AuditPresentation::historicalNotice(), $html);
+        $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-01-01 00:01:00'), $html);
         $this->assertStringContainsString('Back to latest audit', $html);
+        $this->assertStringContainsString('role="status"', $html);
         $this->assertStringContainsString('contentguard-audit--history', $html);
         $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
         $this->assertStringNotContainsString('page=contentguard-audit&amp;run=', $html);
@@ -296,6 +298,7 @@ final class AuditViewTest extends TestCase
         $this->assertSame(50, AuditPage::PAGE_SIZE);
         $this->assertStringContainsString('contentguard-pagination', $html);
         $this->assertStringContainsString('aria-label="Findings pagination"', $html);
+        $this->assertStringContainsString('aria-describedby="contentguard-pagination-status"', $html);
         $this->assertStringContainsString('Showing 1–50 of 51 findings', $html);
         $this->assertStringContainsString('contentguard-pagination__disabled', $html);
         $this->assertStringContainsString('Previous', $html);
@@ -705,6 +708,7 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('Previous audit', $html);
         $this->assertStringContainsString(AuditPresentation::historicalNotice(), $html);
+        $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-01-01 00:01:00'), $html);
         $this->assertStringContainsString('contentguard-audit--history', $html);
         $this->assertStringContainsString('name="run"', $html);
         $this->assertStringContainsString('value="2"', $html);
@@ -713,6 +717,341 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('Back to latest audit', $html);
         $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
+    }
+
+    public function testFindingsFiltersPresentAsAToolbarWithSelectedState(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'query'       => new AuditFindingQuery(7, 'fail', '15', 'recipe'),
+            'ruleImpacts' => array(new AuditRuleImpact(15, 1, 1)),
+            'filterArgs'  => array(
+                'page'     => AuditPage::SLUG,
+                'severity' => 'fail',
+                'rule'     => '15',
+                'cg_type'  => 'recipe',
+            ),
+        )));
+
+        $this->assertStringContainsString('class="contentguard-filters"', $html);
+        $this->assertStringContainsString('role="group"', $html);
+        $this->assertStringContainsString('aria-labelledby="contentguard-filter-severity-label"', $html);
+        $this->assertStringContainsString(AuditPresentation::severityFilterLabel(), $html);
+        $this->assertStringContainsString(AuditPresentation::ruleFilterLabel(), $html);
+        $this->assertStringContainsString(AuditPresentation::contentTypeFilterLabel(), $html);
+        $this->assertStringContainsString('name="severity"', $html);
+        $this->assertStringContainsString('name="rule"', $html);
+        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringNotContainsString('name="post_type"', $html);
+        $this->assertStringContainsString('type="submit"', $html);
+        $this->assertStringContainsString('value="fail"', $html);
+        $this->assertStringContainsString('aria-pressed="true"', $html);
+        $this->assertStringContainsString('is-selected', $html);
+        $this->assertStringContainsString('selected="selected"', $html);
+        $this->assertStringContainsString('value="recipe"', $html);
+        $this->assertStringContainsString('value="15"', $html);
+        $this->assertStringContainsString('Showing 1–1 of 1 findings', $html);
+        $this->assertStringContainsString('contentguard-filters__actions', $html);
+        $this->assertStringContainsString('Filter', $html);
+        $this->assertStringContainsString('Clear filters', $html);
+        $this->assertStringNotContainsString('name="paged"', $html);
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="fail"[^>]*aria-pressed="true"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/href="[^"]*[?&]severity=/', $html);
+        $this->assertDoesNotMatchRegularExpression('/href="[^"]*[?&](?:rule|cg_type)=/', $html);
+    }
+
+    public function testSeverityChipsSubmitImmediatelyAndResetFindingsPage(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $all = $this->renderAudit($this->completedResults(array(
+            'query' => new AuditFindingQuery(7),
+        )));
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value=""[^>]*aria-pressed="true"/', $all);
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="fail"[^>]*aria-pressed="false"/', $all);
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="warning"[^>]*aria-pressed="false"/', $all);
+
+        $blocking = $this->renderAudit($this->completedResults(array(
+            'query' => new AuditFindingQuery(7, 'fail'),
+            'paged' => 3,
+        )));
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="fail"[^>]*aria-pressed="true"/', $blocking);
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value=""[^>]*aria-pressed="false"/', $blocking);
+        $this->assertStringContainsString('type="submit"', $blocking);
+        $this->assertStringNotContainsString('name="paged"', $blocking);
+
+        $warning = $this->renderAudit($this->completedResults(array(
+            'query' => new AuditFindingQuery(7, 'warning'),
+            'severityCounts' => array('fail' => 0, 'warning' => 1),
+            'findings' => array($this->makeFinding(array('severity' => RuleSeverity::Warning))),
+        )));
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="warning"[^>]*aria-pressed="true"/', $warning);
+        $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="fail"[^>]*aria-pressed="false"/', $warning);
+    }
+
+    public function testSeverityChipFormPreservesHistoricalRun(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $latest = $this->makeRun(9, AuditRunStatus::Complete);
+        $older  = $this->makeRun(2, AuditRunStatus::Complete);
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete' => $latest,
+            'latestRun'      => $latest,
+            'resultsRun'     => $older,
+            'viewingHistory' => true,
+            'query'          => new AuditFindingQuery(2, 'warning'),
+            'findings'       => array($this->makeFinding(array('runId' => 2))),
+            'historyPaged'   => 2,
+        )));
+
+        $this->assertStringContainsString('name="run"', $html);
+        $this->assertStringContainsString('value="2"', $html);
+        $this->assertStringContainsString('name="hpaged"', $html);
+        $this->assertStringContainsString('name="severity"', $html);
+        $this->assertStringContainsString('type="submit"', $html);
+        $this->assertStringContainsString('contentguard_run=2', $html);
+        $this->assertStringNotContainsString('name="paged"', $html);
+        $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;run=2', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=2&amp;severity=', $html);
+    }
+
+    public function testAuditHistoryIdentifiesCurrentHistoricalFailedAndCancelledRuns(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $current = $this->makeRun(9, AuditRunStatus::Complete, array(
+            'postsScanned' => 127,
+            'postsFailed'  => 2,
+            'postsWarned'  => 1,
+            'finishedAt'   => '2026-09-06 12:00:00',
+        ));
+        $older = $this->makeRun(4, AuditRunStatus::Complete, array(
+            'postsScanned' => 124,
+            'postsFailed'  => 3,
+            'postsWarned'  => 2,
+            'finishedAt'   => '2026-09-05 15:42:00',
+        ));
+        $failed = $this->makeRun(3, AuditRunStatus::Failed, array(
+            'postsScanned' => 40,
+            'finishedAt'   => '2026-09-04 09:00:00',
+            'errorMessage' => 'Audit timed out',
+        ));
+        $cancelled = $this->makeRun(2, AuditRunStatus::Cancelled, array(
+            'postsScanned' => 18,
+            'finishedAt'   => '2026-09-03 08:00:00',
+        ));
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete' => $current,
+            'latestRun'      => $current,
+            'resultsRun'     => $older,
+            'viewingHistory' => true,
+            'query'          => new AuditFindingQuery(4),
+            'findings'       => array($this->makeFinding(array('runId' => 4))),
+            'history'        => array($current, $older, $failed, $cancelled),
+        )));
+
+        $this->assertStringContainsString('contentguard-history', $html);
+        $this->assertStringContainsString(AuditPresentation::historyHeading(), $html);
+        $this->assertStringNotContainsString('widefat', $html);
+        $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
+        $this->assertStringContainsString('contentguard-history__item--current', $html);
+        $this->assertStringContainsString('contentguard-history__item--viewing', $html);
+        $this->assertStringContainsString('aria-current="true"', $html);
+        $this->assertStringContainsString('127 content items checked', $html);
+        $this->assertStringContainsString('124 content items checked', $html);
+        $this->assertStringContainsString('2 need attention · 1 need review', $html);
+        $this->assertStringContainsString('3 need attention · 2 need review', $html);
+        $this->assertStringContainsString('Completed', $html);
+        $this->assertStringContainsString('Failed', $html);
+        $this->assertStringContainsString('Cancelled', $html);
+        $this->assertStringContainsString('Audit timed out', $html);
+        $this->assertStringContainsString(AuditPresentation::cancelledText(), $html);
+        $this->assertStringContainsString('contentguard-history__item--failed', $html);
+        $this->assertStringContainsString('contentguard-history__item--cancelled', $html);
+        $this->assertStringContainsString(AuditPresentation::viewResultsLabel(), $html);
+        $this->assertStringContainsString('contentguard-history__viewing', $html);
+        $this->assertStringContainsString('>' . AuditPresentation::viewingAuditLabel() . '<', $html);
+        $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-09-05 15:42:00'), $html);
+        $this->assertStringContainsString(AuditPresentation::backToLatestLabel(), $html);
+        $this->assertStringContainsString('contentguard_run=4', $html);
+        $this->assertStringNotContainsString('contentguard_run=9', $html);
+        $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=4">View results', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=9', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=3', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=2', $html);
+    }
+
+    public function testLatestHistoryItemLinksBackWithoutARunQuery(): void
+    {
+        $current = $this->makeRun(9, AuditRunStatus::Complete, array(
+            'postsScanned' => 127,
+            'postsFailed'  => 1,
+            'finishedAt'   => '2026-09-06 12:00:00',
+        ));
+        $older = $this->makeRun(4, AuditRunStatus::Complete, array(
+            'postsScanned' => 124,
+            'finishedAt'   => '2026-09-05 15:42:00',
+        ));
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete' => $current,
+            'latestRun'      => $current,
+            'resultsRun'     => $current,
+            'history'        => array($current, $older),
+        )));
+
+        $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
+        $this->assertStringContainsString(AuditPresentation::viewResultsLabel(), $html);
+        $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;run=4', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=9', $html);
+        $this->assertStringNotContainsString('contentguard-history__viewing', $html);
+        $this->assertStringNotContainsString('contentguard-audit--history', $html);
+        $this->assertStringNotContainsString('aria-current="true"', $html);
+    }
+
+    public function testEmptyStatesStayVisuallyConsistent(): void
+    {
+        $first = $this->renderAudit($this->baseVars());
+        $this->assertStringContainsString(AuditPresentation::firstRunHeading(), $first);
+        $this->assertStringContainsString(AuditPresentation::firstRunText(), $first);
+        $this->assertStringContainsString(AuditPresentation::historyEmptyText(), $first);
+        $this->assertStringContainsString('contentguard-empty', $first);
+
+        $none = $this->renderAudit($this->baseVars(array(
+            'postTypes'       => array(),
+            'activeRuleCount' => 0,
+        )));
+        $this->assertStringContainsString(AuditPresentation::noActiveRulesHeading(), $none);
+        $this->assertStringContainsString('Go to Rules', $none);
+
+        $complete = $this->makeRun(7, AuditRunStatus::Complete, array(
+            'postsScanned' => 12,
+            'postsPassed'  => 12,
+        ));
+        $clear = $this->renderAudit($this->baseVars(array(
+            'latestComplete' => $complete,
+            'latestRun'      => $complete,
+            'resultsRun'     => $complete,
+        )));
+        $this->assertStringContainsString(AuditPresentation::allClearHeading(), $clear);
+        $this->assertStringContainsString(AuditPresentation::allClearText(12), $clear);
+        $this->assertStringContainsString('contentguard-empty', $clear);
+    }
+
+    public function testAuditHistoryUsesFullWidthAndPaginatesIndependently(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $current = $this->makeRun(40, AuditRunStatus::Complete, array('postsScanned' => 127));
+        $page    = array();
+        for ($id = 40; $id >= 31; $id--) {
+            $page[] = $this->makeRun($id, AuditRunStatus::Complete, array('postsScanned' => 10 + $id));
+        }
+
+        $first = $this->renderAudit($this->completedResults(array(
+            'latestComplete'   => $current,
+            'latestRun'        => $current,
+            'resultsRun'       => $current,
+            'history'          => $page,
+            'historyTotal'     => 37,
+            'historyPaged'     => 1,
+            'historyTotalPages'=> 4,
+            'historyArgs'      => array('page' => AuditPage::SLUG, 'paged' => '3'),
+            'paged'            => 3,
+            'totalPages'       => 3,
+            'findingTotal'     => 127,
+            'filterArgs'       => array(
+                'page'     => AuditPage::SLUG,
+                'severity' => 'fail',
+                'hpaged'   => '1',
+            ),
+        )));
+
+        $this->assertSame(10, AuditPage::HISTORY_PAGE_SIZE);
+        $this->assertSame(10, count($page));
+        $this->assertStringContainsString('contentguard-history--wide', $first);
+        $this->assertStringContainsString('contentguard-pagination--history', $first);
+        $this->assertStringContainsString('aria-label="Audit history pagination"', $first);
+        $this->assertStringContainsString('Showing 1–10 of 37 audits', $first);
+        $this->assertStringContainsString('hpaged=%#%', $first);
+        $this->assertStringContainsString('paged=3', $first);
+        $this->assertStringContainsString('paged=%#%', $first);
+        $this->assertStringContainsString('severity=fail', $first);
+        $this->assertStringContainsString('contentguard-pagination--findings', $first);
+        $this->assertStringContainsString('Showing 101–127 of 127 findings', $first);
+
+        $older = $this->makeRun(4, AuditRunStatus::Complete, array('postsScanned' => 124));
+        $middleHistory = $page;
+        $middleHistory[9] = $older;
+
+        $middle = $this->renderAudit($this->completedResults(array(
+            'latestComplete'   => $current,
+            'latestRun'        => $current,
+            'resultsRun'       => $older,
+            'history'          => $middleHistory,
+            'historyTotal'     => 37,
+            'historyPaged'     => 2,
+            'historyTotalPages'=> 4,
+            'historyArgs'      => array('page' => AuditPage::SLUG, 'run' => '4', 'paged' => '3'),
+            'viewingHistory'   => true,
+            'query'            => new AuditFindingQuery(4),
+            'findings'         => array($this->makeFinding(array('runId' => 4))),
+            'paged'            => 3,
+            'totalPages'       => 3,
+            'findingTotal'     => 127,
+            'filterArgs'       => array(
+                'page'   => AuditPage::SLUG,
+                'run'    => '4',
+                'hpaged' => '2',
+            ),
+        )));
+
+        $this->assertStringContainsString('Showing 11–20 of 37 audits', $middle);
+        $this->assertStringContainsString('name="hpaged"', $middle);
+        $this->assertStringContainsString('value="2"', $middle);
+        $this->assertStringContainsString('name="run"', $middle);
+        $this->assertStringContainsString('contentguard_run=4', $middle);
+        $this->assertStringContainsString('hpaged=2', $middle);
+        $this->assertStringContainsString('paged=3', $middle);
+        $this->assertStringContainsString('contentguard-history__viewing', $middle);
+        $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $middle);
+        $this->assertStringContainsString('hpaged=2', $middle);
+
+        $last = $this->renderAudit($this->completedResults(array(
+            'latestComplete'   => $current,
+            'latestRun'        => $current,
+            'resultsRun'       => $current,
+            'history'          => array_slice($page, 0, 7),
+            'historyTotal'     => 37,
+            'historyPaged'     => 4,
+            'historyTotalPages'=> 4,
+            'historyArgs'      => array('page' => AuditPage::SLUG),
+        )));
+
+        $this->assertStringContainsString('Showing 31–37 of 37 audits', $last);
+        $this->assertStringContainsString('contentguard-pagination__disabled', $last);
+        $this->assertStringContainsString('Next', $last);
+        $this->assertStringContainsString('hpaged=%#%', $last);
     }
 
     protected function tearDown(): void
@@ -798,6 +1137,10 @@ final class AuditViewTest extends TestCase
                 'ruleNames'        => array(),
                 'fieldLabels'      => array(),
                 'history'          => array(),
+                'historyTotal'     => 0,
+                'historyPaged'     => 1,
+                'historyTotalPages'=> 1,
+                'historyArgs'      => array('page' => AuditPage::SLUG),
                 'paged'            => 1,
                 'totalPages'       => 1,
                 'filterArgs'       => array('page' => AuditPage::SLUG),
@@ -811,11 +1154,15 @@ final class AuditViewTest extends TestCase
      */
     private function makeRun(int $id, AuditRunStatus $status, array $overrides = array()): AuditRun
     {
+        $finishedAt = array_key_exists('finishedAt', $overrides)
+            ? $overrides['finishedAt']
+            : ($status === AuditRunStatus::Complete ? '2026-01-01 00:01:00' : null);
+
         return new AuditRun(
             $id,
             $status,
-            '2026-01-01 00:00:00',
-            $status === AuditRunStatus::Complete ? '2026-01-01 00:01:00' : null,
+            (string) ($overrides['startedAt'] ?? '2026-01-01 00:00:00'),
+            is_string($finishedAt) || $finishedAt === null ? $finishedAt : null,
             '2026-01-01 00:00:00',
             (int) ($overrides['postsScanned'] ?? 0),
             (int) ($overrides['postsPassed'] ?? 0),

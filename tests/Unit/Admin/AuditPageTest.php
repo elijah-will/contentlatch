@@ -111,6 +111,32 @@ final class AuditPageTest extends TestCase
             array('page' => AuditPage::SLUG),
             AuditPage::filterArgs(array('severity' => 'nope', 'rule' => '0'))
         );
+        $this->assertSame(
+            array('page' => AuditPage::SLUG, 'hpaged' => '2'),
+            AuditPage::filterArgs(array('hpaged' => '2'))
+        );
+        $this->assertArrayNotHasKey('paged', AuditPage::filterArgs(array('paged' => '3', 'hpaged' => '2')));
+        $this->assertArrayNotHasKey('hpaged', AuditPage::filterArgs(array('hpaged' => '1')));
+        $this->assertSame(1, AuditPage::requestedHistoryPage(array()));
+        $this->assertSame(1, AuditPage::requestedHistoryPage(array('hpaged' => '-2')));
+        $this->assertSame(3, AuditPage::requestedHistoryPage(array('hpaged' => '3')));
+        $this->assertSame(4, AuditPage::clampPage(9, 4));
+        $this->assertSame(1, AuditPage::clampPage(0, 4));
+        $this->assertSame(
+            array('page' => AuditPage::SLUG, 'paged' => '3'),
+            AuditPage::historyPaginationArgs(array('page' => AuditPage::SLUG, 'hpaged' => '2'), 3)
+        );
+        $this->assertSame(
+            array('page' => AuditPage::SLUG, 'run' => '4'),
+            AuditPage::clearFilterArgs(4)
+        );
+        $this->assertSame(
+            array('page' => AuditPage::SLUG, 'run' => '4', 'hpaged' => '2'),
+            AuditPage::clearFilterArgs(4, 2)
+        );
+        $this->assertArrayNotHasKey('severity', AuditPage::clearFilterArgs(4, 2));
+        $this->assertSame(10, AuditPage::HISTORY_PAGE_SIZE);
+        $this->assertSame('hpaged', AuditPage::HISTORY_PAGED_ARG);
         $this->assertTrue(AuditAdminRequest::reservedPostTypeWouldBreakAuditPage(array(
             'page'      => AuditPage::SLUG,
             'post_type' => 'recipe',

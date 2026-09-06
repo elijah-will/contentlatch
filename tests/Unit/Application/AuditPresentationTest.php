@@ -65,9 +65,24 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Audit completed', AuditPresentation::completedHeading());
         $this->assertSame('All clear', AuditPresentation::allClearHeading());
         $this->assertSame(
-            'No active rule violations were found in the audited content.',
+            'No issues were found in this audit.',
             AuditPresentation::allClearText(12)
         );
+        $this->assertSame(
+            'This audit completed with no eligible content and no issues.',
+            AuditPresentation::allClearText(0)
+        );
+        $this->assertSame('Viewing results from September 5, 2026', AuditPresentation::viewingResultsFrom('September 5, 2026'));
+        $this->assertSame('Viewing historical audit results', AuditPresentation::viewingResultsFrom(''));
+        $this->assertSame('Back to latest audit', AuditPresentation::backToLatestLabel());
+        $this->assertSame('Current', AuditPresentation::currentAuditLabel());
+        $this->assertSame('Viewing', AuditPresentation::viewingAuditLabel());
+        $this->assertSame('View results', AuditPresentation::viewResultsLabel());
+        $this->assertSame('Audit History', AuditPresentation::historyHeading());
+        $this->assertSame('12 content items checked', AuditPresentation::contentItemsCheckedLabel(12));
+        $this->assertSame('3 need attention · 2 need review', AuditPresentation::historyContentOutcomeLabel(3, 2));
+        $this->assertSame('Severity', AuditPresentation::severityFilterLabel());
+        $this->assertSame('Content type', AuditPresentation::contentTypeFilterLabel());
         $this->assertSame('Audit failed', AuditPresentation::failedHeading());
         $this->assertSame('Audit cancelled', AuditPresentation::cancelledHeading());
         $this->assertStringContainsString('not used as the latest completed result', AuditPresentation::cancelledText());
@@ -81,6 +96,10 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Showing 51–100 of 127 findings', AuditPresentation::findingsRangeLabel(2, 50, 127));
         $this->assertSame('Showing 101–127 of 127 findings', AuditPresentation::findingsRangeLabel(3, 50, 127));
         $this->assertSame('Findings pagination', AuditPresentation::paginationLabel());
+        $this->assertSame('Showing 1–10 of 37 audits', AuditPresentation::historyRangeLabel(1, 10, 37));
+        $this->assertSame('Showing 11–20 of 37 audits', AuditPresentation::historyRangeLabel(2, 10, 37));
+        $this->assertSame('Showing 31–37 of 37 audits', AuditPresentation::historyRangeLabel(4, 10, 37));
+        $this->assertSame('Audit history pagination', AuditPresentation::historyPaginationLabel());
         $this->assertSame('1 issue', AuditPresentation::issuesCountLabel(1));
         $this->assertSame('2 issues', AuditPresentation::issuesCountLabel(2));
         $this->assertSame('1 Blocking', AuditPresentation::blockingCountLabel(1));
