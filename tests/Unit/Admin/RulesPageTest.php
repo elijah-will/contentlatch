@@ -72,6 +72,50 @@ final class RulesPageTest extends TestCase
         )));
     }
 
+    public function testSortForListPutsActiveRulesBeforeInactiveAndKeepsRelativeOrder(): void
+    {
+        $firstInactive = RuleFactory::rule(array(
+            'id'     => 10,
+            'name'   => 'Oldest inactive',
+            'status' => RuleStatus::Inactive,
+        ));
+        $firstActive = RuleFactory::rule(array(
+            'id'     => 11,
+            'name'   => 'First active',
+            'status' => RuleStatus::Active,
+        ));
+        $secondInactive = RuleFactory::rule(array(
+            'id'     => 12,
+            'name'   => 'Newer inactive',
+            'status' => RuleStatus::Inactive,
+        ));
+        $secondActive = RuleFactory::rule(array(
+            'id'     => 13,
+            'name'   => 'Second active',
+            'status' => RuleStatus::Active,
+        ));
+
+        $sorted = RulesPage::sortForList(array(
+            $firstInactive,
+            $firstActive,
+            $secondInactive,
+            $secondActive,
+        ));
+
+        $this->assertSame(array(11, 13, 10, 12), array_map(static fn ($rule) => $rule->id, $sorted));
+        $this->assertSame(array('active', 'active', 'inactive', 'inactive'), array_map(
+            static fn ($rule) => $rule->status->value,
+            $sorted
+        ));
+        $this->assertSame('First active', $sorted[0]->name);
+        $this->assertSame('Second active', $sorted[1]->name);
+        $this->assertSame('Oldest inactive', $sorted[2]->name);
+        $this->assertSame('Newer inactive', $sorted[3]->name);
+        $this->assertCount(4, $sorted);
+        $this->assertSame($firstActive, $sorted[0]);
+        $this->assertSame($secondInactive, $sorted[3]);
+    }
+
     public function testAllInactiveNoticeExplainsEnforcement(): void
     {
         $notice = RulesPage::allInactiveNotice();

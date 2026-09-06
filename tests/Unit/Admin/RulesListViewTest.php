@@ -119,6 +119,37 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('contentguard-rule-item', $html);
     }
 
+    public function testActiveRulesRenderBeforeInactiveRules(): void
+    {
+        $inactive = RuleFactory::rule(array(
+            'id'     => 4,
+            'name'   => 'Inactive page ID rule',
+            'status' => RuleStatus::Inactive,
+        ));
+        $active = RuleFactory::rule(array(
+            'id'     => 5,
+            'name'   => 'Active page ID rule',
+            'status' => RuleStatus::Active,
+        ));
+
+        $html = $this->renderList(
+            array($inactive, $active),
+            array(),
+            array('product' => 'Product')
+        );
+
+        $activePos   = strpos($html, 'Active page ID rule');
+        $inactivePos = strpos($html, 'Inactive page ID rule');
+
+        $this->assertNotFalse($activePos);
+        $this->assertNotFalse($inactivePos);
+        $this->assertLessThan($inactivePos, $activePos);
+        $this->assertStringContainsString('contentguard-status--success', $html);
+        $this->assertStringContainsString('contentguard-status--neutral', $html);
+        $this->assertStringContainsString('Applies to', $html);
+        $this->assertStringContainsString('Product', $html);
+    }
+
     public function testViewAffectedContentAppearsOnlyWhenTheLatestAuditHasMatches(): void
     {
         $rule = RuleFactory::rule(array('id' => 9, 'name' => 'Failing products'));

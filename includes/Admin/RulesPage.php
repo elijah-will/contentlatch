@@ -174,8 +174,35 @@ final class RulesPage
         $notice         = $this->notice();
         $postTypeLabels = $this->factory->allowedPostTypes();
         $allInactive    = self::allRulesInactive($rules);
+        $rules          = self::sortForList($rules);
         $view           = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
         require $view;
+    }
+
+    /**
+     * Active rules first, then inactive. Relative order within each group is kept.
+     *
+     * @param Rule[] $rules
+     * @return Rule[]
+     */
+    public static function sortForList(array $rules): array
+    {
+        $active   = array();
+        $inactive = array();
+
+        foreach ($rules as $rule) {
+            if (!$rule instanceof Rule) {
+                continue;
+            }
+
+            if ($rule->status === RuleStatus::Active) {
+                $active[] = $rule;
+            } else {
+                $inactive[] = $rule;
+            }
+        }
+
+        return array_values(array_merge($active, $inactive));
     }
 
     /**

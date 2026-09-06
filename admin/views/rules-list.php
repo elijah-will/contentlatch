@@ -30,6 +30,7 @@ $rules          = isset($rules) && is_array($rules) ? $rules : array();
 $summaries      = isset($summaries) && is_array($summaries) ? $summaries : array();
 $impacts        = isset($impacts) && is_array($impacts) ? $impacts : array();
 $allInactive    = isset($allInactive) ? (bool) $allInactive : RulesPage::allRulesInactive($rules);
+$rules          = RulesPage::sortForList($rules);
 ?>
 <div class="wrap contentguard" id="contentguard-rules">
     <?php
