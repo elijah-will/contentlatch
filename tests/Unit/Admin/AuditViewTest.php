@@ -738,6 +738,8 @@ final class AuditViewTest extends TestCase
         )));
 
         $this->assertStringContainsString('class="contentguard-filters"', $html);
+        $this->assertStringContainsString('#contentguard-findings-heading', $html);
+        $this->assertStringContainsString('scroll-margin-top: 48px', (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css'));
         $this->assertStringContainsString('role="group"', $html);
         $this->assertStringContainsString('aria-labelledby="contentguard-filter-severity-label"', $html);
         $this->assertStringContainsString(AuditPresentation::severityFilterLabel(), $html);

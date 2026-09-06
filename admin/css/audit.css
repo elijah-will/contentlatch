@@ -148,6 +148,10 @@
     margin-top: 2px;
 }
 
+#contentguard-findings-heading {
+    scroll-margin-top: 48px;
+}
+
 .contentguard-filters {
     align-items: flex-end;
     background: var(--cg-surface, #fff);
@@ -156,7 +160,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--cg-space-3, 12px) var(--cg-space-4, 16px);
-    margin: var(--cg-space-3, 12px) 0 var(--cg-space-2, 8px);
+    margin: 6px 0 var(--cg-space-2, 8px);
     padding: 10px 12px;
 }
 
