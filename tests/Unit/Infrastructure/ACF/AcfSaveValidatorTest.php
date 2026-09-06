@@ -1,0 +1,666 @@
+<?php
+/**
+ * @package ContentGuard
+ */
+
+declare(strict_types=1);
+
+namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+
+use ContentGuard\Application\ContentEvaluator;
+use ContentGuard\Application\RuleDocumentValidator;
+use ContentGuard\Application\RuleRepositoryInterface;
+use ContentGuard\Domain\Rule;
+use ContentGuard\Domain\RuleEngine;
+use ContentGuard\Domain\RuleSeverity;
+use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
+use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentGuard\Infrastructure\WordPress\RulePostRecord;
+use ContentGuard\Tests\Support\FakeRulePostStore;
+use ContentGuard\Tests\Support\RuleFactory;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
+
+final class AcfSaveValidatorTest extends TestCase
+{
+    /**
+     * @var array<int, array{input: string, message: string}>
+     */
+    private array $errors = array();
+
+    public function testMatchingConditionEmptyRequiredFieldOnPublishBlocks(): void
+    {
+        $this->validate($this->publishRequest(), $this->signaturePayload(''));
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_description]',
+                    'message' => 'Recipe Description is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testMatchingConditionFilledFieldOnPublishDoesNotError(): void
+    {
+        $this->validate($this->publishRequest(), $this->signaturePayload('A signature recipe.'));
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testNonMatchingConditionEmptyFieldOnPublishDoesNotError(): void
+    {
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_signature'   => '0',
+                'field_description' => '',
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testClassicEditorAcfAjaxPublishOfDraftIsBlocked(): void
+    {
+        $this->validate(
+            $this->request(
+                array(
+                    'action'               => 'acf/validate_save_post',
+                    'post_status'          => 'draft',
+                    'original_post_status' => 'draft',
+                    '_acf_screen'          => 'post',
+                    '_acf_post_id'         => '42',
+                )
+            ),
+            $this->signaturePayload('')
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_description]',
+                    'message' => 'Recipe Description is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testGutenbergAcfAjaxPublishWithoutPostStatusIsBlocked(): void
+    {
+        $request = $this->request(
+            array(
+                'action'               => 'acf/validate_save_post',
+                'original_post_status' => 'auto-draft',
+                '_acf_screen'          => 'post',
+                '_acf_post_id'         => '42',
+            )
+        );
+        unset($request['post_status']);
+
+        $this->validate($request, $this->signaturePayload(''));
+
+        $this->assertCount(1, $this->errors);
+        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+    }
+
+    public function testRealRecipeFieldKeysOnAcfAjaxPublishAreBlocked(): void
+    {
+        $rule = RuleFactory::rule(
+            array(
+                'id'          => 1,
+                'name'        => 'Signature requires description',
+                'postType'    => 'recipe',
+                'conditions'  => array(
+                    RuleFactory::condition(
+                        array(
+                            'field'    => RuleFactory::field(
+                                'field_65021edb3fb73',
+                                'is_signature',
+                                'Is Signature'
+                            ),
+                            'operator' => 'equals',
+                            'operand'  => '1',
+                        )
+                    ),
+                ),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'field' => RuleFactory::field(
+                                'field_64f8a42a61f56',
+                                'recipe_description',
+                                'Recipe Description'
+                            ),
+                            'type'  => 'required',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $catalog = new AcfFieldCatalog(
+            static function (string $postType): array {
+                if ($postType !== 'recipe') {
+                    return array();
+                }
+
+                return array(
+                    array(
+                        'key'   => 'field_65021edb3fb73',
+                        'name'  => 'is_signature',
+                        'label' => 'Is Signature',
+                        'type'  => 'true_false',
+                    ),
+                    array(
+                        'key'   => 'field_64f8a42a61f56',
+                        'name'  => 'recipe_description',
+                        'label' => 'Recipe Description',
+                        'type'  => 'textarea',
+                    ),
+                );
+            }
+        );
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($rule)),
+            $catalog,
+            array(
+                'action'               => 'acf/validate_save_post',
+                'post_ID'              => 42,
+                'post_type'            => 'recipe',
+                'original_post_status' => 'draft',
+                '_acf_screen'          => 'post',
+                '_acf_post_id'         => '42',
+            ),
+            array(
+                'field_65021edb3fb73' => '1',
+                'field_64f8a42a61f56' => '',
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_64f8a42a61f56]',
+                    'message' => 'Recipe Description is required.',
+                ),
+            ),
+            $this->errors
+        );
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($rule)),
+            $catalog,
+            array(
+                'action'               => 'acf/validate_save_post',
+                'post_ID'              => 42,
+                'post_type'            => 'recipe',
+                'original_post_status' => 'draft',
+                '_acf_screen'          => 'post',
+                '_acf_post_id'         => '42',
+            ),
+            array(
+                'field_65021edb3fb73' => '1',
+                'field_64f8a42a61f56' => 'A signature recipe.',
+            )
+        );
+        $this->assertSame(array(), $this->errors);
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($rule)),
+            $catalog,
+            array(
+                'action'               => 'acf/validate_save_post',
+                'post_ID'              => 42,
+                'post_type'            => 'recipe',
+                'original_post_status' => 'draft',
+                '_acf_screen'          => 'post',
+                '_acf_post_id'         => '42',
+            ),
+            array(
+                'field_65021edb3fb73' => '0',
+                'field_64f8a42a61f56' => '',
+            )
+        );
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testMatchingFailureOnDraftIsAllowed(): void
+    {
+        $this->validate(
+            $this->request(
+                array(
+                    'post_status' => 'draft',
+                    'save'        => 'Save Draft',
+                )
+            ),
+            $this->signaturePayload('')
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testSwitchingAPublishedPostToDraftIsAllowed(): void
+    {
+        $this->validate(
+            $this->request(
+                array(
+                    'post_status'          => 'draft',
+                    'original_post_status' => 'publish',
+                    'save'                 => 'Save Draft',
+                )
+            ),
+            $this->signaturePayload('')
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testMatchingFailureOnPrivateIsBlocked(): void
+    {
+        $this->validate(
+            $this->request(
+                array(
+                    'post_status' => 'draft',
+                    'private'     => 'Private',
+                )
+            ),
+            $this->signaturePayload('')
+        );
+
+        $this->assertCount(1, $this->errors);
+        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+    }
+
+    public function testWarningSeverityNeverBlocks(): void
+    {
+        $this->validate(
+            $this->publishRequest(),
+            $this->signaturePayload(''),
+            array($this->signatureRule(array('severity' => RuleSeverity::Warning)))
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testMultipleFailingRulesReportEveryError(): void
+    {
+        $titleRule = RuleFactory::rule(
+            array(
+                'id'          => 2,
+                'name'        => 'Title required',
+                'postType'    => 'recipe',
+                'conditions'  => array(),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'field' => RuleFactory::field('field_title', 'recipe_title', 'Recipe Title'),
+                            'type'  => 'required',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_signature'   => '1',
+                'field_description' => '',
+                'field_title'       => '',
+            ),
+            array($this->signatureRule(), $titleRule)
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_description]',
+                    'message' => 'Recipe Description is required.',
+                ),
+                array(
+                    'input'   => 'acf[field_title]',
+                    'message' => 'Recipe Title is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testCustomRuleMessageIsUsed(): void
+    {
+        $rule = $this->signatureRule(
+            array(
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'field'   => RuleFactory::field(
+                                'field_description',
+                                'recipe_description',
+                                'Recipe Description'
+                            ),
+                            'type'    => 'required',
+                            'message' => 'Please add a signature recipe description.',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->validate($this->publishRequest(), $this->signaturePayload(''), array($rule));
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_description]',
+                    'message' => 'Please add a signature recipe description.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testUnknownNonCatalogFieldKeyIsRejected(): void
+    {
+        $unknownConditionRule = RuleFactory::rule(
+            array(
+                'id'         => 9,
+                'postType'   => 'recipe',
+                'conditions' => array(
+                    RuleFactory::condition(
+                        array(
+                            'field'    => RuleFactory::field('field_not_in_catalog', 'secret', 'Secret'),
+                            'operator' => 'equals',
+                            'operand'  => 'yes',
+                        )
+                    ),
+                ),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'field' => RuleFactory::field('field_description', 'recipe_description', 'Recipe Description'),
+                            'type'  => 'required',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_not_in_catalog' => 'yes',
+                'field_description'    => '',
+                'recipe_description'   => 'not a key',
+            ),
+            array($unknownConditionRule)
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testMalformedPersistedRuleIsSkippedWithoutFatal(): void
+    {
+        $store = new FakeRulePostStore();
+        $store->seed(new RulePostRecord(10, 'Broken', 'publish', '{not-json', 'recipe'));
+        $store->seed(
+            new RulePostRecord(
+                11,
+                'Valid',
+                'publish',
+                (string) json_encode($this->signatureRule(array('id' => 11))->toArray()),
+                'recipe'
+            )
+        );
+
+        $repository = new PostTypeRuleRepository($store, RuleDocumentValidator::v1());
+        $this->validateWith(
+            $repository,
+            $this->recipeCatalog(),
+            $this->publishRequest(),
+            $this->signaturePayload('')
+        );
+
+        $this->assertCount(1, $this->errors);
+        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+        $this->assertSame(1, $store->findCalls);
+    }
+
+    public function testIncomingTrueFalseUsesTheSameDomainEvaluationAsStored(): void
+    {
+        $this->validate($this->publishRequest(), $this->signaturePayload(''));
+        $this->assertCount(1, $this->errors);
+
+        $this->errors = array();
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_signature'   => 1,
+                'field_description' => '',
+            )
+        );
+        $this->assertCount(1, $this->errors);
+
+        $this->errors = array();
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_signature'   => '0',
+                'field_description' => '',
+            )
+        );
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testNonAcfSaveDoesNotError(): void
+    {
+        $this->validate($this->publishRequest(), null);
+        $this->assertSame(array(), $this->errors);
+
+        $this->validate(
+            array(
+                'post_ID'     => 42,
+                'post_type'   => 'recipe',
+                'post_status' => 'publish',
+                'save'        => 'Update',
+            ),
+            'not-an-array'
+        );
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testHeartbeatAndAutosaveAreIgnored(): void
+    {
+        $this->validate(
+            $this->publishRequest(array('action' => 'heartbeat')),
+            $this->signaturePayload('')
+        );
+        $this->assertSame(array(), $this->errors);
+
+        $this->validate(
+            $this->publishRequest(array('action' => 'autosave')),
+            $this->signaturePayload('')
+        );
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testUnexpectedExceptionFailsSafely(): void
+    {
+        $catalog = new AcfFieldCatalog(
+            static function (): array {
+                throw new RuntimeException('Catalog exploded.');
+            }
+        );
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->signatureRule())),
+            $catalog,
+            $this->publishRequest(),
+            $this->signaturePayload('')
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @param Rule[]               $rules
+     */
+    private function validate(array $request, mixed $payload, array $rules = array()): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository($rules === array() ? array($this->signatureRule()) : $rules),
+            $this->recipeCatalog(),
+            $request,
+            $payload
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    private function validateWith(
+        RuleRepositoryInterface $repository,
+        AcfFieldCatalog $catalog,
+        array $request,
+        mixed $payload,
+    ): void {
+        $this->errors = array();
+
+        $validator = new AcfSaveValidator(
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $repository,
+            $catalog,
+            new IntendedPostStatusResolver(),
+            function (string $input, string $message): void {
+                $this->errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            }
+        );
+
+        $validator->validate($request, $payload);
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function signatureRule(array $overrides = array()): Rule
+    {
+        return RuleFactory::rule(
+            array_merge(
+                array(
+                    'id'          => 1,
+                    'name'        => 'Signature requires description',
+                    'postType'    => 'recipe',
+                    'conditions'  => array(
+                        RuleFactory::condition(
+                            array(
+                                'field'    => RuleFactory::field('field_signature', 'is_signature', 'Is Signature'),
+                                'operator' => 'equals',
+                                'operand'  => '1',
+                            )
+                        ),
+                    ),
+                    'validations' => array(
+                        RuleFactory::validation(
+                            array(
+                                'field' => RuleFactory::field(
+                                    'field_description',
+                                    'recipe_description',
+                                    'Recipe Description'
+                                ),
+                                'type'  => 'required',
+                            )
+                        ),
+                    ),
+                ),
+                $overrides
+            )
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function signaturePayload(string $description): array
+    {
+        return array(
+            'field_signature'   => '1',
+            'field_description' => $description,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function publishRequest(array $overrides = array()): array
+    {
+        return $this->request(
+            array_merge(
+                array(
+                    'post_status' => 'auto-draft',
+                    'publish'     => 'Publish',
+                ),
+                $overrides
+            )
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function request(array $overrides = array()): array
+    {
+        return array_merge(
+            array(
+                'post_ID'     => 42,
+                'post_type'   => 'recipe',
+                'post_status' => 'draft',
+            ),
+            $overrides
+        );
+    }
+
+    private function recipeCatalog(): AcfFieldCatalog
+    {
+        return new AcfFieldCatalog(
+            static function (string $postType): array {
+                if ($postType !== 'recipe') {
+                    return array();
+                }
+
+                return array(
+                    array(
+                        'key'   => 'field_signature',
+                        'name'  => 'is_signature',
+                        'label' => 'Is Signature',
+                        'type'  => 'true_false',
+                    ),
+                    array(
+                        'key'   => 'field_description',
+                        'name'  => 'recipe_description',
+                        'label' => 'Recipe Description',
+                        'type'  => 'textarea',
+                    ),
+                    array(
+                        'key'   => 'field_title',
+                        'name'  => 'recipe_title',
+                        'label' => 'Recipe Title',
+                        'type'  => 'text',
+                    ),
+                );
+            }
+        );
+    }
+}

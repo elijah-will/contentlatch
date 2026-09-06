@@ -1,0 +1,27 @@
+# Copyright (C) 2026 ContentGuard
+# This file is distributed under the GNU General Public License v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: ContentGuard 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: \n"
+
+#: includes/Activator.php
+msgid "ContentGuard requires PHP %s or higher."
+msgstr ""
+
+#: includes/Activator.php
+msgid "ContentGuard requires WordPress %s or higher."
+msgstr ""
+
+#: includes/Dependencies.php
+msgid "ContentGuard requires Advanced Custom Fields 6.0 or higher (Free or Pro)."
+msgstr ""
+
+#: includes/Dependencies.php
+msgid "ContentGuard requires Advanced Custom Fields %s or higher (Free or Pro)."
+msgstr ""
