@@ -7,6 +7,7 @@
  * @var string $title
  * @var string $message
  * @var list<string> $messages
+ * @var list<array{label?: string, fieldKey?: string, messages?: list<string>, editUrl?: string}> $fieldIssues
  * @var string $field
  * @var string $rule
  * @var string $status
@@ -14,12 +15,16 @@
  * @var string $postType
  * @var string $editUrl
  * @var string $uid
+ * @var int $issueCount
+ * @var int $blockingCount
+ * @var int $warningCount
  */
 
 defined('ABSPATH') || exit;
 
 use ContentGuard\Admin\AdminView;
 use ContentGuard\Application\AuditPresentation;
+use ContentGuard\Application\EditorFieldNavigation;
 
 $title    = isset($title) && is_string($title) ? $title : '';
 $field    = isset($field) && is_string($field) ? $field : '';
@@ -35,12 +40,47 @@ $statuses = isset($statuses) && is_array($statuses) ? array_values(array_filter(
 if ($statuses === array() && isset($status) && is_string($status) && $status !== '') {
     $statuses = array($status);
 }
-$display    = AuditPresentation::postTitle($title);
-$headingId  = 'contentguard-finding-title-' . $uid;
-$primary    = $statuses[0] ?? 'blocking';
-$modifier   = $primary === 'warning' ? 'warning' : 'blocking';
-$multiple   = count($messages) > 1;
-$countLabel = AuditPresentation::issuesCountLabel(count($messages));
+$fieldIssues = isset($fieldIssues) && is_array($fieldIssues) ? array_values($fieldIssues) : array();
+$issueCount  = isset($issueCount) ? (int) $issueCount : ($fieldIssues !== array()
+    ? array_sum(array_map(static fn (array $issue): int => count($issue['messages'] ?? array()), $fieldIssues))
+    : count($messages));
+$blockingCount = isset($blockingCount) ? (int) $blockingCount : 0;
+$warningCount  = isset($warningCount) ? (int) $warningCount : 0;
+$display       = AuditPresentation::postTitle($title);
+$headingId     = 'contentguard-finding-title-' . $uid;
+$primary       = $statuses[0] ?? 'blocking';
+$modifier      = $primary === 'warning' ? 'warning' : 'blocking';
+$multiple      = $issueCount > 1;
+$countLabel    = AuditPresentation::issuesCountLabel($issueCount);
+$summary       = AuditPresentation::groupSummary($messages, $issueCount);
+$visibleFields = array();
+$allFieldNames = array();
+foreach ($fieldIssues as $issue) {
+    $issueLabel = AuditPresentation::displayFieldLabel(
+        isset($issue['label']) && is_string($issue['label']) ? $issue['label'] : '',
+        isset($issue['fieldKey']) && is_string($issue['fieldKey']) ? $issue['fieldKey'] : ''
+    );
+    if ($issueLabel === '') {
+        continue;
+    }
+
+    $allFieldNames[] = $issueLabel;
+    if (count($visibleFields) < AuditPresentation::VISIBLE_FIELD_LIMIT) {
+        $visibleFields[] = $issue + array('label' => $issueLabel);
+    }
+}
+if ($visibleFields === array() && $field !== '') {
+    $singleLabel = AuditPresentation::displayFieldLabel($field);
+    if ($singleLabel !== '') {
+        $allFieldNames[] = $singleLabel;
+        $visibleFields[] = array(
+            'label'    => $singleLabel,
+            'fieldKey' => '',
+            'editUrl'  => '',
+        );
+    }
+}
+$hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
 ?>
 <article
     class="contentguard-finding contentguard-finding--<?php echo esc_attr($modifier); ?><?php echo $multiple ? ' contentguard-finding--grouped' : ''; ?>"
@@ -48,33 +88,58 @@ $countLabel = AuditPresentation::issuesCountLabel(count($messages));
 >
     <div class="contentguard-finding__headline">
         <h3 class="contentguard-finding__title" id="<?php echo esc_attr($headingId); ?>"><?php echo esc_html($display); ?></h3>
-        <?php if ($field !== '') : ?>
+        <?php if ($multiple) : ?>
             <span class="contentguard-finding__sep" aria-hidden="true">·</span>
-            <span class="contentguard-finding__field">
-                <span class="screen-reader-text"><?php echo esc_html__('Field', 'contentguard'); ?>: </span>
-                <?php echo esc_html($field); ?>
-            </span>
+            <span class="contentguard-finding__count"><?php echo esc_html($countLabel); ?></span>
         <?php endif; ?>
         <?php foreach ($statuses as $statusKey) : ?>
             <span class="contentguard-finding__sep" aria-hidden="true">·</span>
             <?php AdminView::partial('status-pill', array('status' => $statusKey)); ?>
         <?php endforeach; ?>
-        <?php if ($multiple) : ?>
-            <span class="contentguard-finding__sep" aria-hidden="true">·</span>
-            <span class="contentguard-finding__count"><?php echo esc_html($countLabel); ?></span>
-        <?php endif; ?>
-        <?php if ($postType !== '') : ?>
-            <span class="contentguard-finding__type"><?php echo esc_html($postType); ?></span>
+        <?php if ($multiple && $blockingCount > 0 && $warningCount > 0) : ?>
+            <span class="screen-reader-text">
+                <?php echo esc_html(AuditPresentation::blockingCountLabel($blockingCount) . ', ' . AuditPresentation::warningCountLabel($warningCount)); ?>
+            </span>
         <?php endif; ?>
     </div>
-    <?php if ($multiple) : ?>
-        <ul class="contentguard-finding__issues">
-            <?php foreach ($messages as $issue) : ?>
-                <li><?php echo esc_html($issue); ?></li>
+    <?php if ($postType !== '' || $visibleFields !== array()) : ?>
+        <p class="contentguard-finding__meta">
+            <?php if ($postType !== '') : ?>
+                <span class="contentguard-finding__type"><?php echo esc_html($postType); ?></span>
+            <?php endif; ?>
+            <?php if ($allFieldNames !== array()) : ?>
+                <span class="screen-reader-text">
+                    <?php echo esc_html(sprintf(/* translators: %s: comma-separated field names */ __('Affected fields: %s', 'contentguard'), implode(', ', $allFieldNames))); ?>
+                </span>
+            <?php endif; ?>
+            <?php foreach ($visibleFields as $index => $issue) : ?>
+                <?php
+                $issueLabel = (string) $issue['label'];
+                $issueKey   = isset($issue['fieldKey']) && is_string($issue['fieldKey']) ? $issue['fieldKey'] : '';
+                $issueEdit  = isset($issue['editUrl']) && is_string($issue['editUrl']) ? $issue['editUrl'] : '';
+                $canLink    = $issueEdit !== '' && EditorFieldNavigation::isSafeFieldKey($issueKey);
+                ?>
+                <?php if ($postType !== '' || $index > 0) : ?>
+                    <span class="contentguard-finding__sep" aria-hidden="true">·</span>
+                <?php endif; ?>
+                <?php if ($canLink) : ?>
+                    <a
+                        class="contentguard-finding__field"
+                        href="<?php echo esc_url($issueEdit); ?>"
+                        aria-label="<?php echo esc_attr(AuditPresentation::goToFieldEditAria($issueLabel)); ?>"
+                    ><?php echo esc_html($issueLabel); ?></a>
+                <?php else : ?>
+                    <span class="contentguard-finding__field"><?php echo esc_html($issueLabel); ?></span>
+                <?php endif; ?>
             <?php endforeach; ?>
-        </ul>
-    <?php elseif (isset($messages[0])) : ?>
-        <p class="contentguard-finding__issue"><?php echo esc_html($messages[0]); ?></p>
+            <?php if ($hiddenFields > 0) : ?>
+                <span class="contentguard-finding__sep" aria-hidden="true">·</span>
+                <span class="contentguard-finding__more"><?php echo esc_html(AuditPresentation::moreFieldsLabel($hiddenFields)); ?></span>
+            <?php endif; ?>
+        </p>
+    <?php endif; ?>
+    <?php if ($summary !== '') : ?>
+        <p class="contentguard-finding__issue"><?php echo esc_html($summary); ?></p>
     <?php endif; ?>
     <p class="contentguard-finding__footer">
         <?php if ($rule !== '') : ?>
@@ -83,9 +148,6 @@ $countLabel = AuditPresentation::issuesCountLabel(count($messages));
             </span>
         <?php endif; ?>
         <?php if ($editUrl !== '') : ?>
-            <?php if ($rule !== '') : ?>
-                <span class="contentguard-finding__sep" aria-hidden="true">·</span>
-            <?php endif; ?>
             <a
                 class="contentguard-button--link contentguard-finding__action"
                 href="<?php echo esc_url($editUrl); ?>"

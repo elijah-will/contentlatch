@@ -83,5 +83,34 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Findings pagination', AuditPresentation::paginationLabel());
         $this->assertSame('1 issue', AuditPresentation::issuesCountLabel(1));
         $this->assertSame('2 issues', AuditPresentation::issuesCountLabel(2));
+        $this->assertSame('1 Blocking', AuditPresentation::blockingCountLabel(1));
+        $this->assertSame('2 Blocking', AuditPresentation::blockingCountLabel(2));
+        $this->assertSame('1 Warning', AuditPresentation::warningCountLabel(1));
+        $this->assertSame('3 Warning', AuditPresentation::warningCountLabel(3));
+        $this->assertSame('Edit content and go to field: Prep Time', AuditPresentation::goToFieldEditAria('Prep Time'));
+        $this->assertSame('Prep Time', AuditPresentation::displayFieldLabel('Prep Time', 'field_prep'));
+        $this->assertSame('', AuditPresentation::displayFieldLabel('field_prep', 'field_prep'));
+        $this->assertSame('', AuditPresentation::displayFieldLabel('field_abc123', 'field_other'));
+        $this->assertSame('4 required fields are missing', AuditPresentation::groupSummary(array(
+            'This field is required.',
+            'This field is required.',
+            'This field is required.',
+            'This field is required.',
+        ), 4));
+        $this->assertSame('2 required fields are missing', AuditPresentation::groupSummary(array(
+            'Page ID is required.',
+            'Description is required.',
+        ), 2));
+        $this->assertSame('2 validation issues need attention', AuditPresentation::groupSummary(array(
+            'This field is required.',
+            'Must be at least 50 characters.',
+        ), 2));
+        $this->assertSame('This field is required.', AuditPresentation::groupSummary(array(
+            'This field is required.',
+        ), 1));
+        $this->assertSame('+ 4 more', AuditPresentation::moreFieldsLabel(4));
+        $this->assertTrue(AuditPresentation::isRequiredMessage('This field is required.'));
+        $this->assertTrue(AuditPresentation::isRequiredMessage('Prep Time is required'));
+        $this->assertFalse(AuditPresentation::isRequiredMessage('This field is required when Show "New" Tag is Yes.'));
     }
 }

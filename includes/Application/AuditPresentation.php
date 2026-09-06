@@ -16,6 +16,8 @@ use ContentGuard\Domain\Validation;
 
 final class AuditPresentation
 {
+    public const VISIBLE_FIELD_LIMIT = 5;
+
     public static function ruleName(?Rule $rule, int|string $ruleId): string
     {
         unset($ruleId);
@@ -105,6 +107,84 @@ final class AuditPresentation
     public static function issuesCountLabel(int $count): string
     {
         return $count === 1 ? '1 issue' : sprintf('%d issues', $count);
+    }
+
+    public static function blockingCountLabel(int $count): string
+    {
+        return $count === 1 ? '1 Blocking' : sprintf('%d Blocking', $count);
+    }
+
+    public static function warningCountLabel(int $count): string
+    {
+        return $count === 1 ? '1 Warning' : sprintf('%d Warning', $count);
+    }
+
+    public static function goToFieldEditAria(string $fieldLabel): string
+    {
+        $field = $fieldLabel !== '' ? $fieldLabel : 'field';
+
+        return sprintf('Edit content and go to field: %s', $field);
+    }
+
+    public static function displayFieldLabel(string $label, string $fieldKey = ''): string
+    {
+        $label = trim($label);
+        if ($label === '' || $label === $fieldKey || EditorFieldNavigation::isSafeFieldKey($label)) {
+            return '';
+        }
+
+        return $label;
+    }
+
+    /**
+     * @param list<string> $messages
+     */
+    public static function groupSummary(array $messages, int $issueCount): string
+    {
+        $messages = array_values(array_filter(array_map('strval', $messages), static fn (string $message): bool => $message !== ''));
+        if ($issueCount <= 1) {
+            return $messages[0] ?? '';
+        }
+
+        $unique = array_values(array_unique($messages));
+        $allRequired = $unique !== array() && array_reduce(
+            $unique,
+            static fn (bool $carry, string $message): bool => $carry && self::isRequiredMessage($message),
+            true
+        );
+        if ($allRequired) {
+            return self::requiredFieldsSummary($issueCount);
+        }
+
+        if (count($unique) === 1) {
+            return $unique[0];
+        }
+
+        return self::validationIssuesSummary($issueCount);
+    }
+
+    public static function requiredFieldsSummary(int $count): string
+    {
+        return $count === 1
+            ? '1 required field is missing'
+            : sprintf('%d required fields are missing', $count);
+    }
+
+    public static function validationIssuesSummary(int $count): string
+    {
+        return $count === 1
+            ? '1 validation issue needs attention'
+            : sprintf('%d validation issues need attention', $count);
+    }
+
+    public static function moreFieldsLabel(int $hidden): string
+    {
+        return $hidden === 1 ? '+ 1 more' : sprintf('+ %d more', $hidden);
+    }
+
+    public static function isRequiredMessage(string $message): bool
+    {
+        return (bool) preg_match('/\bis required\.?$/i', trim($message));
     }
 
     public static function firstRunHeading(): string

@@ -406,21 +406,33 @@ foreach ($postTypes as $type) {
                         <?php
                         $finding = $group->first();
                         $title   = function_exists('get_the_title') ? (string) get_the_title($finding->postId) : '';
-                        $edit    = function_exists('get_edit_post_link') ? get_edit_post_link($finding->postId, 'raw') : '';
+                        $base    = function_exists('get_edit_post_link') ? get_edit_post_link($finding->postId, 'raw') : '';
+                        $base    = is_string($base) ? $base : '';
                         $runId   = $resultsRun !== null ? (int) $resultsRun->id : 0;
-                        $edit    = is_string($edit) ? EditorFieldNavigation::appendToEditUrl($edit, $finding->fieldKey, $runId) : '';
+                        $edit    = $base !== '' ? EditorFieldNavigation::appendToEditUrl($base, $finding->fieldKey, $runId) : '';
                         $field   = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey] ?? $finding->fieldKey;
+                        $fieldIssues = array();
+                        foreach ($group->fieldIssues($fieldLabels) as $issue) {
+                            $issue['editUrl'] = $base !== ''
+                                ? EditorFieldNavigation::appendToEditUrl($base, $issue['fieldKey'], $runId)
+                                : '';
+                            $fieldIssues[] = $issue;
+                        }
                         AdminView::partial(
                             'audit-finding',
                             array(
-                                'title'    => $title,
-                                'messages' => $group->messages(),
-                                'field'    => $field,
-                                'rule'     => $ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId),
-                                'statuses' => $group->statuses(),
-                                'postType' => AdminPresentation::postTypeLabel($finding->postType),
-                                'editUrl'  => is_string($edit) ? $edit : '',
-                                'uid'      => (string) $finding->id,
+                                'title'         => $title,
+                                'messages'      => $group->messages(),
+                                'field'         => $field,
+                                'fieldIssues'   => $fieldIssues,
+                                'rule'          => $ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId),
+                                'statuses'      => $group->statuses(),
+                                'postType'      => AdminPresentation::postTypeLabel($finding->postType),
+                                'editUrl'       => is_string($edit) ? $edit : '',
+                                'uid'           => (string) $finding->id,
+                                'issueCount'    => $group->count(),
+                                'blockingCount' => $group->blockingCount(),
+                                'warningCount'  => $group->warningCount(),
                             )
                         );
                         ?>

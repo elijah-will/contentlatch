@@ -170,7 +170,10 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('contentguard-finding__title', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('This field is required when Show &quot;New&quot; Tag is Yes.', $html);
+        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringContainsString('Recipe', $html);
         $this->assertStringContainsString('Recipe Description', $html);
+        $this->assertStringContainsString('overflow-wrap: anywhere', (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css'));
         $this->assertStringNotContainsString('>field_123abc<', $html);
         $this->assertStringContainsString('Blocking', $html);
         $this->assertStringContainsString('contentguard-finding--blocking', $html);
@@ -392,15 +395,18 @@ final class AuditViewTest extends TestCase
         $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
         $this->assertStringContainsString('contentguard-finding--grouped', $html);
         $this->assertStringContainsString('2 issues', $html);
-        $this->assertStringContainsString('Page ID is required.', $html);
-        $this->assertStringContainsString('Page ID must be at least 10 characters.', $html);
-        $this->assertStringContainsString('<ul class="contentguard-finding__issues">', $html);
+        $this->assertStringContainsString('2 validation issues need attention', $html);
+        $this->assertStringNotContainsString('Page ID is required.', $html);
+        $this->assertStringNotContainsString('Page ID must be at least 10 characters.', $html);
+        $this->assertStringNotContainsString('<ul class="contentguard-finding__issues">', $html);
+        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringContainsString('>Page ID</a>', $html);
         $this->assertSame(1, substr_count($html, 'contentguard-finding__action'));
         $this->assertStringContainsString('post.php?post=42&amp;action=edit&amp;contentguard_field=field_123abc&amp;contentguard_run=7', $html);
         $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
     }
 
-    public function testMultipleValidationRulesKeepSeparateEditUrlsPerField(): void
+    public function testMultipleFieldsOnTheSameRuleShareOneCard(): void
     {
         $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
         $GLOBALS['contentguard_test_edit_links'] = array(
@@ -430,15 +436,218 @@ final class AuditViewTest extends TestCase
             ),
         )));
 
-        $this->assertSame(2, substr_count($html, 'contentguard-finding__title'));
-        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
-        $this->assertStringContainsString('Page ID is required.', $html);
-        $this->assertStringContainsString('Description is required.', $html);
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
+        $this->assertStringContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringContainsString('2 issues', $html);
+        $this->assertStringContainsString('2 required fields are missing', $html);
+        $this->assertStringNotContainsString('Page ID is required.', $html);
+        $this->assertStringNotContainsString('Description is required.', $html);
+        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringContainsString('aria-label="Edit content and go to field: Page ID"', $html);
+        $this->assertStringContainsString('aria-label="Edit content and go to field: Recipe Description"', $html);
         $this->assertStringContainsString('contentguard_field=field_pageid', $html);
         $this->assertStringContainsString('contentguard_field=field_desc', $html);
         $this->assertStringContainsString('contentguard_run=7', $html);
-        $this->assertSame(2, substr_count($html, 'post.php?post=42&amp;action=edit'));
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__action'));
         $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+    }
+
+    public function testFourRequiredFieldsStayOnOneCompactCard(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $fields = array(
+            'field_prep'  => 'Prep Time',
+            'field_cook'  => 'Cook Time',
+            'field_total' => 'Total Time',
+            'field_yield' => 'Yield',
+        );
+        $findings = array();
+        $labels   = array();
+        $id       = 50;
+        foreach ($fields as $key => $label) {
+            $findings[] = $this->makeFinding(array(
+                'id'       => $id++,
+                'fieldKey' => $key,
+                'message'  => 'This field is required.',
+            ));
+            $labels['15:' . $key] = $label;
+        }
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 4,
+            'findingTotal'    => 4,
+            'findings'        => $findings,
+            'fieldLabels'     => $labels,
+        )));
+
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
+        $this->assertStringContainsString('4 issues', $html);
+        $this->assertStringContainsString('4 required fields are missing', $html);
+        $this->assertStringContainsString('Prep Time', $html);
+        $this->assertStringContainsString('Cook Time', $html);
+        $this->assertStringContainsString('Total Time', $html);
+        $this->assertStringContainsString('Yield', $html);
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+        $this->assertStringNotContainsString('This field is required.', $html);
+        $this->assertStringNotContainsString('contentguard-finding__field-name', $html);
+    }
+
+    public function testManyFieldsCollapseWithAMoreCount(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $findings = array();
+        $labels   = array();
+        for ($i = 1; $i <= 8; $i++) {
+            $key = 'field_f' . $i;
+            $findings[] = $this->makeFinding(array(
+                'id'       => 60 + $i,
+                'fieldKey' => $key,
+                'message'  => 'This field is required.',
+            ));
+            $labels['15:' . $key] = 'Field ' . $i;
+        }
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 8,
+            'findingTotal'    => 8,
+            'findings'        => $findings,
+            'fieldLabels'     => $labels,
+        )));
+
+        $this->assertStringContainsString('8 issues', $html);
+        $this->assertStringContainsString('8 required fields are missing', $html);
+        $this->assertStringContainsString('+ 3 more', $html);
+        $this->assertStringContainsString('Affected fields: Field 1, Field 2, Field 3, Field 4, Field 5, Field 6, Field 7, Field 8', $html);
+        $this->assertSame(5, substr_count($html, 'class="contentguard-finding__field"'));
+    }
+
+    public function testUnsafeFieldKeyStaysVisibleButNotALink(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings'    => array($this->makeFinding(array('fieldKey' => 'not a key'))),
+            'fieldLabels' => array('15:not a key' => 'Recipe Description'),
+        )));
+
+        $this->assertStringContainsString('Recipe Description', $html);
+        $this->assertStringNotContainsString('aria-label="Edit content and go to field: Recipe Description"', $html);
+        $this->assertStringNotContainsString('>field_', $html);
+        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertStringNotContainsString('contentguard_field=', $html);
+    }
+
+    public function testMixedSeverityGroupAnnouncesBothStatuses(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 2,
+            'findingTotal'    => 2,
+            'findings'        => array(
+                $this->makeFinding(array(
+                    'id'       => 31,
+                    'fieldKey' => 'field_prep',
+                    'message'  => 'Prep Time is required.',
+                )),
+                $this->makeFinding(array(
+                    'id'       => 32,
+                    'fieldKey' => 'field_total',
+                    'severity' => RuleSeverity::Warning,
+                    'message'  => 'Total Time looks thin.',
+                )),
+            ),
+            'fieldLabels' => array(
+                '15:field_prep'  => 'Prep Time',
+                '15:field_total' => 'Total Time',
+            ),
+        )));
+
+        $this->assertStringContainsString('2 issues', $html);
+        $this->assertStringContainsString('1 Blocking', $html);
+        $this->assertStringContainsString('1 Warning', $html);
+        $this->assertStringContainsString('contentguard-status--danger', $html);
+        $this->assertStringContainsString('contentguard-status--caution', $html);
+        $this->assertStringContainsString('2 validation issues need attention', $html);
+        $this->assertStringContainsString('Prep Time', $html);
+        $this->assertStringContainsString('Total Time', $html);
+        $this->assertStringNotContainsString('Prep Time is required.', $html);
+        $this->assertStringNotContainsString('Total Time looks thin.', $html);
+    }
+
+    public function testSeverityFilterDoesNotClaimHiddenWarnings(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'query'        => new AuditFindingQuery(7, 'fail'),
+            'findings'     => array($this->makeFinding(array(
+                'fieldKey' => 'field_prep',
+                'message'  => 'Prep Time is required.',
+            ))),
+            'fieldLabels'  => array('15:field_prep' => 'Prep Time'),
+        )));
+
+        $this->assertStringContainsString('Prep Time is required.', $html);
+        $this->assertStringContainsString('Blocking', $html);
+        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringNotContainsString('Total Time looks thin.', $html);
+        $this->assertStringNotContainsString('1 Warning', $html);
+    }
+
+    public function testDifferentRulesOnTheSameContentStaySeparateCards(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 2,
+            'findingTotal'    => 2,
+            'findings'        => array(
+                $this->makeFinding(array(
+                    'id'      => 41,
+                    'ruleId'  => 15,
+                    'message' => 'Description is required.',
+                )),
+                $this->makeFinding(array(
+                    'id'      => 42,
+                    'ruleId'  => 22,
+                    'message' => 'Yield is required.',
+                )),
+            ),
+            'ruleNames'   => array(
+                '15' => 'Recipes requirements',
+                '22' => 'Yield rules',
+            ),
+            'fieldLabels' => array(
+                '15:field_123abc' => 'Recipe Description',
+                '22:field_123abc' => 'Yield',
+            ),
+        )));
+
+        $this->assertSame(2, substr_count($html, 'contentguard-finding__title'));
+        $this->assertStringContainsString('Rule: Recipes requirements', $html);
+        $this->assertStringContainsString('Rule: Yield rules', $html);
+        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
     }
 
     public function testEditContentRejectsAnAuditPageUrl(): void

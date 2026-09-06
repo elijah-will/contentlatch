@@ -1,6 +1,6 @@
 <?php
 /**
- * Presentation grouping for findings that share content, rule, and field.
+ * Presentation grouping for findings that share content and rule.
  *
  * Does not change finding identity or persistence. Multiple validation_id
  * rows remain separate; this only combines them for display.
@@ -43,7 +43,7 @@ final class AuditFindingGroup
                 continue;
             }
 
-            $key = $finding->postId . "\n" . (string) $finding->ruleId . "\n" . $finding->fieldKey;
+            $key = $finding->postId . "\n" . (string) $finding->ruleId;
             if (!isset($buckets[$key])) {
                 $buckets[$key] = array();
                 $order[]       = $key;
@@ -81,6 +81,77 @@ final class AuditFindingGroup
     public function isMultiple(): bool
     {
         return $this->count() > 1;
+    }
+
+    public function blockingCount(): int
+    {
+        $count = 0;
+        foreach ($this->findings as $finding) {
+            if ($finding->severity === RuleSeverity::Fail) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function warningCount(): int
+    {
+        return $this->count() - $this->blockingCount();
+    }
+
+    /**
+     * @return array<string, AuditFinding[]>
+     */
+    public function findingsByField(): array
+    {
+        $buckets = array();
+        $order   = array();
+
+        foreach ($this->findings as $finding) {
+            $key = $finding->fieldKey;
+            if (!isset($buckets[$key])) {
+                $buckets[$key] = array();
+                $order[]       = $key;
+            }
+
+            $buckets[$key][] = $finding;
+        }
+
+        $grouped = array();
+        foreach ($order as $key) {
+            $grouped[$key] = $buckets[$key];
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @param array<string, string> $fieldLabels
+     * @return list<array{label: string, fieldKey: string, messages: list<string>}>
+     */
+    public function fieldIssues(array $fieldLabels): array
+    {
+        $issues = array();
+
+        foreach ($this->findingsByField() as $fieldKey => $items) {
+            $messages = array();
+            foreach ($items as $finding) {
+                if ($finding->message === '' || in_array($finding->message, $messages, true)) {
+                    continue;
+                }
+
+                $messages[] = $finding->message;
+            }
+
+            $issues[] = array(
+                'label'    => $fieldLabels[(string) $this->ruleId . ':' . $fieldKey] ?? $fieldKey,
+                'fieldKey' => $fieldKey,
+                'messages' => $messages,
+            );
+        }
+
+        return $issues;
     }
 
     /**
