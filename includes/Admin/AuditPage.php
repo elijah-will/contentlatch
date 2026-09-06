@@ -109,6 +109,26 @@ final class AuditPage
         return $latestComplete;
     }
 
+    public static function isViewingHistory(?AuditRun $latestComplete, ?AuditRun $resultsRun): bool
+    {
+        return $resultsRun !== null
+            && $latestComplete !== null
+            && $resultsRun->id !== $latestComplete->id;
+    }
+
+    public static function healthHeading(bool $viewingHistory): string
+    {
+        return $viewingHistory ? 'Previous audit' : 'Content Health';
+    }
+
+    /**
+     * @return array{page: string}
+     */
+    public static function latestResultsArgs(): array
+    {
+        return array('page' => self::SLUG);
+    }
+
     /**
      * @param array<string, mixed> $request
      */
@@ -229,9 +249,7 @@ final class AuditPage
         $latestRun      = $this->audit->getLatestRun();
         $requested      = $this->requestedRun(self::requestedRunId($_GET));
         $resultsRun     = self::resolveResultsRun($latestComplete, $requested);
-        $viewingHistory = $resultsRun !== null
-            && $latestComplete !== null
-            && $resultsRun->id !== $latestComplete->id;
+        $viewingHistory = self::isViewingHistory($latestComplete, $resultsRun);
         $query          = $resultsRun !== null
             ? self::findingQueryFromRequest($resultsRun->id, $_GET)
             : null;

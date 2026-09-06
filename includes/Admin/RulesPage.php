@@ -16,6 +16,7 @@ use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RulePresentation;
 use ContentGuard\Application\RuleRepositoryInterface;
+use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
@@ -144,11 +145,16 @@ final class RulesPage
 
     private function renderList(): void
     {
-        $rules      = $this->rules->findAll();
-        $summaries  = array();
+        $rules           = $this->rules->findAll();
+        $summaries       = array();
+        $typesByPostType = array();
         foreach ($rules as $rule) {
+            if (!isset($typesByPostType[$rule->postType])) {
+                $typesByPostType[$rule->postType] = $this->fieldTypesFor($rule->postType);
+            }
+
             $summaries[(string) $rule->id] = array(
-                'conditions'  => RulePresentation::conditionsSummary($rule),
+                'conditions'  => RulePresentation::conditionsSummary($rule, $typesByPostType[$rule->postType]),
                 'validations' => RulePresentation::validationsSummary($rule),
             );
         }
@@ -187,6 +193,27 @@ final class RulesPage
         return $postCount === 1
             ? '1 content item failing'
             : $postCount . ' content items failing';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function fieldTypesFor(string $postType): array
+    {
+        try {
+            $types = array();
+            foreach ($this->factory->fieldsForPostType($postType) as $field) {
+                $key  = (string) ($field['key'] ?? '');
+                $type = (string) ($field['type'] ?? '');
+                if ($key !== '') {
+                    $types[$key] = $type;
+                }
+            }
+
+            return $types;
+        } catch (InvalidRuleException) {
+            return array();
+        }
     }
 
     private function renderEditor(?Rule $rule, int $ruleId): void

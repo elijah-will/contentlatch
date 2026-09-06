@@ -114,6 +114,21 @@ final class AuditPageTest extends TestCase
         $this->assertSame('2026-09-05 15:42:00', AuditPage::formatRunTime('2026-09-05 15:42:00'));
     }
 
+    public function testHistoricalViewIsPreviousAuditAndBackLinkOmitsRun(): void
+    {
+        $latest = $this->makeRun(4, AuditRunStatus::Complete);
+        $older  = $this->makeRun(2, AuditRunStatus::Complete);
+        $failed = $this->makeRun(5, AuditRunStatus::Failed);
+
+        $this->assertTrue(AuditPage::isViewingHistory($latest, $older));
+        $this->assertFalse(AuditPage::isViewingHistory($latest, $latest));
+        $this->assertFalse(AuditPage::isViewingHistory($latest, AuditPage::resolveResultsRun($latest, $failed)));
+        $this->assertSame('Previous audit', AuditPage::healthHeading(true));
+        $this->assertSame('Content Health', AuditPage::healthHeading(false));
+        $this->assertSame(array('page' => AuditPage::SLUG), AuditPage::latestResultsArgs());
+        $this->assertArrayNotHasKey('run', AuditPage::latestResultsArgs());
+    }
+
     private function makeRun(int $id, AuditRunStatus $status): AuditRun
     {
         return new AuditRun(

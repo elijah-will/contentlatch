@@ -21,9 +21,12 @@ use ContentGuard\Domain\RuleStatus;
 $isNew       = $editor->isNew();
 $conditions  = $editor->conditions;
 $validations = $editor->validations;
-$fieldKeys   = array();
+$fieldKeys  = array();
+$fieldTypes = array();
 foreach ($fields as $field) {
-    $fieldKeys[(string) ($field['key'] ?? '')] = true;
+    $key = (string) ($field['key'] ?? '');
+    $fieldKeys[$key] = true;
+    $fieldTypes[$key] = (string) ($field['type'] ?? '');
 }
 
 $operators = array(
@@ -47,10 +50,11 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     echo '<option value="">' . esc_html__('Field', 'contentguard') . '</option>';
     foreach ($fields as $field) {
         $key = (string) ($field['key'] ?? '');
+        $type = (string) ($field['type'] ?? '');
         $label = (string) ($field['label'] ?? '') !== ''
             ? (string) $field['label']
             : (string) ($field['name'] ?? $key);
-        echo '<option value="' . esc_attr($key) . '" ' . selected($selected, $key, false) . '>'
+        echo '<option value="' . esc_attr($key) . '" data-type="' . esc_attr($type) . '" ' . selected($selected, $key, false) . '>'
             . esc_html($label)
             . '</option>';
     }
@@ -131,6 +135,8 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             <?php foreach ($conditions as $index => $condition) : ?>
                 <?php
                 $needsValue = in_array($condition['operator'], array('equals', 'not_equals'), true);
+                $fieldType  = $fieldTypes[$condition['field_key']] ?? '';
+                $operandName = 'conditions[' . (int) $index . '][operand]';
                 ?>
                 <div class="contentguard-row" data-row="condition">
                     <input type="hidden" name="conditions[<?php echo (int) $index; ?>][id]" value="<?php echo esc_attr($condition['id']); ?>">
@@ -142,7 +148,14 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html($label); ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="text" class="contentguard-operand" name="conditions[<?php echo (int) $index; ?>][operand]" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                    <?php if ($fieldType === 'true_false') : ?>
+                        <select class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                            <option value="1" <?php selected($condition['operand'], '1'); ?>><?php echo esc_html__('Yes', 'contentguard'); ?></option>
+                            <option value="0" <?php selected($condition['operand'], '0'); ?>><?php echo esc_html__('No', 'contentguard'); ?></option>
+                        </select>
+                    <?php else : ?>
+                        <input type="text" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                    <?php endif; ?>
                     <button type="button" class="button contentguard-remove"><?php echo esc_html__('Remove', 'contentguard'); ?></button>
                 </div>
             <?php endforeach; ?>

@@ -15,7 +15,10 @@ use ContentGuard\Domain\Validation;
 
 final class RulePresentation
 {
-    public static function conditionsSummary(Rule $rule): string
+    /**
+     * @param array<string, string> $fieldTypes Field key => ACF type.
+     */
+    public static function conditionsSummary(Rule $rule, array $fieldTypes = array()): string
     {
         if ($rule->conditions === array()) {
             return 'Always applies';
@@ -24,7 +27,8 @@ final class RulePresentation
         $parts = array();
         foreach ($rule->conditions as $condition) {
             if ($condition instanceof Condition) {
-                $parts[] = self::conditionSummary($condition);
+                $type    = $fieldTypes[$condition->field->key] ?? null;
+                $parts[] = self::conditionSummary($condition, is_string($type) ? $type : null);
             }
         }
 
@@ -43,16 +47,28 @@ final class RulePresentation
         return $parts === array() ? 'None' : implode('; ', $parts);
     }
 
-    private static function conditionSummary(Condition $condition): string
+    private static function conditionSummary(Condition $condition, ?string $fieldType): string
     {
         $field = $condition->field->label !== '' ? $condition->field->label : $condition->field->name;
         if ($field === '') {
             $field = $condition->field->key;
         }
 
+        $operand = FieldValuePresentation::label($condition->operand, $fieldType);
+        if (
+            FieldValuePresentation::isTrueFalse($fieldType)
+            && FieldValuePresentation::isTrueFalseBit($condition->operand)
+        ) {
+            return match ($condition->operator) {
+                'equals'     => $field . ' is ' . $operand,
+                'not_equals' => $field . ' is not ' . $operand,
+                default      => $field . ' ' . $condition->operator,
+            };
+        }
+
         return match ($condition->operator) {
-            'equals'       => $field . ' equals ' . self::scalar($condition->operand),
-            'not_equals'   => $field . ' does not equal ' . self::scalar($condition->operand),
+            'equals'       => $field . ' equals ' . $operand,
+            'not_equals'   => $field . ' does not equal ' . $operand,
             'is_empty'     => $field . ' is empty',
             'is_not_empty' => $field . ' is not empty',
             default        => $field . ' ' . $condition->operator,
@@ -73,18 +89,5 @@ final class RulePresentation
             'allowed_values' => $field . ' allowed values',
             default          => $field . ' ' . $validation->type,
         };
-    }
-
-    private static function scalar(mixed $value): string
-    {
-        if ($value === null) {
-            return '';
-        }
-
-        if (is_bool($value)) {
-            return $value ? '1' : '0';
-        }
-
-        return is_scalar($value) ? (string) $value : '';
     }
 }
