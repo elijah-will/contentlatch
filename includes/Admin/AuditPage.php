@@ -32,6 +32,7 @@ final class AuditPage
     public static function register(ContentAuditService $audit, RuleRepositoryInterface $rules): void
     {
         $page = new self($audit, $rules);
+        AuditAdminRequest::register();
         add_action('admin_menu', array($page, 'addMenu'));
         add_action('admin_enqueue_scripts', array($page, 'enqueue'));
     }
@@ -172,7 +173,7 @@ final class AuditPage
             $runId,
             self::requestKey($request, 'severity'),
             isset($request['rule']) ? $request['rule'] : null,
-            self::requestKey($request, 'post_type'),
+            self::requestPostType($request),
             $pageSize,
             ($paged - 1) * $pageSize
         );
@@ -235,12 +236,25 @@ final class AuditPage
             $args['rule'] = $rule;
         }
 
-        $postType = self::requestKey($request, 'post_type');
+        $postType = self::requestPostType($request);
         if ($postType !== '') {
-            $args['post_type'] = $postType;
+            $args[AuditAdminRequest::TYPE_QUERY_ARG] = $postType;
         }
 
         return $args;
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    public static function requestPostType(array $request): string
+    {
+        $type = self::requestKey($request, AuditAdminRequest::TYPE_QUERY_ARG);
+        if ($type !== '') {
+            return $type;
+        }
+
+        return self::requestKey($request, 'post_type');
     }
 
     /**

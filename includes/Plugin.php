@@ -11,6 +11,8 @@ namespace ContentGuard;
 
 use ContentGuard\Admin\AuditAjaxController;
 use ContentGuard\Admin\AuditPage;
+use ContentGuard\Admin\EditorAuditNotice;
+use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Admin\RuleEditorDraftStore;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
@@ -73,6 +75,8 @@ final class Plugin
         $ruleDrafts = RuleEditorDraftStore::wordpress();
 
         AcfSaveValidator::register($this->ruleRepository());
+        EditorFieldFocus::register();
+        EditorAuditNotice::register($this->auditService(), $this->ruleRepository());
         SaveWarningNotifier::register($this->ruleRepository());
         RulesPage::register($this->ruleRepository(), $this->ruleFactory(), $ruleDrafts, $this->auditService());
         RulesController::register($this->ruleRepository(), $this->ruleCommands(), $this->ruleFactory(), $ruleDrafts);

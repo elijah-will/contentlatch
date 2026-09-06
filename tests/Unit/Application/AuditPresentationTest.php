@@ -77,5 +77,11 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Edit content: Content no longer available', AuditPresentation::editContentAria(''));
         $this->assertSame('No matching findings', AuditPresentation::filteredEmptyHeading());
         $this->assertSame('Try changing or clearing your filters.', AuditPresentation::filteredEmptyText());
+        $this->assertSame('Showing 1–50 of 127 findings', AuditPresentation::findingsRangeLabel(1, 50, 127));
+        $this->assertSame('Showing 51–100 of 127 findings', AuditPresentation::findingsRangeLabel(2, 50, 127));
+        $this->assertSame('Showing 101–127 of 127 findings', AuditPresentation::findingsRangeLabel(3, 50, 127));
+        $this->assertSame('Findings pagination', AuditPresentation::paginationLabel());
+        $this->assertSame('1 issue', AuditPresentation::issuesCountLabel(1));
+        $this->assertSame('2 issues', AuditPresentation::issuesCountLabel(2));
     }
 }

@@ -1,0 +1,62 @@
+.contentguard-warning-field {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.contentguard-warning-field:hover {
+    color: var(--wp-admin-theme-color, #2271b1);
+}
+
+.contentguard-warning-field:focus {
+    outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+    outline-offset: 2px;
+}
+
+.contentguard-warning-field:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.contentguard-warning-field:focus-visible {
+    outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+    outline-offset: 2px;
+}
+
+.contentguard-audit-blockers {
+    margin: 0;
+}
+
+.contentguard-audit-blockers__title {
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+.contentguard-audit-blockers__count {
+    margin: 0 0 6px;
+}
+
+.contentguard-audit-blockers__list {
+    margin: 0;
+    padding-left: 1.25em;
+}
+
+.contentguard-audit-blockers__list li {
+    margin: 0 0 4px;
+}
+
+.notice.contentguard-audit-blockers-notice {
+    padding: 8px 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contentguard-warning-field {
+        transition: none;
+        scroll-behavior: auto;
+    }
+}

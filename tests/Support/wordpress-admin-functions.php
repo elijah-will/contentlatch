@@ -169,6 +169,15 @@ if (!function_exists('wp_kses_post')) {
     }
 }
 
+if (!function_exists('add_query_arg')) {
+    function add_query_arg(string $key, string $value, string $url): string
+    {
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        return $url . $separator . rawurlencode($key) . '=' . rawurlencode($value);
+    }
+}
+
 if (!function_exists('paginate_links')) {
     /**
      * @param array<string, mixed> $args

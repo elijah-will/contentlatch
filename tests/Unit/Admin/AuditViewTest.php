@@ -166,11 +166,12 @@ final class AuditViewTest extends TestCase
 
         $html = $this->renderAudit($this->completedResults());
 
+        $this->assertStringContainsString('contentguard-finding__headline', $html);
         $this->assertStringContainsString('contentguard-finding__title', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('This field is required when Show &quot;New&quot; Tag is Yes.', $html);
         $this->assertStringContainsString('Recipe Description', $html);
-        $this->assertStringNotContainsString('field_123abc', $html);
+        $this->assertStringNotContainsString('>field_123abc<', $html);
         $this->assertStringContainsString('Blocking', $html);
         $this->assertStringContainsString('contentguard-finding--blocking', $html);
         $this->assertStringContainsString('contentguard-status__text', $html);
@@ -178,9 +179,15 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Edit content', $html);
         $this->assertStringContainsString('aria-label="Edit content: Chocolate Chip Cookies"', $html);
         $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit', $html);
+        $this->assertStringContainsString('contentguard_field=field_123abc', $html);
+        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringNotContainsString('name="post_type"', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
         $this->assertStringNotContainsString('>Edit</a>', $html);
         $this->assertStringNotContainsString('Unavailable', $html);
         $this->assertStringNotContainsString(AuditPresentation::filteredEmptyHeading(), $html);
+        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
     }
 
     public function testWarningFindingUsesWarningLabelAndModifier(): void
@@ -227,6 +234,7 @@ final class AuditViewTest extends TestCase
         $this->assertStringNotContainsString('Edit content', $html);
         $this->assertStringNotContainsString('post.php?post=77', $html);
         $this->assertStringNotContainsString('href=""', $html);
+        $this->assertStringNotContainsString('contentguard_field=', $html);
     }
 
     public function testZeroFindingsShowsAllClearNotFilteredEmpty(): void
@@ -284,9 +292,184 @@ final class AuditViewTest extends TestCase
 
         $this->assertSame(50, AuditPage::PAGE_SIZE);
         $this->assertStringContainsString('contentguard-pagination', $html);
+        $this->assertStringContainsString('aria-label="Findings pagination"', $html);
+        $this->assertStringContainsString('Showing 1–50 of 51 findings', $html);
+        $this->assertStringContainsString('contentguard-pagination__disabled', $html);
+        $this->assertStringContainsString('Previous', $html);
         $this->assertStringContainsString('paged=%#%', $html);
-        $this->assertStringContainsString('51 issues', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
+    }
+
+    public function testPaginationPreservesFiltersAndHistoricalRun(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findingTotal' => 127,
+            'paged'        => 2,
+            'totalPages'   => 3,
+            'viewingHistory' => true,
+            'query'        => new AuditFindingQuery(2, 'fail'),
+            'filterArgs'   => array(
+                'page'     => AuditPage::SLUG,
+                'run'      => '2',
+                'severity' => 'fail',
+            ),
+        )));
+
+        $this->assertSame(50, AuditPage::PAGE_SIZE);
+        $this->assertStringContainsString('Showing 51–100 of 127 findings', $html);
+        $this->assertStringContainsString('paged=%#%', $html);
+        $this->assertStringContainsString('page=contentguard-audit', $html);
+        $this->assertStringContainsString('run=2', $html);
+        $this->assertStringContainsString('severity=fail', $html);
+        $this->assertStringContainsString('name="run"', $html);
+        $this->assertStringNotContainsString('contentguard-pagination__disabled', $html);
+    }
+
+    public function testPostTypeFilterUsesSafeQueryArgAndKeepsOtherFilters(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'query'        => new AuditFindingQuery(7, 'fail', '15', 'recipe'),
+            'filterArgs'   => array(
+                'page'     => AuditPage::SLUG,
+                'severity' => 'fail',
+                'rule'     => '15',
+                'cg_type'  => 'recipe',
+            ),
+            'findingTotal' => 51,
+            'paged'        => 1,
+            'totalPages'   => 2,
+        )));
+
+        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringContainsString('value="recipe"', $html);
+        $this->assertStringNotContainsString('name="post_type"', $html);
+        $this->assertStringContainsString('cg_type=recipe', $html);
+        $this->assertStringContainsString('severity=fail', $html);
+        $this->assertStringContainsString('rule=15', $html);
+        $this->assertStringContainsString('page=contentguard-audit', $html);
+        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertStringContainsString('Clear filters', $html);
+        $this->assertStringContainsString('paged=%#%', $html);
+    }
+
+    public function testMultipleValidationsGroupOnTheSameContentRuleAndField(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 2,
+            'findingTotal'    => 2,
+            'findings'        => array(
+                $this->makeFinding(array(
+                    'id'           => 11,
+                    'validationId' => 'v1',
+                    'code'         => 'required',
+                    'message'      => 'Page ID is required.',
+                )),
+                $this->makeFinding(array(
+                    'id'           => 12,
+                    'validationId' => 'v2',
+                    'code'         => 'min_length',
+                    'message'      => 'Page ID must be at least 10 characters.',
+                )),
+            ),
+            'fieldLabels' => array('15:field_123abc' => 'Page ID'),
+        )));
+
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
+        $this->assertStringContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringContainsString('2 issues', $html);
+        $this->assertStringContainsString('Page ID is required.', $html);
+        $this->assertStringContainsString('Page ID must be at least 10 characters.', $html);
+        $this->assertStringContainsString('<ul class="contentguard-finding__issues">', $html);
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__action'));
+        $this->assertStringContainsString('post.php?post=42&amp;action=edit&amp;contentguard_field=field_123abc&amp;contentguard_run=7', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+    }
+
+    public function testMultipleValidationRulesKeepSeparateEditUrlsPerField(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 2,
+            'findingTotal'    => 2,
+            'findings'        => array(
+                $this->makeFinding(array(
+                    'id'           => 21,
+                    'fieldKey'     => 'field_pageid',
+                    'validationId' => 'v1',
+                    'message'      => 'Page ID is required.',
+                )),
+                $this->makeFinding(array(
+                    'id'           => 22,
+                    'fieldKey'     => 'field_desc',
+                    'validationId' => 'v2',
+                    'message'      => 'Description is required.',
+                )),
+            ),
+            'fieldLabels' => array(
+                '15:field_pageid' => 'Page ID',
+                '15:field_desc'   => 'Recipe Description',
+            ),
+        )));
+
+        $this->assertSame(2, substr_count($html, 'contentguard-finding__title'));
+        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringContainsString('Page ID is required.', $html);
+        $this->assertStringContainsString('Description is required.', $html);
+        $this->assertStringContainsString('contentguard_field=field_pageid', $html);
+        $this->assertStringContainsString('contentguard_field=field_desc', $html);
+        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertSame(2, substr_count($html, 'post.php?post=42&amp;action=edit'));
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+    }
+
+    public function testEditContentRejectsAnAuditPageUrl(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/admin.php?page=contentguard-audit&post_type=recipe',
+        );
+
+        $html = $this->renderAudit($this->completedResults());
+
+        $this->assertStringContainsString('Chocolate Chip Cookies', $html);
+        $this->assertStringNotContainsString('Edit content', $html);
+        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+    }
+
+    public function testUnsafeFieldKeyDoesNotChangeTheEditUrl(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings'    => array($this->makeFinding(array('fieldKey' => 'not a key'))),
+            'fieldLabels' => array('15:not a key' => 'Recipe Description'),
+        )));
+
+        $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit&amp;contentguard_run=7', $html);
+        $this->assertStringContainsString('Edit content', $html);
+        $this->assertStringNotContainsString('contentguard_field=', $html);
     }
 
     public function testHistoricalFindingsStayTiedToThatAudit(): void
@@ -316,6 +499,8 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('contentguard-audit--history', $html);
         $this->assertStringContainsString('name="run"', $html);
         $this->assertStringContainsString('value="2"', $html);
+        $this->assertStringContainsString('contentguard_run=2', $html);
+        $this->assertStringNotContainsString('contentguard_run=9', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('Back to latest audit', $html);
         $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);

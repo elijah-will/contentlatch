@@ -427,6 +427,83 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame(2, $run->postsScanned);
     }
 
+    public function testBlockingFindingsForPostIgnoreOtherPostsAndIncompleteRuns(): void
+    {
+        $service = $this->service();
+        $run     = $this->store->insertRun(1, array('recipe'), 2, '2026-01-01 00:00:00');
+        $this->store->saveRun($run->withStatus(AuditRunStatus::Complete, '2026-01-01 00:01:00'));
+
+        $this->store->replaceFindingsForPosts(1, array(42, 99), array(
+            new \ContentGuard\Application\Audit\AuditFinding(
+                0,
+                1,
+                42,
+                'recipe',
+                15,
+                'field_description',
+                'v1',
+                'required',
+                RuleSeverity::Fail,
+                'Description is required',
+                '2026-01-01 00:00:00'
+            ),
+            new \ContentGuard\Application\Audit\AuditFinding(
+                0,
+                1,
+                42,
+                'recipe',
+                15,
+                'field_yield',
+                'v2',
+                'required',
+                RuleSeverity::Fail,
+                'Yield is required',
+                '2026-01-01 00:00:00'
+            ),
+            new \ContentGuard\Application\Audit\AuditFinding(
+                0,
+                1,
+                99,
+                'recipe',
+                15,
+                'field_description',
+                'v1',
+                'required',
+                RuleSeverity::Fail,
+                'Secret from another post',
+                '2026-01-01 00:00:00'
+            ),
+            new \ContentGuard\Application\Audit\AuditFinding(
+                0,
+                1,
+                42,
+                'recipe',
+                15,
+                'field_description',
+                'v3',
+                'min_length',
+                RuleSeverity::Warning,
+                'This looks thin.',
+                '2026-01-01 00:00:00'
+            ),
+        ));
+
+        $blockers = $service->blockingFindingsForPost(1, 42);
+
+        $this->assertCount(2, $blockers);
+        $this->assertSame(array(42, 42), array_map(static fn ($finding) => $finding->postId, $blockers));
+        $this->assertSame(
+            array('Description is required', 'Yield is required'),
+            array_map(static fn ($finding) => $finding->message, $blockers)
+        );
+        $this->assertSame(array(), $service->blockingFindingsForPost(1, 77));
+        $this->assertSame(array(), $service->blockingFindingsForPost(0, 42));
+        $this->assertSame(array(), $service->blockingFindingsForPost(999, 42));
+
+        $pending = $this->store->insertRun(1, array('recipe'), 1, '2026-01-01 00:00:00');
+        $this->assertSame(array(), $service->blockingFindingsForPost($pending->id, 42));
+    }
+
     /**
      * @param array<int, \ContentGuard\Domain\Rule> $rules
      * @param array<int, array{id: int, postType: string, status: string}> $posts

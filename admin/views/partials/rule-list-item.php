@@ -35,10 +35,10 @@ if (!$rule instanceof \ContentGuard\Domain\Rule) {
     return;
 }
 
-$ruleId       = (int) $rule->id;
-$titleId      = 'contentguard-rule-title-' . $ruleId;
-$isActive     = $rule->status === RuleStatus::Active;
-$statusLabel  = $isActive ? __('Deactivate', 'contentguard') : __('Activate', 'contentguard');
+$ruleId        = (int) $rule->id;
+$titleId       = 'contentguard-rule-title-' . $ruleId;
+$isActive      = $rule->status === RuleStatus::Active;
+$statusLabel   = $isActive ? __('Deactivate', 'contentguard') : __('Activate', 'contentguard');
 $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept.', 'contentguard');
 ?>
 <article class="contentguard-panel contentguard-rule-item" aria-labelledby="<?php echo esc_attr($titleId); ?>">
@@ -46,16 +46,15 @@ $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept
         <h2 class="contentguard-rule-item__title" id="<?php echo esc_attr($titleId); ?>">
             <a href="<?php echo esc_url($editUrl); ?>"><?php echo esc_html($rule->name); ?></a>
         </h2>
-        <p class="contentguard-rule-item__applies">
-            <?php echo esc_html__('Applies to', 'contentguard'); ?>
-            <?php echo esc_html($postTypeLabel); ?>
-        </p>
+        <div class="contentguard-rule-item__status">
+            <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?>
+            <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?>
+        </div>
     </header>
 
-    <div class="contentguard-rule-item__status">
-        <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?>
-        <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?>
-    </div>
+    <p class="contentguard-rule-item__applies">
+        <?php echo esc_html(sprintf(/* translators: %s: post type label */ __('Applies to: %s', 'contentguard'), $postTypeLabel)); ?>
+    </p>
 
     <dl class="contentguard-rule-item__logic">
         <div>
@@ -83,14 +82,15 @@ $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept
 
     <div class="contentguard-rule-item__actions">
         <a
-            class="button button-primary"
+            class="contentguard-button--link"
             href="<?php echo esc_url($editUrl); ?>"
             aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Edit: %s', 'contentguard'), $rule->name)); ?>"
         >
             <?php echo esc_html__('Edit', 'contentguard'); ?>
         </a>
+        <span class="contentguard-rule-item__action-sep" aria-hidden="true">·</span>
         <a
-            class="button"
+            class="contentguard-button--link"
             href="<?php echo esc_url($statusUrl); ?>"
             aria-label="<?php echo esc_attr($isActive
                 ? sprintf(/* translators: %s: rule name */ __('Deactivate: %s', 'contentguard'), $rule->name)
@@ -98,6 +98,7 @@ $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept
         >
             <?php echo esc_html($statusLabel); ?>
         </a>
+        <span class="contentguard-rule-item__action-sep" aria-hidden="true">·</span>
         <a
             class="submitdelete contentguard-button--destructive"
             href="<?php echo esc_url($deleteUrl); ?>"

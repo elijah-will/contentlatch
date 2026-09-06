@@ -83,7 +83,8 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('<dt>THEN</dt>', $html);
         $this->assertStringContainsString('No completed audit yet', $html);
         $this->assertStringNotContainsString('View affected content', $html);
-        $this->assertStringContainsString('class="button button-primary"', $html);
+        $this->assertStringContainsString('contentguard-button--link', $html);
+        $this->assertStringContainsString('Applies to: Product', $html);
         $this->assertStringContainsString('aria-label="Edit: New Products need Page ID"', $html);
         $this->assertStringContainsString('aria-label="Deactivate: New Products need Page ID"', $html);
         $this->assertStringContainsString('aria-label="Delete: New Products need Page ID"', $html);
@@ -96,7 +97,11 @@ final class RulesListViewTest extends TestCase
         $item = substr($html, (int) strpos($html, 'contentguard-rule-item'));
         $this->assertLessThan(
             (int) strpos($item, 'submitdelete'),
-            (int) strpos($item, 'button button-primary')
+            (int) strpos($item, 'aria-label="Edit: New Products need Page ID"')
+        );
+        $this->assertLessThan(
+            (int) strpos($item, 'submitdelete'),
+            (int) strpos($item, 'aria-label="Deactivate: New Products need Page ID"')
         );
     }
 

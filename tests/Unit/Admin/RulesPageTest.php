@@ -116,6 +116,68 @@ final class RulesPageTest extends TestCase
         $this->assertSame($secondInactive, $sorted[3]);
     }
 
+    public function testSortForListUsesActiveBlockingThenWarningThenInactive(): void
+    {
+        $inactiveWarning = RuleFactory::rule(array(
+            'id'       => 1,
+            'name'     => 'Inactive warning first',
+            'status'   => RuleStatus::Inactive,
+            'severity' => RuleSeverity::Warning,
+        ));
+        $activeWarning = RuleFactory::rule(array(
+            'id'       => 2,
+            'name'     => 'Active warning',
+            'status'   => RuleStatus::Active,
+            'severity' => RuleSeverity::Warning,
+        ));
+        $inactiveBlocking = RuleFactory::rule(array(
+            'id'       => 3,
+            'name'     => 'Inactive blocking',
+            'status'   => RuleStatus::Inactive,
+            'severity' => RuleSeverity::Fail,
+        ));
+        $activeBlockingLate = RuleFactory::rule(array(
+            'id'       => 4,
+            'name'     => 'Active blocking later',
+            'status'   => RuleStatus::Active,
+            'severity' => RuleSeverity::Fail,
+        ));
+        $activeBlockingEarly = RuleFactory::rule(array(
+            'id'       => 5,
+            'name'     => 'Active blocking earlier in input',
+            'status'   => RuleStatus::Active,
+            'severity' => RuleSeverity::Fail,
+        ));
+        $inactiveBlockingLater = RuleFactory::rule(array(
+            'id'       => 6,
+            'name'     => 'Inactive blocking later',
+            'status'   => RuleStatus::Inactive,
+            'severity' => RuleSeverity::Fail,
+        ));
+
+        $sorted = RulesPage::sortForList(array(
+            $inactiveWarning,
+            $activeWarning,
+            $inactiveBlocking,
+            $activeBlockingLate,
+            $activeBlockingEarly,
+            $inactiveBlockingLater,
+        ));
+
+        $this->assertSame(
+            array(4, 5, 2, 3, 6, 1),
+            array_map(static fn ($rule) => $rule->id, $sorted)
+        );
+        $this->assertSame('active', $sorted[0]->status->value);
+        $this->assertSame('fail', $sorted[0]->severity->value);
+        $this->assertSame('active', $sorted[2]->status->value);
+        $this->assertSame('warning', $sorted[2]->severity->value);
+        $this->assertSame('inactive', $sorted[3]->status->value);
+        $this->assertSame('fail', $sorted[3]->severity->value);
+        $this->assertSame('inactive', $sorted[5]->status->value);
+        $this->assertSame('warning', $sorted[5]->severity->value);
+    }
+
     public function testAllInactiveNoticeExplainsEnforcement(): void
     {
         $notice = RulesPage::allInactiveNotice();

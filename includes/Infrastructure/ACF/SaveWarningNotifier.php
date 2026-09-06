@@ -15,6 +15,9 @@
  * - Gutenberg: localize those messages and refresh them via REST after save,
  *   then show wp.data core/notices (not snackbars).
  *
+ * Clickable field labels reuse EditorFieldFocus / editor-field.js. Top-level
+ * ACF fields only.
+ *
  * @package ContentGuard
  */
 
@@ -22,7 +25,9 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Application\ContentEvaluator;
+use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
 use ContentGuard\Domain\EvaluationResult;
@@ -39,7 +44,7 @@ final class SaveWarningNotifier
     public const REST_ROUTE     = '/warnings/(?P<id>\d+)';
 
     /**
-     * @var array<int, list<string>>
+     * @var array<int, list<array{text: string, message: string, label: string, fieldKey: string}>>
      */
     private array $pageCache = array();
 
@@ -133,11 +138,14 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return array{messages: list<string>}
+     * @return array{messages: list<string>, warnings: list<array{text: string, message: string, label: string, fieldKey: string}>}
      */
     public function payloadForPost(int $postId): array
     {
-        return array('messages' => $this->messagesForPost($postId));
+        return array(
+            'messages' => $this->messagesForPost($postId),
+            'warnings' => $this->warningsForPost($postId),
+        );
     }
 
     public function onAdminEnqueue(string $hook): void
@@ -146,19 +154,25 @@ final class SaveWarningNotifier
             return;
         }
 
-        $postId = $this->editorPostId();
-        $messages = $postId > 0 ? $this->messagesForPost($postId) : array();
-        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        $postId   = $this->editorPostId();
+        $warnings = $postId > 0 ? $this->warningsForPost($postId) : array();
+        $messages = array_values(array_map(
+            static fn (array $warning): string => $warning['text'],
+            $warnings
+        ));
+        $screen  = function_exists('get_current_screen') ? get_current_screen() : null;
         $isBlock = is_object($screen) && !empty($screen->is_block_editor);
 
         if (!$isBlock || !function_exists('wp_register_script')) {
             return;
         }
 
+        EditorFieldFocus::enqueueAssets($_GET);
+
         wp_register_script(
             'contentguard-editor-warnings',
             CONTENTGUARD_URL . 'admin/js/editor-warnings.js',
-            array('wp-api-fetch', 'wp-data'),
+            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
             \ContentGuard\Plugin::VERSION,
             true
         );
@@ -168,7 +182,12 @@ final class SaveWarningNotifier
             array(
                 'postId'   => $postId,
                 'messages' => $messages,
+                'warnings' => $warnings,
                 'restPath' => self::REST_NAMESPACE . '/warnings/' . $postId,
+                'i18n'     => array(
+                    'warning'   => __('Warning', 'contentguard'),
+                    'goToField' => __('Go to field: %s', 'contentguard'),
+                ),
             )
         );
         wp_enqueue_script('contentguard-editor-warnings');
@@ -185,9 +204,9 @@ final class SaveWarningNotifier
             return;
         }
 
-        foreach ($this->messagesForPost($postId) as $message) {
+        foreach ($this->warningsForPost($postId) as $warning) {
             echo '<div class="notice notice-warning is-dismissible"><p>'
-                . esc_html($message)
+                . self::classicNoticeHtml($warning)
                 . '</p></div>';
         }
     }
@@ -196,6 +215,17 @@ final class SaveWarningNotifier
      * @return list<string>
      */
     public function messagesForPost(int $postId): array
+    {
+        return array_values(array_map(
+            static fn (array $warning): string => $warning['text'],
+            $this->warningsForPost($postId)
+        ));
+    }
+
+    /**
+     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
+     */
+    public function warningsForPost(int $postId): array
     {
         if ($postId <= 0) {
             return array();
@@ -232,17 +262,93 @@ final class SaveWarningNotifier
      */
     public static function warningMessages(ContentEvaluation $evaluation): array
     {
-        $messages = array();
+        return array_values(array_map(
+            static fn (array $warning): string => $warning['text'],
+            self::warningItems($evaluation)
+        ));
+    }
+
+    /**
+     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
+     */
+    public static function warningItems(ContentEvaluation $evaluation): array
+    {
+        $items = array();
+        $seen  = array();
 
         foreach ($evaluation->results as $result) {
             if (!$result instanceof EvaluationResult || !$result->isWarning()) {
                 continue;
             }
 
-            $messages[] = self::formatWarning($result);
+            $item = self::warningItem($result);
+            $id   = $item['text'] . "\0" . $item['fieldKey'];
+            if (isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $items[]   = $item;
         }
 
-        return array_values(array_unique($messages));
+        return $items;
+    }
+
+    /**
+     * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
+     */
+    public static function isClickableWarning(array $warning): bool
+    {
+        $label    = trim((string) ($warning['label'] ?? ''));
+        $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
+
+        return $label !== '' && $fieldKey !== '';
+    }
+
+    /**
+     * Human-readable notice text. Never the structured warning object.
+     *
+     * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
+     */
+    public static function displayText(array $warning): string
+    {
+        $label   = trim((string) ($warning['label'] ?? ''));
+        $message = trim((string) ($warning['message'] ?? ''));
+        $text    = trim((string) ($warning['text'] ?? ''));
+        $prefix  = function_exists('__') ? __('Warning', 'contentguard') : 'Warning';
+
+        if ($label !== '' && $message !== '') {
+            return $prefix . ': ' . $label . ' — ' . $message;
+        }
+
+        if ($text !== '') {
+            return $text;
+        }
+
+        return $message !== '' ? $message : $label;
+    }
+
+    /**
+     * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
+     */
+    public static function classicNoticeHtml(array $warning): string
+    {
+        $label    = trim((string) ($warning['label'] ?? ''));
+        $message  = (string) ($warning['message'] ?? '');
+        $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
+
+        if ($fieldKey === '' || $label === '') {
+            return self::escapeHtml(self::displayText($warning));
+        }
+
+        $warningLabel = function_exists('__') ? __('Warning', 'contentguard') : 'Warning';
+
+        return self::escapeHtml($warningLabel) . ': <button type="button" class="contentguard-warning-field" data-contentguard-field="'
+            . self::escapeAttr($fieldKey)
+            . '" aria-label="' . self::escapeAttr(EditorFieldNavigation::goToFieldAria($label)) . '">'
+            . self::escapeHtml($label)
+            . '</button> — '
+            . self::escapeHtml($message !== '' ? $message : 'Content warning.');
     }
 
     public static function isPublishedStatus(string $status): bool
@@ -251,7 +357,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return list<string>
+     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
      */
     private function evaluateWarnings(int $postId): array
     {
@@ -291,7 +397,23 @@ final class SaveWarningNotifier
             new AcfStoredValueProvider($postId, new AcfValueNormalizer(), $fieldTypes, $this->reader)
         );
 
-        return self::warningMessages($evaluation);
+        return self::warningItems($evaluation);
+    }
+
+    /**
+     * @return array{text: string, message: string, label: string, fieldKey: string}
+     */
+    private static function warningItem(EvaluationResult $result): array
+    {
+        $label   = trim((string) ($result->context['field_label'] ?? ''));
+        $message = $result->message !== '' ? $result->message : 'Content warning.';
+
+        return array(
+            'text'     => self::formatWarning($result),
+            'message'  => $message,
+            'label'    => $label,
+            'fieldKey' => EditorFieldNavigation::navigableFieldKey($result->fieldId),
+        );
     }
 
     private function editorPostId(): int
@@ -348,5 +470,23 @@ final class SaveWarningNotifier
         }
 
         return $message;
+    }
+
+    private static function escapeHtml(string $value): string
+    {
+        if (function_exists('esc_html')) {
+            return esc_html($value);
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private static function escapeAttr(string $value): string
+    {
+        if (function_exists('esc_attr')) {
+            return esc_attr($value);
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 }

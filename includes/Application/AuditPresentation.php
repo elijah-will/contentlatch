@@ -80,6 +80,33 @@ final class AuditPresentation
         return 'Issues';
     }
 
+    public static function findingsRangeLabel(int $paged, int $pageSize, int $total): string
+    {
+        if ($total <= 0 || $pageSize <= 0) {
+            return 'Showing 0 of 0 findings';
+        }
+
+        $page = max(1, $paged);
+        $from = (($page - 1) * $pageSize) + 1;
+        $to   = min($page * $pageSize, $total);
+        if ($from > $total) {
+            $from = $total;
+            $to   = $total;
+        }
+
+        return sprintf('Showing %d–%d of %d findings', $from, $to, $total);
+    }
+
+    public static function paginationLabel(): string
+    {
+        return 'Findings pagination';
+    }
+
+    public static function issuesCountLabel(int $count): string
+    {
+        return $count === 1 ? '1 issue' : sprintf('%d issues', $count);
+    }
+
     public static function firstRunHeading(): string
     {
         return 'Ready to check your content';

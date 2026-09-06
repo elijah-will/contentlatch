@@ -199,6 +199,34 @@ final class ContentAuditService
     }
 
     /**
+     * Blocking findings for one post in a completed audit run.
+     *
+     * Never returns findings that belong to a different post.
+     *
+     * @return AuditFinding[]
+     */
+    public function blockingFindingsForPost(int $runId, int $postId): array
+    {
+        if ($runId <= 0 || $postId <= 0) {
+            return array();
+        }
+
+        $run = $this->store->findRun($runId);
+        if ($run === null || $run->status !== AuditRunStatus::Complete) {
+            return array();
+        }
+
+        $matches = array();
+        foreach ($this->store->findFindings($runId, 'fail') as $finding) {
+            if ($finding->postId === $postId) {
+                $matches[] = $finding;
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
      * @return AuditFinding[]
      */
     public function queryFindings(AuditFindingQuery $query): array

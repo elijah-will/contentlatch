@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Tests\Unit\Admin;
 
+use ContentGuard\Admin\AuditAdminRequest;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Application\Audit\AuditFindingQuery;
 use ContentGuard\Application\Audit\AuditRun;
@@ -48,10 +49,10 @@ final class AuditPageTest extends TestCase
         $query = AuditPage::findingQueryFromRequest(
             7,
             array(
-                'severity'  => 'fail',
-                'rule'      => '15',
-                'post_type' => 'recipe',
-                'paged'     => '3',
+                'severity' => 'fail',
+                'rule'     => '15',
+                'cg_type'  => 'recipe',
+                'paged'    => '3',
             ),
             50
         );
@@ -63,6 +64,13 @@ final class AuditPageTest extends TestCase
         $this->assertSame(50, $query->limit);
         $this->assertSame(100, $query->offset);
         $this->assertSame(3, AuditPage::currentPage($query));
+
+        $legacy = AuditPage::findingQueryFromRequest(7, array('post_type' => 'page'));
+        $this->assertSame('page', $legacy->postType);
+        $this->assertSame('recipe', AuditPage::requestPostType(array(
+            'cg_type'   => 'recipe',
+            'post_type' => 'page',
+        )));
 
         $ignored = AuditPage::findingQueryFromRequest(7, array(
             'severity' => 'all',
@@ -77,11 +85,11 @@ final class AuditPageTest extends TestCase
     {
         $this->assertSame(
             array(
-                'page'      => AuditPage::SLUG,
-                'run'       => '4',
-                'severity'  => 'warning',
-                'rule'      => '8',
-                'post_type' => 'page',
+                'page'     => AuditPage::SLUG,
+                'run'      => '4',
+                'severity' => 'warning',
+                'rule'     => '8',
+                'cg_type'  => 'page',
             ),
             AuditPage::filterArgs(
                 array(
@@ -95,9 +103,18 @@ final class AuditPageTest extends TestCase
         );
 
         $this->assertSame(
+            array('page' => AuditPage::SLUG, 'cg_type' => 'recipe'),
+            AuditPage::filterArgs(array('cg_type' => 'recipe'))
+        );
+        $this->assertArrayNotHasKey('post_type', AuditPage::filterArgs(array('post_type' => 'recipe')));
+        $this->assertSame(
             array('page' => AuditPage::SLUG),
             AuditPage::filterArgs(array('severity' => 'nope', 'rule' => '0'))
         );
+        $this->assertTrue(AuditAdminRequest::reservedPostTypeWouldBreakAuditPage(array(
+            'page'      => AuditPage::SLUG,
+            'post_type' => 'recipe',
+        )));
     }
 
     public function testTotalPagesNeverDropsBelowOne(): void

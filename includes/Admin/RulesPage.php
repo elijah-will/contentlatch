@@ -187,29 +187,37 @@ final class RulesPage
     }
 
     /**
-     * Active rules first, then inactive. Relative order within each group is kept.
+     * Active before inactive; Blocking before Warning within each status.
+     * Relative order inside a status+severity group is kept.
      *
      * @param Rule[] $rules
      * @return Rule[]
      */
     public static function sortForList(array $rules): array
     {
-        $active   = array();
-        $inactive = array();
+        $buckets = array(
+            'active-fail'       => array(),
+            'active-warning'    => array(),
+            'inactive-fail'     => array(),
+            'inactive-warning'  => array(),
+        );
 
         foreach ($rules as $rule) {
             if (!$rule instanceof Rule) {
                 continue;
             }
 
-            if ($rule->status === RuleStatus::Active) {
-                $active[] = $rule;
-            } else {
-                $inactive[] = $rule;
-            }
+            $status   = $rule->status === RuleStatus::Active ? 'active' : 'inactive';
+            $severity = $rule->severity === RuleSeverity::Warning ? 'warning' : 'fail';
+            $buckets[$status . '-' . $severity][] = $rule;
         }
 
-        return array_values(array_merge($active, $inactive));
+        return array_values(array_merge(
+            $buckets['active-fail'],
+            $buckets['active-warning'],
+            $buckets['inactive-fail'],
+            $buckets['inactive-warning']
+        ));
     }
 
     /**

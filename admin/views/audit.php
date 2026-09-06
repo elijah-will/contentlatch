@@ -33,7 +33,10 @@ use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Application\AdminPresentation;
 use ContentGuard\Application\Audit\AuditRunStatus;
+use ContentGuard\Admin\AuditAdminRequest;
+use ContentGuard\Application\Audit\AuditFindingGroup;
 use ContentGuard\Application\AuditPresentation;
+use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\StatusPresentation;
 
 $auditUrl    = static function (array $args): string {
@@ -357,7 +360,7 @@ foreach ($postTypes as $type) {
                 </label>
                 <label>
                     <span><?php echo esc_html__('Post type', 'contentguard'); ?></span>
-                    <select name="post_type">
+                    <select name="<?php echo esc_attr(AuditAdminRequest::TYPE_QUERY_ARG); ?>">
                         <option value=""><?php echo esc_html__('All types', 'contentguard'); ?></option>
                         <?php foreach ($resultsRun->postTypes as $type) : ?>
                             <option value="<?php echo esc_attr($type); ?>" <?php selected($query !== null && $query->postType === $type); ?>>
@@ -399,19 +402,22 @@ foreach ($postTypes as $type) {
                 ?>
             <?php else : ?>
                 <div class="contentguard-findings" aria-labelledby="contentguard-findings-heading">
-                    <?php foreach ($findings as $finding) : ?>
+                    <?php foreach (AuditFindingGroup::group($findings) as $group) : ?>
                         <?php
-                        $title = function_exists('get_the_title') ? (string) get_the_title($finding->postId) : '';
-                        $edit  = function_exists('get_edit_post_link') ? get_edit_post_link($finding->postId, 'raw') : '';
-                        $field = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey] ?? $finding->fieldKey;
+                        $finding = $group->first();
+                        $title   = function_exists('get_the_title') ? (string) get_the_title($finding->postId) : '';
+                        $edit    = function_exists('get_edit_post_link') ? get_edit_post_link($finding->postId, 'raw') : '';
+                        $runId   = $resultsRun !== null ? (int) $resultsRun->id : 0;
+                        $edit    = is_string($edit) ? EditorFieldNavigation::appendToEditUrl($edit, $finding->fieldKey, $runId) : '';
+                        $field   = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey] ?? $finding->fieldKey;
                         AdminView::partial(
                             'audit-finding',
                             array(
                                 'title'    => $title,
-                                'message'  => $finding->message,
+                                'messages' => $group->messages(),
                                 'field'    => $field,
                                 'rule'     => $ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId),
-                                'status'   => StatusPresentation::fromSeverity($finding->severity),
+                                'statuses' => $group->statuses(),
                                 'postType' => AdminPresentation::postTypeLabel($finding->postType),
                                 'editUrl'  => is_string($edit) ? $edit : '',
                                 'uid'      => (string) $finding->id,
@@ -423,19 +429,14 @@ foreach ($postTypes as $type) {
             <?php endif; ?>
 
             <?php if ($totalPages > 1) : ?>
-                <div class="contentguard-pagination tablenav">
-                    <div class="tablenav-pages">
-                        <span class="displaying-num">
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    /* translators: %d: issue count */
-                                    _n('%d issue', '%d issues', $findingTotal, 'contentguard'),
-                                    $findingTotal
-                                )
-                            );
-                            ?>
-                        </span>
+                <nav class="contentguard-pagination" aria-label="<?php echo esc_attr(AuditPresentation::paginationLabel()); ?>">
+                    <p class="contentguard-pagination__status" id="contentguard-pagination-status">
+                        <?php echo esc_html(AuditPresentation::findingsRangeLabel($paged, AuditPage::PAGE_SIZE, $findingTotal)); ?>
+                    </p>
+                    <div class="contentguard-pagination__controls">
+                        <?php if ($paged <= 1) : ?>
+                            <span class="contentguard-pagination__disabled" aria-disabled="true"><?php echo esc_html__('Previous', 'contentguard'); ?></span>
+                        <?php endif; ?>
                         <?php
                         $pagination = '';
                         if (function_exists('paginate_links')) {
@@ -445,15 +446,18 @@ foreach ($postTypes as $type) {
                                     'format'    => '',
                                     'current'   => $paged,
                                     'total'     => $totalPages,
-                                    'prev_text' => __('&laquo;', 'contentguard'),
-                                    'next_text' => __('&raquo;', 'contentguard'),
+                                    'prev_text' => __('Previous', 'contentguard'),
+                                    'next_text' => __('Next', 'contentguard'),
                                 )
                             );
                         }
                         echo wp_kses_post($pagination);
                         ?>
+                        <?php if ($paged >= $totalPages) : ?>
+                            <span class="contentguard-pagination__disabled" aria-disabled="true"><?php echo esc_html__('Next', 'contentguard'); ?></span>
+                        <?php endif; ?>
                     </div>
-                </div>
+                </nav>
             <?php endif; ?>
         <?php endif; ?>
     <?php endif; ?>
