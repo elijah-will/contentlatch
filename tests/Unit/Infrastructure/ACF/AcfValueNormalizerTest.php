@@ -114,6 +114,15 @@ final class AcfValueNormalizerTest extends TestCase
         $this->assertNull($this->normalizer->normalize(array(array('field_x' => 'y')), 'wysiwyg'));
     }
 
+    public function testColorPickerKeepsScalarStringsAndRejectsComplexValues(): void
+    {
+        $this->assertSame('#ff0000', $this->normalizer->normalize('#ff0000', 'color_picker'));
+        $this->assertSame('rgba(0, 0, 0, 0.5)', $this->normalizer->normalize('rgba(0, 0, 0, 0.5)', 'color_picker'));
+        $this->assertNull($this->normalizer->normalize('', 'color_picker'));
+        $this->assertNull($this->normalizer->normalize(null, 'color_picker'));
+        $this->assertNull($this->normalizer->normalize(array('color' => '#ff0000', 'alpha' => 1), 'color_picker'));
+    }
+
     public function testRadioAndButtonGroupUseStoredValue(): void
     {
         $this->assertSame('external', $this->normalizer->normalize('external', 'radio'));

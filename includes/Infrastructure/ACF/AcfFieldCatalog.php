@@ -26,6 +26,7 @@ final class AcfFieldCatalog
         'true_false',
         'date_picker',
         'date_time_picker',
+        'color_picker',
     );
 
     /**

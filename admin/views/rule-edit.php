@@ -131,6 +131,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
 
         <h2><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
         <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
+        <p class="description"><?php echo esc_html__('Fields inside Groups, Repeaters, and Flexible Content are not supported yet.', 'contentguard'); ?></p>
         <div id="contentguard-conditions" class="contentguard-rows">
             <?php foreach ($conditions as $index => $condition) : ?>
                 <?php
