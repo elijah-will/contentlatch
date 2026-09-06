@@ -64,6 +64,41 @@ final class ValueTest extends TestCase
         $this->assertFalse(Value::equals(array('a'), array('a')));
     }
 
+    /**
+     * @dataProvider tryNumberProvider
+     */
+    public function testTryNumber(mixed $value, ?float $expected): void
+    {
+        $this->assertSame($expected, Value::tryNumber($value));
+    }
+
+    /**
+     * @return array<string, array{0: mixed, 1: ?float}>
+     */
+    public static function tryNumberProvider(): array
+    {
+        return array(
+            'int 5'          => array(5, 5.0),
+            'int 50'         => array(50, 50.0),
+            'int 100'        => array(100, 100.0),
+            'int 0'          => array(0, 0.0),
+            'string 5'       => array('5', 5.0),
+            'string 50'      => array('50', 50.0),
+            'string 100'     => array('100', 100.0),
+            'string 0'       => array('0', 0.0),
+            'decimal'        => array('30.5', 30.5),
+            'float'          => array(2.5, 2.5),
+            'empty string'   => array('', null),
+            'null'           => array(null, null),
+            'false'          => array(false, null),
+            'empty array'    => array(array(), null),
+            'invalid text'   => array('thirty', null),
+            'untrimmed'      => array(' 30', null),
+            'comma'          => array('1,000', null),
+            'bool true'      => array(true, null),
+        );
+    }
+
     public function testStringLength(): void
     {
         $this->assertSame(0, Value::stringLength(null));

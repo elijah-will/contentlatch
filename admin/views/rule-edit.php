@@ -16,6 +16,7 @@ use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\AdminNotice;
+use ContentGuard\Application\ConditionOperators;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RulePreview;
 use ContentGuard\Domain\RuleSeverity;
@@ -44,12 +45,6 @@ foreach ($fields as $field) {
 }
 $preview = RulePreview::fromEditor($conditions, $validations, $fieldMeta);
 
-$operators = array(
-    'equals'       => __('is', 'contentguard'),
-    'not_equals'   => __('is not', 'contentguard'),
-    'is_empty'     => __('is empty', 'contentguard'),
-    'is_not_empty' => __('is not empty', 'contentguard'),
-);
 $validators = array(
     'required'       => __('is required', 'contentguard'),
     'min_length'     => __('Minimum length', 'contentguard'),
@@ -157,8 +152,12 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php
-                    $needsValue  = in_array($condition['operator'], array('equals', 'not_equals'), true);
+                    $needsValue  = ConditionOperators::requiresOperand($condition['operator']);
                     $fieldType   = $fieldTypes[$condition['field_key']] ?? '';
+                    $operators   = ConditionOperators::labelsForFieldType($fieldType);
+                    if ($condition['operator'] !== '' && !isset($operators[$condition['operator']])) {
+                        $operators[$condition['operator']] = $condition['operator'];
+                    }
                     $operandName = 'conditions[' . (int) $index . '][operand]';
                     $fieldId     = 'contentguard-condition-field-' . (int) $index;
                     $operatorId  = 'contentguard-condition-operator-' . (int) $index;
@@ -174,7 +173,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                             <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentguard-operator">
                                 <?php foreach ($operators as $value => $label) : ?>
-                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html($label); ?></option>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html__($label, 'contentguard'); ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <label class="screen-reader-text" for="<?php echo esc_attr($operandId); ?>"><?php echo esc_html__('Value', 'contentguard'); ?></label>
@@ -183,6 +182,8 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                                     <option value="1" <?php selected($condition['operand'], '1'); ?>><?php echo esc_html__('Yes', 'contentguard'); ?></option>
                                     <option value="0" <?php selected($condition['operand'], '0'); ?>><?php echo esc_html__('No', 'contentguard'); ?></option>
                                 </select>
+                            <?php elseif (ConditionOperators::isNumericField($fieldType)) : ?>
+                                <input id="<?php echo esc_attr($operandId); ?>" type="number" step="any" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
                             <?php else : ?>
                                 <input id="<?php echo esc_attr($operandId); ?>" type="text" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
                             <?php endif; ?>
@@ -230,17 +231,17 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                             </select>
                             <span class="contentguard-param-group contentguard-param-group--min" <?php echo $showMin ? '' : 'hidden'; ?>>
                                 <label class="screen-reader-text" for="<?php echo esc_attr($minId); ?>"><?php echo esc_html__('Minimum length', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($minId); ?>" type="number" min="0" class="contentguard-param contentguard-min" name="validations[<?php echo (int) $index; ?>][min]" value="<?php echo esc_attr($validation['min']); ?>">
+                                <input id="<?php echo esc_attr($minId); ?>" type="number" min="0" class="contentguard-param contentguard-min" name="validations[<?php echo (int) $index; ?>][min]" value="<?php echo esc_attr($showMin ? $validation['min'] : ''); ?>" <?php disabled(!$showMin); ?>>
                                 <span class="contentguard-param-suffix"><?php echo esc_html__('characters', 'contentguard'); ?></span>
                             </span>
                             <span class="contentguard-param-group contentguard-param-group--max" <?php echo $showMax ? '' : 'hidden'; ?>>
                                 <label class="screen-reader-text" for="<?php echo esc_attr($maxId); ?>"><?php echo esc_html__('Maximum length', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($maxId); ?>" type="number" min="0" class="contentguard-param contentguard-max" name="validations[<?php echo (int) $index; ?>][max]" value="<?php echo esc_attr($validation['max']); ?>">
+                                <input id="<?php echo esc_attr($maxId); ?>" type="number" min="0" class="contentguard-param contentguard-max" name="validations[<?php echo (int) $index; ?>][max]" value="<?php echo esc_attr($showMax ? $validation['max'] : ''); ?>" <?php disabled(!$showMax); ?>>
                                 <span class="contentguard-param-suffix"><?php echo esc_html__('characters', 'contentguard'); ?></span>
                             </span>
                             <span class="contentguard-param-group contentguard-param-group--values" <?php echo $showValues ? '' : 'hidden'; ?>>
                                 <label class="screen-reader-text" for="<?php echo esc_attr($valuesId); ?>"><?php echo esc_html__('Allowed values', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($valuesId); ?>" type="text" class="contentguard-param contentguard-values" name="validations[<?php echo (int) $index; ?>][values]" value="<?php echo esc_attr($validation['values']); ?>" placeholder="<?php echo esc_attr__('value1, value2', 'contentguard'); ?>">
+                                <input id="<?php echo esc_attr($valuesId); ?>" type="text" class="contentguard-param contentguard-values" name="validations[<?php echo (int) $index; ?>][values]" value="<?php echo esc_attr($showValues ? $validation['values'] : ''); ?>" placeholder="<?php echo esc_attr__('value1, value2', 'contentguard'); ?>" <?php disabled(!$showValues); ?>>
                             </span>
                             <label class="screen-reader-text" for="<?php echo esc_attr($messageId); ?>"><?php echo esc_html__('Custom message (optional)', 'contentguard'); ?></label>
                             <input id="<?php echo esc_attr($messageId); ?>" type="text" class="contentguard-validation-message" name="validations[<?php echo (int) $index; ?>][message]" value="<?php echo esc_attr($validation['message']); ?>" placeholder="<?php echo esc_attr__('Custom message (optional)', 'contentguard'); ?>">

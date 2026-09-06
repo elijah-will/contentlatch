@@ -116,6 +116,44 @@ final class RulePreviewTest extends TestCase
             )
         );
         $this->assertSame(
+            'When Cook Time is greater than 30, Ingredients is required.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'field_cook_time',
+                        'operator'  => 'greater_than',
+                        'operand'   => '30',
+                    ),
+                ),
+                array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                    ),
+                ),
+                $this->fieldMeta()
+            )
+        );
+        $this->assertSame(
+            'When Total Time is at least 60, Ingredients is required.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'field_total_time',
+                        'operator'  => 'greater_than_or_equal',
+                        'operand'   => '60',
+                    ),
+                ),
+                array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                    ),
+                ),
+                $this->fieldMeta()
+            )
+        );
+        $this->assertSame(
             'When Show "New" Tag is not empty, PowerReviews Page ID must be at most 100 characters.',
             RulePreview::fromEditor(
                 array(
@@ -144,6 +182,9 @@ final class RulePreviewTest extends TestCase
         return array(
             'field_683097e0dc6d2' => array('label' => 'Show "New" Tag', 'type' => 'true_false'),
             'field_6a05f9e8420ea' => array('label' => 'PowerReviews Page ID', 'type' => 'text'),
+            'field_cook_time'     => array('label' => 'Cook Time', 'type' => 'number'),
+            'field_total_time'    => array('label' => 'Total Time', 'type' => 'number'),
+            'field_ingredients'   => array('label' => 'Ingredients', 'type' => 'textarea'),
         );
     }
 }

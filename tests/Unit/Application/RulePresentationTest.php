@@ -81,4 +81,22 @@ final class RulePresentationTest extends TestCase
             RulePresentation::conditionsSummary($notYes, array('field_signature' => 'true_false'))
         );
     }
+
+    public function testNumericConditionSummaryUsesFriendlyLanguage(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions' => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('field_cook_time', 'cook_time', 'Cook Time'),
+                    'operator' => 'greater_than',
+                    'operand'  => '30',
+                )),
+            ),
+        ));
+
+        $this->assertSame(
+            'Cook Time is greater than 30',
+            RulePresentation::conditionsSummary($rule, array('field_cook_time' => 'number'))
+        );
+    }
 }

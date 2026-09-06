@@ -88,15 +88,35 @@
     return select;
   }
 
-  function operatorSelect(name, selected, id) {
+  function operatorLabelsForType(fieldType) {
+    var map = config.operatorsByType || {};
+    if (fieldType && map[fieldType]) {
+      return map[fieldType];
+    }
+    return map.default || config.operators || {};
+  }
+
+  function requiresOperand(operator) {
+    return [
+      "equals",
+      "not_equals",
+      "greater_than",
+      "greater_than_or_equal",
+      "less_than",
+      "less_than_or_equal"
+    ].indexOf(operator) !== -1;
+  }
+
+  function operatorSelect(name, selected, id, fieldType) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-operator";
     if (id) {
       select.id = id;
     }
-    Object.keys(config.operators).forEach(function (value) {
-      select.appendChild(option(value, config.operators[value], value === selected));
+    var labels = operatorLabelsForType(fieldType);
+    Object.keys(labels).forEach(function (value) {
+      select.appendChild(option(value, labels[value], value === selected));
     });
     return select;
   }
@@ -129,7 +149,10 @@
     }
 
     var input = document.createElement("input");
-    input.type = "text";
+    input.type = fieldType === "number" || fieldType === "range" ? "number" : "text";
+    if (input.type === "number") {
+      input.step = "any";
+    }
     input.className = "contentguard-operand";
     input.name = name;
     input.value = value;
@@ -151,6 +174,7 @@
     input.className = "contentguard-param contentguard-" + kind;
     input.name = name;
     input.value = value;
+    input.disabled = hidden;
     if (kind === "values") {
       input.type = "text";
       input.placeholder = "value1, value2";
@@ -178,13 +202,45 @@
       return;
     }
 
-    var needsValue = operator.value === "equals" || operator.value === "not_equals";
+    var needsValue = requiresOperand(operator.value);
     var next = operandControl(operand.name, operand.value, selectedFieldType(field), !needsValue, operand.id);
     operand.replaceWith(next);
   }
 
+  function syncOperator(row) {
+    var field = row.querySelector(".contentguard-field");
+    var operator = row.querySelector(".contentguard-operator");
+    if (!field || !operator) {
+      return;
+    }
+
+    var type = selectedFieldType(field);
+    var current = operator.value;
+    var labels = operatorLabelsForType(type);
+    if (!Object.prototype.hasOwnProperty.call(labels, current)) {
+      current = "equals";
+    }
+    operator.replaceWith(operatorSelect(operator.name, current, operator.id, type));
+  }
+
   function toggleCondition(row) {
+    syncOperator(row);
     syncOperand(row);
+  }
+
+  function setParamGroup(group, visible) {
+    if (!group) {
+      return;
+    }
+    group.hidden = !visible;
+    var input = group.querySelector(".contentguard-param");
+    if (!input) {
+      return;
+    }
+    input.disabled = !visible;
+    if (!visible) {
+      input.value = "";
+    }
   }
 
   function toggleValidation(row) {
@@ -192,18 +248,9 @@
     if (!type) {
       return;
     }
-    var min = row.querySelector(".contentguard-param-group--min");
-    var max = row.querySelector(".contentguard-param-group--max");
-    var values = row.querySelector(".contentguard-param-group--values");
-    if (min) {
-      min.hidden = type.value !== "min_length";
-    }
-    if (max) {
-      max.hidden = type.value !== "max_length";
-    }
-    if (values) {
-      values.hidden = type.value !== "allowed_values";
-    }
+    setParamGroup(row.querySelector(".contentguard-param-group--min"), type.value === "min_length");
+    setParamGroup(row.querySelector(".contentguard-param-group--max"), type.value === "max_length");
+    setParamGroup(row.querySelector(".contentguard-param-group--values"), type.value === "allowed_values");
   }
 
   function nextIndex(container) {
@@ -229,7 +276,7 @@
     controls.appendChild(srLabel("WHEN field", fieldId));
     controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
     controls.appendChild(srLabel("Operator", operatorId));
-    controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId));
+    controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId, fieldTypeFor(selected || "")));
     controls.appendChild(srLabel("Value", operandId));
     controls.appendChild(operandControl("conditions[" + index + "][operand]", "", fieldTypeFor(selected || ""), false, operandId));
     row.appendChild(controls);
@@ -299,7 +346,7 @@
       var replacement = fieldSelect(name, current, select.id);
       select.replaceWith(replacement);
     });
-    form.querySelectorAll("[data-row='condition']").forEach(syncOperand);
+    form.querySelectorAll("[data-row='condition']").forEach(toggleCondition);
     updatePreview();
   }
 
@@ -330,6 +377,18 @@
     }
     if (operator === "is_not_empty") {
       return field + " is not empty";
+    }
+    if (operator === "greater_than") {
+      return field + " is greater than " + value;
+    }
+    if (operator === "greater_than_or_equal") {
+      return field + " is at least " + value;
+    }
+    if (operator === "less_than") {
+      return field + " is less than " + value;
+    }
+    if (operator === "less_than_or_equal") {
+      return field + " is at most " + value;
     }
     return field + " " + operator;
   }
@@ -374,7 +433,7 @@
         whenIncomplete = true;
         return;
       }
-      var needsValue = operator.value === "equals" || operator.value === "not_equals";
+      var needsValue = requiresOperand(operator.value);
       var fieldType = selectedFieldType(field);
       var displayValue = operandPreviewValue(operand, fieldType);
       if (needsValue && displayValue === "") {
@@ -396,9 +455,9 @@
         return;
       }
       var fieldKey = field.value;
-      var minValue = min ? min.value.trim() : "";
-      var maxValue = max ? max.value.trim() : "";
-      var valuesValue = values ? values.value.trim() : "";
+      var minValue = min && !min.disabled ? min.value.trim() : "";
+      var maxValue = max && !max.disabled ? max.value.trim() : "";
+      var valuesValue = values && !values.disabled ? values.value.trim() : "";
       var started = fieldKey !== "" || minValue !== "" || maxValue !== "" || valuesValue !== "";
       if (!started && type.value === "") {
         return;

@@ -80,7 +80,7 @@ final class RulePreview
                 return array('state' => 'incomplete', 'text' => '');
             }
 
-            $needsValue = in_array($operator, array('equals', 'not_equals'), true);
+            $needsValue = ConditionOperators::requiresOperand($operator);
             if ($needsValue && self::scalar($operand) === '') {
                 return array('state' => 'incomplete', 'text' => '');
             }
@@ -168,11 +168,15 @@ final class RulePreview
         $value = FieldValuePresentation::label($operand, $fieldType);
 
         return match ($operator) {
-            'equals'       => $field . ' is ' . $value,
-            'not_equals'   => $field . ' is not ' . $value,
-            'is_empty'     => $field . ' is empty',
-            'is_not_empty' => $field . ' is not empty',
-            default        => $field . ' ' . $operator,
+            'equals'                => $field . ' is ' . $value,
+            'not_equals'            => $field . ' is not ' . $value,
+            'greater_than'          => $field . ' is greater than ' . $value,
+            'greater_than_or_equal' => $field . ' is at least ' . $value,
+            'less_than'             => $field . ' is less than ' . $value,
+            'less_than_or_equal'    => $field . ' is at most ' . $value,
+            'is_empty'              => $field . ' is empty',
+            'is_not_empty'          => $field . ' is not empty',
+            default                 => $field . ' ' . $operator,
         };
     }
 

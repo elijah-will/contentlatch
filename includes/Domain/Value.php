@@ -52,6 +52,43 @@ final class Value
         return null;
     }
 
+    /**
+     * Numeric comparison form. Empty and invalid values are null, never 0.
+     * Integer 0 and string "0" remain 0.0.
+     */
+    public static function tryNumber(mixed $value): ?float
+    {
+        if ($value === null || $value === false || $value === '' || $value === array()) {
+            return null;
+        }
+
+        if (is_bool($value) || is_array($value) || is_object($value)) {
+            return null;
+        }
+
+        if (is_int($value)) {
+            return (float) $value;
+        }
+
+        if (is_float($value)) {
+            if (is_nan($value) || is_infinite($value)) {
+                return null;
+            }
+
+            return $value;
+        }
+
+        if (!is_string($value) || !is_numeric($value)) {
+            return null;
+        }
+
+        if ($value !== trim($value) || str_contains($value, ',')) {
+            return null;
+        }
+
+        return (float) $value;
+    }
+
     public static function equals(mixed $left, mixed $right): bool
     {
         $leftEmpty  = self::isEmpty($left);

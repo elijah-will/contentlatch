@@ -17,6 +17,7 @@ use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\Operators\OperatorRegistry;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\Validators\ValidatorRegistry;
+use ContentGuard\Domain\Value;
 
 final class RuleDocumentFactory
 {
@@ -196,16 +197,25 @@ final class RuleDocumentFactory
                 throw new InvalidRuleException(sprintf('Unknown condition operator "%s".', $operator));
             }
 
-            $field = $this->fieldRef($fieldKey, $fields);
+            $field     = $this->fieldRef($fieldKey, $fields);
+            $fieldType = (string) ($fields[$fieldKey]['type'] ?? '');
 
-            if (in_array($operator, array('equals', 'not_equals'), true)) {
+            if (ConditionOperators::requiresOperand($operator)) {
                 $operand = $row['operand'] ?? '';
                 if (!is_scalar($operand) && !is_bool($operand)) {
                     throw new InvalidRuleException('A condition value is required.');
                 }
-                $operand = self::normalizeConditionOperand($operand, (string) ($fields[$fieldKey]['type'] ?? ''));
+                $operand = self::normalizeConditionOperand($operand, $fieldType);
                 if ($operand === '') {
                     throw new InvalidRuleException('A condition value is required.');
+                }
+                if (ConditionOperators::isNumericComparison($operator)) {
+                    if (!ConditionOperators::isNumericField($fieldType)) {
+                        throw new InvalidRuleException('Numeric comparisons can only be used with number fields.');
+                    }
+                    if (Value::tryNumber($operand) === null) {
+                        throw new InvalidRuleException('A numeric condition value is required.');
+                    }
                 }
             } else {
                 $operand = null;

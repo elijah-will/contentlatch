@@ -67,11 +67,15 @@ final class RulePresentation
         }
 
         return match ($condition->operator) {
-            'equals'       => $field . ' equals ' . $operand,
-            'not_equals'   => $field . ' does not equal ' . $operand,
-            'is_empty'     => $field . ' is empty',
-            'is_not_empty' => $field . ' is not empty',
-            default        => $field . ' ' . $condition->operator,
+            'equals'                => $field . ' equals ' . $operand,
+            'not_equals'            => $field . ' does not equal ' . $operand,
+            'greater_than'          => $field . ' is greater than ' . $operand,
+            'greater_than_or_equal' => $field . ' is at least ' . $operand,
+            'less_than'             => $field . ' is less than ' . $operand,
+            'less_than_or_equal'    => $field . ' is at most ' . $operand,
+            'is_empty'              => $field . ' is empty',
+            'is_not_empty'          => $field . ' is not empty',
+            default                 => $field . ' ' . $condition->operator,
         };
     }
 

@@ -132,6 +132,171 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('When Show &quot;New&quot; Tag is No, PowerReviews Page ID is required.', $html);
     }
 
+    public function testRequiredThenHidesUnrelatedConfiguration(): void
+    {
+        $html = $this->renderValidationEditor('required', array('min' => '50', 'max' => '10', 'values' => 'a, b'));
+
+        $this->assertThenParam($html, 0, 'min', false);
+        $this->assertThenParam($html, 0, 'max', false);
+        $this->assertThenParam($html, 0, 'values', false);
+        $this->assertStringNotContainsString('name="validations[0][min]" value="50"', $html);
+    }
+
+    public function testMinimumLengthShowsOnlyItsConfiguration(): void
+    {
+        $html = $this->renderValidationEditor('min_length', array('min' => '50', 'max' => '10', 'values' => 'a'));
+
+        $this->assertThenParam($html, 0, 'min', true);
+        $this->assertThenParam($html, 0, 'max', false);
+        $this->assertThenParam($html, 0, 'values', false);
+        $this->assertStringContainsString('name="validations[0][min]" value="50"', $html);
+    }
+
+    public function testMaximumLengthShowsOnlyItsConfiguration(): void
+    {
+        $html = $this->renderValidationEditor('max_length', array('min' => '50', 'max' => '10', 'values' => 'a'));
+
+        $this->assertThenParam($html, 0, 'min', false);
+        $this->assertThenParam($html, 0, 'max', true);
+        $this->assertThenParam($html, 0, 'values', false);
+        $this->assertStringContainsString('name="validations[0][max]" value="10"', $html);
+    }
+
+    public function testAllowedValuesShowsOnlyItsConfiguration(): void
+    {
+        $html = $this->renderValidationEditor('allowed_values', array('min' => '50', 'max' => '10', 'values' => 'sauce, rub'));
+
+        $this->assertThenParam($html, 0, 'min', false);
+        $this->assertThenParam($html, 0, 'max', false);
+        $this->assertThenParam($html, 0, 'values', true);
+        $this->assertStringContainsString('name="validations[0][values]" value="sauce, rub"', $html);
+    }
+
+    public function testMultipleValidatorsShowOnlyRelevantConfiguration(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Mixed THEN',
+                'target_post_type' => 'product',
+                'validations'      => array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                        'min'       => '50',
+                    ),
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'min_length',
+                        'min'       => '12',
+                        'max'       => '99',
+                    ),
+                ),
+            )),
+            array(
+                array('key' => 'field_ingredients', 'name' => 'ingredients', 'label' => 'Ingredients', 'type' => 'textarea'),
+            )
+        );
+
+        $this->assertThenParam($html, 0, 'min', false);
+        $this->assertThenParam($html, 0, 'max', false);
+        $this->assertThenParam($html, 1, 'min', true);
+        $this->assertThenParam($html, 1, 'max', false);
+        $this->assertStringContainsString('name="validations[1][min]" value="12"', $html);
+        $this->assertStringNotContainsString('name="validations[0][min]" value="50"', $html);
+    }
+
+    public function testNumberFieldsOfferNumericOperatorsAndTextFieldsDoNot(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Cook Time rule',
+                'target_post_type' => 'recipe',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'field_cook_time',
+                        'operator'  => 'greater_than',
+                        'operand'   => '30',
+                    ),
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'operator'  => 'equals',
+                        'operand'   => 'salt',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array('key' => 'field_cook_time', 'name' => 'cook_time', 'label' => 'Cook Time', 'type' => 'number'),
+                array('key' => 'field_ingredients', 'name' => 'ingredients', 'label' => 'Ingredients', 'type' => 'textarea'),
+            )
+        );
+
+        $this->assertStringContainsString('value="greater_than"', $html);
+        $this->assertStringContainsString('is greater than', $html);
+        $this->assertStringContainsString('When Cook Time is greater than 30 and Ingredients is salt, Ingredients is required.', $html);
+        $this->assertStringContainsString('type="number"', $html);
+        $this->assertMatchesRegularExpression(
+            '/name="conditions\[1\]\[operator\]"[^>]*>[\s\S]*?<\/select>/',
+            $html
+        );
+        if (preg_match('/name="conditions\[1\]\[operator\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('Text field operator select missing');
+        }
+        $this->assertStringNotContainsString('greater_than', $match[1]);
+        $this->assertStringContainsString('value="equals"', $match[1]);
+        $this->assertStringContainsString('value="is_empty"', $match[1]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    private function renderValidationEditor(string $type, array $params): string
+    {
+        return $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'THEN config',
+                'target_post_type' => 'product',
+                'validations'      => array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => $type,
+                        'min'       => $params['min'] ?? '',
+                        'max'       => $params['max'] ?? '',
+                        'values'    => $params['values'] ?? '',
+                    ),
+                ),
+            )),
+            array(
+                array('key' => 'field_ingredients', 'name' => 'ingredients', 'label' => 'Ingredients', 'type' => 'textarea'),
+            )
+        );
+    }
+
+    private function assertThenParam(string $html, int $index, string $kind, bool $visible): void
+    {
+        $name = 'validations[' . $index . '][' . $kind . ']';
+        $this->assertSame(1, preg_match(
+            '/<span class="contentguard-param-group contentguard-param-group--' . preg_quote($kind, '/') . '"([^>]*)>\s*<label[^>]*>[^<]*<\/label>\s*<input[^>]*name="' . preg_quote($name, '/') . '"([^>]*)>/',
+            $html,
+            $match
+        ), $name . ' group missing');
+
+        $groupAttrs = $match[1];
+        $inputAttrs = $match[2];
+        if ($visible) {
+            $this->assertStringNotContainsString('hidden', $groupAttrs);
+            $this->assertStringNotContainsString('disabled', $inputAttrs);
+        } else {
+            $this->assertStringContainsString('hidden', $groupAttrs);
+            $this->assertStringContainsString('disabled', $inputAttrs);
+        }
+    }
+
     /**
      * @param array<int, array<string, mixed>> $fields
      * @param array{type: string, message: string}|null $notice

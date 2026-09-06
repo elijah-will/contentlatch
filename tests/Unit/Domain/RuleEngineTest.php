@@ -133,6 +133,78 @@ final class RuleEngineTest extends TestCase
         $this->assertTrue($skipped->results[0]->isSkipped());
     }
 
+    public function testNumericGreaterThanIsMathematicalNotLexicographic(): void
+    {
+        $rule = RuleFactory::rule(
+            array(
+                'conditions' => array(
+                    RuleFactory::condition(
+                        array(
+                            'field'    => RuleFactory::field('field_cook_time', 'cook_time', 'Cook Time'),
+                            'operator' => 'greater_than',
+                            'operand'  => '30',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 50,
+                    'field_ingredients' => 'ok',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 100,
+                    'field_ingredients' => 'ok',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 5,
+                    'field_ingredients' => '',
+                ))
+            )->isNotEvaluated()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 0,
+                    'field_ingredients' => '',
+                ))
+            )->isNotEvaluated()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => '',
+                    'field_ingredients' => '',
+                ))
+            )->isNotEvaluated()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 'abc',
+                    'field_ingredients' => '',
+                ))
+            )->isNotEvaluated()
+        );
+    }
+
     public function testEmptyAndNotEmptyConditions(): void
     {
         $whenEmpty = RuleFactory::rule(

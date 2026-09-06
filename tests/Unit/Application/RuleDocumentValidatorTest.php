@@ -163,6 +163,25 @@ final class RuleDocumentValidatorTest extends TestCase
         $this->assertSame('field_page_id', $rule->validations[0]->field->key);
     }
 
+    public function testExistingSchemaOneDocumentsRemainReadable(): void
+    {
+        $rule = $this->validator->validateArray(RuleFactory::document());
+        $this->assertSame(1, $rule->schemaVersion);
+        $this->assertSame('equals', $rule->conditions[0]->operator);
+    }
+
+    public function testNumericOperatorsAreAcceptedWithoutSchemaChange(): void
+    {
+        $document = RuleFactory::document();
+        $document['conditions'][0]['operator'] = 'greater_than';
+        $document['conditions'][0]['operand'] = '30';
+
+        $rule = $this->validator->validateArray($document);
+        $this->assertSame(1, $rule->schemaVersion);
+        $this->assertSame('greater_than', $rule->conditions[0]->operator);
+        $this->assertSame('30', $rule->conditions[0]->operand);
+    }
+
     public function testEmptyAllowedValuesAreRejected(): void
     {
         $document = RuleFactory::document();

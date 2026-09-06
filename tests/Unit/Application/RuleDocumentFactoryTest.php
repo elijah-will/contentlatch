@@ -470,6 +470,127 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->factory->fromAdminInput($input);
     }
 
+    public function testRequiredIgnoresStaleLengthAndAllowedValuesParams(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array();
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'required',
+                'min'       => '50',
+                'max'       => '10',
+                'values'    => 'sauce, rub',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+
+        $this->assertSame('required', $rule->validations[0]->type);
+        $this->assertSame(array(), $rule->validations[0]->params);
+    }
+
+    public function testNumericComparisonOnNumberFieldPersistsAndEvaluates(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_cook_time',
+                'operator'  => 'greater_than',
+                'operand'   => '30',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'required',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+
+        $this->assertSame('greater_than', $rule->conditions[0]->operator);
+        $this->assertSame('30', $rule->conditions[0]->operand);
+        $this->assertSame(1, $rule->schemaVersion);
+
+        $engine = RuleEngine::v1();
+        $this->assertTrue(
+            $engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 50,
+                    'field_ingredients' => 'tomatoes',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_cook_time'   => 5,
+                    'field_ingredients' => '',
+                ))
+            )->isNotEvaluated()
+        );
+    }
+
+    public function testNumericComparisonOnTextFieldIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Numeric comparisons can only be used with number fields.');
+        $input = $this->validInput();
+        $input['conditions'][0]['operator'] = 'greater_than';
+        $input['conditions'][0]['operand'] = '30';
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testInvalidNumericOperandIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('A numeric condition value is required.');
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_cook_time',
+                'operator'  => 'less_than',
+                'operand'   => 'thirty',
+            ),
+        );
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testZeroIsAValidNumericOperand(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_cook_time',
+                'operator'  => 'greater_than',
+                'operand'   => '0',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'required',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('0', $rule->conditions[0]->operand);
+    }
+
+    public function testExistingTextOperatorsRemainAvailable(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'][0]['operator'] = 'not_equals';
+        $input['conditions'][0]['operand'] = 'dip';
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('not_equals', $rule->conditions[0]->operator);
+        $this->assertSame('dip', $rule->conditions[0]->operand);
+    }
+
     public function testEmptyOperatorDoesNotNeedAValue(): void
     {
         $input = $this->validInput();
@@ -577,6 +698,18 @@ final class RuleDocumentFactoryTest extends TestCase
                         'name'  => 'page_id',
                         'label' => 'Page ID',
                         'type'  => 'text',
+                    ),
+                    array(
+                        'key'   => 'field_cook_time',
+                        'name'  => 'cook_time',
+                        'label' => 'Cook Time',
+                        'type'  => 'number',
+                    ),
+                    array(
+                        'key'   => 'field_total_time',
+                        'name'  => 'total_time',
+                        'label' => 'Total Time',
+                        'type'  => 'number',
                     ),
                 )
                 : array()

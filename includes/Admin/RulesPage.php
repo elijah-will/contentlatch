@@ -13,6 +13,7 @@ use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\AdminNotice;
+use ContentGuard\Application\ConditionOperators;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RuleMutationPresentation;
@@ -101,11 +102,11 @@ final class RulesPage
                 'ajaxUrl'    => admin_url('admin-ajax.php'),
                 'nonce'      => wp_create_nonce(RuleCommandService::NONCE_ACTION),
                 'fieldsAction' => RulesController::ACTION_FIELDS,
-                'operators'  => array(
-                    'equals'       => __('is', 'contentguard'),
-                    'not_equals'   => __('is not', 'contentguard'),
-                    'is_empty'     => __('is empty', 'contentguard'),
-                    'is_not_empty' => __('is not empty', 'contentguard'),
+                'operators'  => $this->operatorLabels('text'),
+                'operatorsByType' => array(
+                    'default' => $this->operatorLabels('text'),
+                    'number'  => $this->operatorLabels('number'),
+                    'range'   => $this->operatorLabels('range'),
                 ),
                 'validators' => array(
                     'required'       => __('is required', 'contentguard'),
@@ -341,5 +342,18 @@ final class RulesPage
     private function notice(): ?array
     {
         return AdminNotice::fromQuery($_GET);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function operatorLabels(string $fieldType): array
+    {
+        $labels = array();
+        foreach (ConditionOperators::labelsForFieldType($fieldType) as $id => $label) {
+            $labels[$id] = __($label, 'contentguard');
+        }
+
+        return $labels;
     }
 }
