@@ -83,6 +83,17 @@ final class AuditPage
                     'cancel' => AuditAjaxController::ACTION_CANCEL,
                     'status' => AuditAjaxController::ACTION_STATUS,
                 ),
+                'i18n'    => array(
+                    'running'          => AuditPresentation::runningHeading(),
+                    'progressKnown'    => __('%1$d of %2$d content items checked', 'contentguard'),
+                    'progressUnknown'  => __('%d content items checked', 'contentguard'),
+                    'couldNotStart'    => __('Could not start the audit.', 'contentguard'),
+                    'batchFailed'      => __('The audit could not continue.', 'contentguard'),
+                    'cancelConfirm'    => AuditPresentation::cancelConfirmText(),
+                    'stopAudit'        => __('Stop audit', 'contentguard'),
+                    'keepRunning'      => __('Keep running', 'contentguard'),
+                    'cancelAudit'      => __('Cancel Audit', 'contentguard'),
+                ),
             )
         );
         wp_enqueue_script('contentguard-audit');
@@ -120,7 +131,12 @@ final class AuditPage
 
     public static function healthHeading(bool $viewingHistory): string
     {
-        return $viewingHistory ? 'Previous audit' : 'Content Health';
+        return $viewingHistory ? 'Previous audit' : AuditPresentation::completedHeading();
+    }
+
+    public static function isFirstRun(?AuditRun $resultsRun, ?AuditRun $active): bool
+    {
+        return $resultsRun === null && $active === null;
     }
 
     /**

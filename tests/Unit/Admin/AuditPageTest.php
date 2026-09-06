@@ -124,7 +124,10 @@ final class AuditPageTest extends TestCase
         $this->assertFalse(AuditPage::isViewingHistory($latest, $latest));
         $this->assertFalse(AuditPage::isViewingHistory($latest, AuditPage::resolveResultsRun($latest, $failed)));
         $this->assertSame('Previous audit', AuditPage::healthHeading(true));
-        $this->assertSame('Content Health', AuditPage::healthHeading(false));
+        $this->assertSame('Audit completed', AuditPage::healthHeading(false));
+        $this->assertTrue(AuditPage::isFirstRun(null, null));
+        $this->assertFalse(AuditPage::isFirstRun($latest, null));
+        $this->assertFalse(AuditPage::isFirstRun(null, $this->makeRun(8, AuditRunStatus::Running)));
         $this->assertSame(array('page' => AuditPage::SLUG), AuditPage::latestResultsArgs());
         $this->assertArrayNotHasKey('run', AuditPage::latestResultsArgs());
     }

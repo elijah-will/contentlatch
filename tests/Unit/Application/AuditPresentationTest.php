@@ -54,4 +54,22 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Blocking', AuditPresentation::severityLabel(RuleSeverity::Fail));
         $this->assertSame('Warning', AuditPresentation::severityLabel(RuleSeverity::Warning));
     }
+
+    public function testAuditStateCopyAndProgressLabels(): void
+    {
+        $this->assertSame('Ready to check your content', AuditPresentation::firstRunHeading());
+        $this->assertStringContainsString('does not change your content', AuditPresentation::doesNotModifyContent());
+        $this->assertSame('Audit in progress', AuditPresentation::runningHeading());
+        $this->assertSame('42 of 137 content items checked', AuditPresentation::progressLabel(42, 137));
+        $this->assertSame('8 content items checked', AuditPresentation::progressLabel(8, 0));
+        $this->assertSame('Audit completed', AuditPresentation::completedHeading());
+        $this->assertSame('All clear', AuditPresentation::allClearHeading());
+        $this->assertSame(
+            'No active rule violations were found in the audited content.',
+            AuditPresentation::allClearText(12)
+        );
+        $this->assertSame('Audit failed', AuditPresentation::failedHeading());
+        $this->assertSame('Audit cancelled', AuditPresentation::cancelledHeading());
+        $this->assertStringContainsString('not used as the latest completed result', AuditPresentation::cancelledText());
+    }
 }

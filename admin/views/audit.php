@@ -36,13 +36,20 @@ use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Application\StatusPresentation;
 
-$statuses    = implode(', ', \ContentGuard\Application\Audit\ContentAuditService::AUDITED_STATUSES);
 $auditUrl    = static function (array $args): string {
     return admin_url('admin.php?' . http_build_query($args));
 };
 $completedAt = $resultsRun !== null
     ? AuditPage::formatRunTime($resultsRun->finishedAt ?? $resultsRun->startedAt)
     : '';
+$canStart    = AuditPage::canStart($active, $postTypes);
+$isFirstRun  = AuditPage::isFirstRun($resultsRun, $active);
+$isRunning   = $active !== null;
+$progressPct = $active !== null ? $active->progressPercent() : null;
+$typeNames   = array();
+foreach ($postTypes as $type) {
+    $typeNames[] = AdminPresentation::postTypeLabel($type);
+}
 ?>
 <div class="wrap contentguard<?php echo $viewingHistory ? ' contentguard-audit--history' : ''; ?>" id="contentguard-audit">
     <?php
@@ -53,98 +60,158 @@ $completedAt = $resultsRun !== null
             'description' => __('Check your existing content against your active rules.', 'contentguard'),
             'primary'     => array(
                 'label'    => __('Run Audit', 'contentguard'),
+                'class'    => 'contentguard-audit-start',
                 'attrs'    => array(
                     'id' => 'contentguard-audit-start',
                 ),
-                'disabled' => !AuditPage::canStart($active, $postTypes),
+                'disabled' => !$canStart,
             ),
         )
     );
     ?>
 
-    <h2><?php echo esc_html__('Start Audit', 'contentguard'); ?></h2>
-    <p>
-        <?php echo esc_html__('Post types:', 'contentguard'); ?>
-        <strong><?php
-        if ($postTypes === array()) {
-            echo esc_html__('None with active rules', 'contentguard');
-        } else {
-            $typeNames = array();
-            foreach ($postTypes as $type) {
-                $typeNames[] = AdminPresentation::postTypeLabel($type);
-            }
-            echo esc_html(implode(', ', $typeNames));
-        }
-        ?></strong>
-        &nbsp;|&nbsp;
-        <?php echo esc_html__('Active rules:', 'contentguard'); ?>
-        <strong><?php echo esc_html((string) $activeRuleCount); ?></strong>
-        &nbsp;|&nbsp;
-        <?php echo esc_html__('Statuses:', 'contentguard'); ?>
-        <strong><?php echo esc_html($statuses); ?></strong>
-    </p>
-    <?php if ($postTypes === array()) : ?>
-        <p class="description">
-            <?php echo esc_html__('Start Audit requires at least one active rule. Zero matching publish/private posts still allows an audit to start and complete.', 'contentguard'); ?>
-        </p>
-        <?php if ($latestComplete !== null) : ?>
-            <p class="description">
-                <?php echo esc_html__('No content is currently being evaluated. Previous completed results are still shown below.', 'contentguard'); ?>
-            </p>
-        <?php endif; ?>
-    <?php endif; ?>
-
-    <h2><?php echo esc_html__('Active audit', 'contentguard'); ?></h2>
-    <div id="contentguard-audit-active">
-        <?php if ($active === null) : ?>
-            <p><?php echo esc_html__('No audit is currently running.', 'contentguard'); ?></p>
-        <?php else : ?>
-            <p>
-                <?php echo esc_html__('Status:', 'contentguard'); ?>
-                <strong id="contentguard-audit-status"><?php echo esc_html(StatusPresentation::label(StatusPresentation::fromAuditRunStatus($active->status))); ?></strong>
-                &nbsp;|&nbsp;
-                <?php echo esc_html__('Scanned:', 'contentguard'); ?>
-                <span id="contentguard-audit-scanned"><?php echo esc_html((string) $active->postsScanned); ?></span>
-                /
-                <span id="contentguard-audit-total"><?php echo esc_html((string) $active->postsTotal); ?></span>
-                &nbsp;|&nbsp;
-                <?php echo esc_html__('Failed:', 'contentguard'); ?>
-                <span id="contentguard-audit-failed"><?php echo esc_html((string) $active->postsFailed); ?></span>
-                &nbsp;|&nbsp;
-                <?php echo esc_html__('Warnings:', 'contentguard'); ?>
-                <span id="contentguard-audit-warned"><?php echo esc_html((string) $active->postsWarned); ?></span>
-                <?php if ($active->progressPercent() !== null) : ?>
-                    &nbsp;|&nbsp;
-                    <?php echo esc_html__('Progress:', 'contentguard'); ?>
-                    <span id="contentguard-audit-progress"><?php echo esc_html((string) $active->progressPercent()); ?>%</span>
-                <?php endif; ?>
-            </p>
-            <p>
-                <button type="button" class="button" id="contentguard-audit-cancel" data-run="<?php echo esc_attr((string) $active->id); ?>">
-                    <?php echo esc_html__('Cancel', 'contentguard'); ?>
-                </button>
-            </p>
-        <?php endif; ?>
+    <div id="contentguard-audit-client-notice" class="notice notice-error inline" hidden>
+        <p class="contentguard-notice-message"></p>
     </div>
 
+    <section class="contentguard-panel contentguard-audit-action" aria-labelledby="contentguard-audit-action-heading">
+        <h2 class="contentguard-builder-section__title" id="contentguard-audit-action-heading"><?php echo esc_html__('Check your content', 'contentguard'); ?></h2>
+        <p><?php echo esc_html__('Check your existing published and private content against your active rules. ContentGuard only reports issues. It does not change your content.', 'contentguard'); ?></p>
+        <dl class="contentguard-audit-meta">
+            <div>
+                <dt><?php echo esc_html__('Applies to', 'contentguard'); ?></dt>
+                <dd><?php echo $typeNames === array() ? esc_html__('None with active rules', 'contentguard') : esc_html(implode(', ', $typeNames)); ?></dd>
+            </div>
+            <div>
+                <dt><?php echo esc_html__('Active rules', 'contentguard'); ?></dt>
+                <dd><?php echo esc_html((string) $activeRuleCount); ?></dd>
+            </div>
+        </dl>
+
+        <?php if (!$canStart && $postTypes === array()) : ?>
+            <?php
+            AdminView::partial(
+                'empty-state',
+                array(
+                    'heading'   => AuditPresentation::noActiveRulesHeading(),
+                    'text'      => AuditPresentation::noActiveRulesText(),
+                    'secondary' => array(
+                        'label' => __('Go to Rules', 'contentguard'),
+                        'href'  => admin_url('admin.php?page=contentguard'),
+                    ),
+                )
+            );
+            ?>
+        <?php elseif ($isFirstRun && $canStart && $latestRun === null) : ?>
+            <?php
+            AdminView::partial(
+                'empty-state',
+                array(
+                    'heading' => AuditPresentation::firstRunHeading(),
+                    'text'    => AuditPresentation::firstRunText(),
+                    'note'    => AuditPresentation::doesNotModifyContent() . ' ' . AuditPresentation::firstRunOutcome(),
+                    'primary' => array(
+                        'label' => __('Run Audit', 'contentguard'),
+                        'class' => 'contentguard-audit-start',
+                    ),
+                )
+            );
+            ?>
+        <?php endif; ?>
+    </section>
+
+    <section
+        class="contentguard-panel contentguard-audit-progress"
+        id="contentguard-audit-active"
+        <?php echo $isRunning ? '' : 'hidden'; ?>
+        aria-live="polite"
+        tabindex="-1"
+    >
+        <h2 class="contentguard-builder-section__title" id="contentguard-audit-running-heading"><?php echo esc_html(AuditPresentation::runningHeading()); ?></h2>
+        <p class="contentguard-audit-progress__status">
+            <span id="contentguard-audit-status"><?php echo esc_html($isRunning ? StatusPresentation::label(StatusPresentation::fromAuditRunStatus($active->status)) : StatusPresentation::label('running')); ?></span>
+        </p>
+        <p class="contentguard-audit-progress__count">
+            <span id="contentguard-audit-count-text"><?php echo esc_html(AuditPresentation::progressLabel($isRunning ? $active->postsScanned : 0, $isRunning ? $active->postsTotal : 0)); ?></span>
+            <span id="contentguard-audit-scanned" hidden><?php echo esc_html((string) ($isRunning ? $active->postsScanned : 0)); ?></span>
+            <span id="contentguard-audit-total" hidden><?php echo esc_html((string) ($isRunning ? $active->postsTotal : 0)); ?></span>
+        </p>
+        <div
+            class="contentguard-progress"
+            id="contentguard-audit-progressbar"
+            role="progressbar"
+            aria-labelledby="contentguard-audit-running-heading"
+            aria-valuemin="0"
+            <?php if ($progressPct !== null) : ?>
+                aria-valuemax="100"
+                aria-valuenow="<?php echo esc_attr((string) $progressPct); ?>"
+            <?php else : ?>
+                aria-busy="true"
+            <?php endif; ?>
+        >
+            <div class="contentguard-progress__bar" id="contentguard-audit-progress-bar" style="<?php echo $progressPct !== null ? 'width:' . (int) $progressPct . '%' : ''; ?>"></div>
+        </div>
+        <p class="contentguard-audit-progress__percent" id="contentguard-audit-progress-wrap" <?php echo $progressPct === null ? 'hidden' : ''; ?>>
+            <span id="contentguard-audit-progress"><?php echo esc_html((string) ($progressPct ?? '')); ?></span>%
+        </p>
+        <p class="description contentguard-audit-progress__issues">
+            <span id="contentguard-audit-failed"><?php echo esc_html((string) ($isRunning ? $active->postsFailed : 0)); ?></span>
+            <?php echo esc_html__('need attention', 'contentguard'); ?>
+            ·
+            <span id="contentguard-audit-warned"><?php echo esc_html((string) ($isRunning ? $active->postsWarned : 0)); ?></span>
+            <?php echo esc_html__('need review', 'contentguard'); ?>
+        </p>
+        <div class="contentguard-audit-progress__actions">
+            <button
+                type="button"
+                class="button"
+                id="contentguard-audit-cancel"
+                data-run="<?php echo $isRunning ? esc_attr((string) $active->id) : ''; ?>"
+            >
+                <?php echo esc_html__('Cancel Audit', 'contentguard'); ?>
+            </button>
+            <div id="contentguard-audit-cancel-confirm" class="contentguard-audit-confirm" hidden>
+                <p><?php echo esc_html(AuditPresentation::cancelConfirmText()); ?></p>
+                <button type="button" class="button button-primary" id="contentguard-audit-cancel-confirm-yes">
+                    <?php echo esc_html__('Stop audit', 'contentguard'); ?>
+                </button>
+                <button type="button" class="button" id="contentguard-audit-cancel-confirm-no">
+                    <?php echo esc_html__('Keep running', 'contentguard'); ?>
+                </button>
+            </div>
+        </div>
+    </section>
+
     <?php if ($active === null && $latestRun !== null && $latestRun->status === AuditRunStatus::Failed) : ?>
-        <div class="notice notice-error inline">
-            <p><?php echo esc_html__('The most recent audit attempt failed and was not used as current results.', 'contentguard'); ?></p>
-        </div>
+        <section class="contentguard-panel contentguard-audit-outcome contentguard-audit-outcome--failed" id="contentguard-audit-outcome" tabindex="-1">
+            <h2 class="contentguard-builder-section__title"><?php echo esc_html(AuditPresentation::failedHeading()); ?></h2>
+            <p><?php echo esc_html($latestRun->errorMessage !== null && $latestRun->errorMessage !== '' ? $latestRun->errorMessage : AuditPresentation::failedFallbackMessage()); ?></p>
+            <p class="description"><?php echo esc_html__('This attempt was not used as the latest completed result.', 'contentguard'); ?></p>
+            <p>
+                <button type="button" class="button button-primary contentguard-audit-start" id="contentguard-audit-retry" <?php disabled(!$canStart); ?>>
+                    <?php echo esc_html__('Try again', 'contentguard'); ?>
+                </button>
+            </p>
+        </section>
     <?php elseif ($active === null && $latestRun !== null && $latestRun->status === AuditRunStatus::Cancelled) : ?>
-        <div class="notice notice-warning inline">
-            <p><?php echo esc_html__('The most recent audit attempt was cancelled and was not used as current results.', 'contentguard'); ?></p>
-        </div>
+        <section class="contentguard-panel contentguard-audit-outcome contentguard-audit-outcome--cancelled" id="contentguard-audit-outcome" tabindex="-1">
+            <h2 class="contentguard-builder-section__title"><?php echo esc_html(AuditPresentation::cancelledHeading()); ?></h2>
+            <p><?php echo esc_html(AuditPresentation::cancelledText()); ?></p>
+        </section>
     <?php endif; ?>
 
-    <h2>
-        <?php echo esc_html($viewingHistory ? __('Previous audit', 'contentguard') : __('Content Health', 'contentguard')); ?>
+    <?php if ($resultsRun !== null) : ?>
+    <h2 id="contentguard-audit-results-heading">
+        <?php echo esc_html($viewingHistory ? __('Previous audit', 'contentguard') : AuditPresentation::completedHeading()); ?>
         <?php if ($viewingHistory && $completedAt !== '') : ?>
             <span class="contentguard-history-date"><?php echo esc_html($completedAt); ?></span>
         <?php endif; ?>
     </h2>
+    <?php endif; ?>
     <?php if ($resultsRun === null) : ?>
-        <p><?php echo esc_html__('No completed audit results yet.', 'contentguard'); ?></p>
+        <?php if (!$isFirstRun && $active === null) : ?>
+            <p><?php echo esc_html__('No completed audit results yet.', 'contentguard'); ?></p>
+        <?php endif; ?>
     <?php else : ?>
         <?php if ($viewingHistory) : ?>
             <div class="notice notice-warning contentguard-history-banner">
@@ -153,7 +220,7 @@ $completedAt = $resultsRun !== null
                     <?php if ($completedAt !== '') : ?>
                         — <?php echo esc_html($completedAt); ?>.
                     <?php endif; ?>
-                    <?php echo esc_html__('This is not the current content health result.', 'contentguard'); ?>
+                    <?php echo esc_html(AuditPresentation::historicalNotice()); ?>
                     <a class="button button-primary" href="<?php echo esc_url($auditUrl(AuditPage::latestResultsArgs())); ?>">
                         <?php echo esc_html__('Back to latest audit', 'contentguard'); ?>
                     </a>
@@ -253,17 +320,15 @@ $completedAt = $resultsRun !== null
         </div>
 
         <?php if ($allFindingTotal === 0) : ?>
-            <div class="notice notice-success inline">
-                <p>
-                    <?php
-                    echo esc_html(
-                        $resultsRun->postsScanned > 0
-                            ? __('All checked content passed. No issues.', 'contentguard')
-                            : __('This audit completed with no eligible content and no issues.', 'contentguard')
-                    );
-                    ?>
-                </p>
-            </div>
+            <?php
+            AdminView::partial(
+                'empty-state',
+                array(
+                    'heading' => AuditPresentation::allClearHeading(),
+                    'text'    => AuditPresentation::allClearText($resultsRun->postsScanned),
+                )
+            );
+            ?>
         <?php else : ?>
             <h2><?php echo esc_html__('Issues', 'contentguard'); ?></h2>
             <form method="get" class="contentguard-filters" action="<?php echo esc_url(admin_url('admin.php')); ?>">

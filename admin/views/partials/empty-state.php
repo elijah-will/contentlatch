@@ -2,34 +2,48 @@
 /**
  * Shared ContentGuard empty state.
  *
- * Used by the Rules list when no rules exist.
- *
  * @package ContentGuard
  *
  * @var string $heading
  * @var string $text
- * @var array{label: string, href?: string, class?: string}|null $primary
- * @var array{label: string, href?: string, class?: string}|null $secondary
+ * @var string $note
+ * @var array{label: string, href?: string, class?: string, attrs?: array<string, string>, disabled?: bool}|null $primary
+ * @var array{label: string, href?: string, class?: string, attrs?: array<string, string>, disabled?: bool}|null $secondary
  */
 
 defined('ABSPATH') || exit;
 
 $heading   = isset($heading) && is_string($heading) ? $heading : '';
 $text      = isset($text) && is_string($text) ? $text : '';
+$note      = isset($note) && is_string($note) ? $note : '';
 $primary   = isset($primary) && is_array($primary) ? $primary : null;
 $secondary = isset($secondary) && is_array($secondary) ? $secondary : null;
 
 $renderAction = static function (array $action, string $defaultClass): void {
-    $label = (string) ($action['label'] ?? '');
-    $href  = isset($action['href']) ? (string) $action['href'] : '';
-    $class = trim($defaultClass . ' ' . (string) ($action['class'] ?? ''));
+    $label    = (string) ($action['label'] ?? '');
+    $href     = isset($action['href']) ? (string) $action['href'] : '';
+    $class    = trim($defaultClass . ' ' . (string) ($action['class'] ?? ''));
+    $attrs    = isset($action['attrs']) && is_array($action['attrs']) ? $action['attrs'] : array();
+    $disabled = !empty($action['disabled']);
+
+    $attrHtml = '';
+    foreach ($attrs as $name => $value) {
+        if (!is_string($name) || $name === '') {
+            continue;
+        }
+        $attrHtml .= ' ' . esc_attr($name) . '="' . esc_attr((string) $value) . '"';
+    }
 
     if ($href !== '') {
-        echo '<a href="' . esc_url($href) . '" class="' . esc_attr($class) . '">' . esc_html($label) . '</a>';
+        echo '<a href="' . esc_url($href) . '" class="' . esc_attr($class) . '"' . $attrHtml . '>'
+            . esc_html($label)
+            . '</a>';
         return;
     }
 
-    echo '<button type="button" class="' . esc_attr($class) . '">' . esc_html($label) . '</button>';
+    echo '<button type="button" class="' . esc_attr($class) . '"' . $attrHtml;
+    disabled($disabled);
+    echo '>' . esc_html($label) . '</button>';
 };
 ?>
 <div class="contentguard-empty">
@@ -38,6 +52,9 @@ $renderAction = static function (array $action, string $defaultClass): void {
     <?php endif; ?>
     <?php if ($text !== '') : ?>
         <p class="contentguard-empty__text"><?php echo esc_html($text); ?></p>
+    <?php endif; ?>
+    <?php if ($note !== '') : ?>
+        <p class="contentguard-empty__text"><?php echo esc_html($note); ?></p>
     <?php endif; ?>
     <?php if ($primary !== null || $secondary !== null) : ?>
         <div class="contentguard-empty__actions">
