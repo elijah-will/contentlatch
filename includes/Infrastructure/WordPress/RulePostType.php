@@ -13,6 +13,7 @@ final class RulePostType
 {
     public const POST_TYPE = 'contentguard_rule';
     public const TARGET_META_KEY = '_contentguard_post_type';
+    public const DOCUMENT_META_KEY = '_contentguard_rule_document';
 
     public static function register(): void
     {

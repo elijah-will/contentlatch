@@ -32,6 +32,65 @@ final class PostTypeRuleRepositoryTest extends TestCase
         $this->repository = new PostTypeRuleRepository($this->store, RuleDocumentValidator::v1());
     }
 
+    public function testTrueFalseYesAndRequiredTextPersistAndReload(): void
+    {
+        $created = $this->repository->save(
+            RuleFactory::rule(
+                array(
+                    'id'         => '',
+                    'name'       => 'Page ID is required when Show New Tag is Yes',
+                    'conditions' => array(
+                        RuleFactory::condition(array(
+                            'field'    => RuleFactory::field('field_show_new_tag', 'show_new_tag', 'Show New Tag'),
+                            'operator' => 'equals',
+                            'operand'  => '1',
+                        )),
+                    ),
+                    'validations' => array(
+                        RuleFactory::validation(array(
+                            'field' => RuleFactory::field('field_page_id', 'page_id', 'Page ID'),
+                            'type'  => 'required',
+                        )),
+                    ),
+                )
+            )
+        );
+
+        $this->assertSame(1, $created->id);
+        $this->assertNotNull($this->store->get(1));
+        $loaded = $this->repository->find(1);
+        $this->assertNotNull($loaded);
+        $this->assertSame('1', $loaded->conditions[0]->operand);
+        $this->assertSame('required', $loaded->validations[0]->type);
+        $this->assertSame('Page ID is required when Show New Tag is Yes', $this->repository->findAll()[0]->name);
+
+        $no = $this->repository->save(
+            RuleFactory::rule(
+                array(
+                    'id'         => '',
+                    'name'       => 'Page ID is required when Show New Tag is No',
+                    'conditions' => array(
+                        RuleFactory::condition(array(
+                            'field'    => RuleFactory::field('field_show_new_tag', 'show_new_tag', 'Show New Tag'),
+                            'operator' => 'equals',
+                            'operand'  => '0',
+                        )),
+                    ),
+                    'validations' => array(
+                        RuleFactory::validation(array(
+                            'field' => RuleFactory::field('field_page_id', 'page_id', 'Page ID'),
+                            'type'  => 'required',
+                        )),
+                    ),
+                )
+            )
+        );
+
+        $reloadedNo = $this->repository->find($no->id);
+        $this->assertNotNull($reloadedNo);
+        $this->assertSame('0', $reloadedNo->conditions[0]->operand);
+    }
+
     public function testCreateStampsCptIdAndPersistsJson(): void
     {
         $created = $this->repository->save(RuleFactory::rule(array('id' => '')));

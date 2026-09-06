@@ -50,11 +50,11 @@ final class RuleDocumentFactory
     public function fromAdminInput(array $input): Rule
     {
         $name     = trim((string) ($input['name'] ?? ''));
-        $postType = self::sanitizeKey((string) ($input['post_type'] ?? ''));
+        $postType = self::sanitizeKey((string) ($input['target_post_type'] ?? $input['post_type'] ?? ''));
         $status   = (string) ($input['status'] ?? 'active');
         $severity = (string) ($input['severity'] ?? 'fail');
         $default  = trim((string) ($input['message'] ?? ''));
-        $id       = $input['id'] ?? '';
+        $id       = $input['rule_id'] ?? $input['id'] ?? '';
 
         if ($name === '') {
             throw new InvalidRuleException('Rule name is required.');
@@ -102,6 +102,25 @@ final class RuleDocumentFactory
         $types = $loader();
 
         return is_array($types) ? $types : array();
+    }
+
+    /**
+     * Post types that currently have at least one catalog-supported field.
+     *
+     * @return array<string, string>
+     */
+    public function selectablePostTypes(): array
+    {
+        $selectable = array();
+
+        foreach ($this->allowedPostTypes() as $slug => $label) {
+            $slug = (string) $slug;
+            if ($this->fieldsByKey($slug) !== array()) {
+                $selectable[$slug] = (string) $label;
+            }
+        }
+
+        return $selectable;
     }
 
     /**
@@ -181,10 +200,13 @@ final class RuleDocumentFactory
 
             if (in_array($operator, array('equals', 'not_equals'), true)) {
                 $operand = $row['operand'] ?? '';
-                if (!is_scalar($operand) || trim((string) $operand) === '') {
+                if (!is_scalar($operand) && !is_bool($operand)) {
                     throw new InvalidRuleException('A condition value is required.');
                 }
-                $operand = is_bool($operand) ? ($operand ? '1' : '0') : trim((string) $operand);
+                $operand = self::normalizeConditionOperand($operand, (string) ($fields[$fieldKey]['type'] ?? ''));
+                if ($operand === '') {
+                    throw new InvalidRuleException('A condition value is required.');
+                }
             } else {
                 $operand = null;
             }
@@ -222,11 +244,15 @@ final class RuleDocumentFactory
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
-            if ($fieldKey === '') {
+            $type     = (string) ($row['type'] ?? '');
+            if ($fieldKey === '' && $type === '') {
                 continue;
             }
 
-            $type = (string) ($row['type'] ?? '');
+            if ($fieldKey === '' || $type === '') {
+                throw new InvalidRuleException(RuleDocumentValidator::MSG_MISSING_THEN);
+            }
+
             if (!$this->validators->has($type)) {
                 throw new InvalidRuleException(sprintf('Unknown validation type "%s".', $type));
             }
@@ -282,7 +308,7 @@ final class RuleDocumentFactory
             $raw = $row['values'] ?? ($row['params']['values'] ?? null);
             $values = $this->allowedValues($raw);
             if ($values === array()) {
-                throw new InvalidRuleException('Allowed values are not configured.');
+                throw new InvalidRuleException(RuleDocumentValidator::MSG_ALLOWED_VALUES);
             }
 
             return array('values' => $values);
@@ -336,6 +362,30 @@ final class RuleDocumentFactory
             (string) ($field['name'] ?? ''),
             (string) ($field['label'] ?? '')
         );
+    }
+
+    private static function normalizeConditionOperand(mixed $operand, string $fieldType): string
+    {
+        if (is_bool($operand)) {
+            $value = $operand ? '1' : '0';
+        } else {
+            $value = trim((string) $operand);
+        }
+
+        if ($fieldType !== 'true_false') {
+            return $value;
+        }
+
+        $lower = strtolower($value);
+        if (in_array($lower, array('1', 'yes', 'true', 'on'), true)) {
+            return '1';
+        }
+
+        if (in_array($lower, array('0', 'no', 'false', 'off'), true)) {
+            return '0';
+        }
+
+        return $value;
     }
 
     private static function sanitizeKey(string $value): string

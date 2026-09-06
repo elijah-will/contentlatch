@@ -11,6 +11,7 @@ namespace ContentGuard\Infrastructure\WordPress;
 
 use ContentGuard\Application\Exception\RulePersistenceException;
 use ContentGuard\Application\RuleDocumentValidator;
+use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
@@ -56,6 +57,40 @@ final class PostTypeRuleRepository implements RuleRepositoryInterface
         }
 
         return $this->hydrate($record);
+    }
+
+    /**
+     * Safe facts about why find() missed a saved ID. No document bodies.
+     *
+     * @return array<string, mixed>
+     */
+    public function describeRead(int $id): array
+    {
+        $record = $this->store->get($id);
+        $info = array(
+            'id'            => $id,
+            'store_hit'     => $record !== null,
+            'hydrate_ok'    => false,
+            'hydrate_error' => '',
+        );
+
+        if ($this->store instanceof WpRulePostStore) {
+            $info = array_merge($this->store->inspect($id), $info);
+        }
+
+        if ($record === null) {
+            return $info;
+        }
+
+        try {
+            $json = RuleDocumentCodec::recover($record->json) ?? $record->json;
+            $this->validator->decode($json);
+            $info['hydrate_ok'] = true;
+        } catch (InvalidRuleException $exception) {
+            $info['hydrate_error'] = $exception->getMessage();
+        }
+
+        return $info;
     }
 
     public function findAll(): array
@@ -140,9 +175,13 @@ final class PostTypeRuleRepository implements RuleRepositoryInterface
 
     private function hydrate(RulePostRecord $record): ?Rule
     {
+        $json = RuleDocumentCodec::recover($record->json) ?? $record->json;
+
         try {
-            $rule = $this->validator->decode($record->json);
-        } catch (InvalidRuleException) {
+            $rule = $this->validator->decode($json);
+        } catch (InvalidRuleException $exception) {
+            RuleMutationPresentation::logFailure('rule document could not be read for ID ' . $record->id, $exception);
+
             return null;
         }
 

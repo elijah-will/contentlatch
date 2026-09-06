@@ -15,6 +15,7 @@ defined('ABSPATH') || exit;
 use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
+use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Domain\RuleStatus;
@@ -85,12 +86,13 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     ?>
 
     <?php if ($notice !== null) : ?>
-        <div class="notice notice-<?php echo esc_attr($notice['type']); ?> is-dismissible"><p><?php echo esc_html($notice['message']); ?></p></div>
+        <div class="<?php echo esc_attr(AdminNotice::cssClass($notice['type'])); ?>"><p><?php echo esc_html($notice['message']); ?></p></div>
     <?php endif; ?>
+    <div id="contentguard-rule-client-notice" class="notice notice-error" hidden><p></p></div>
 
     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="contentguard-rule-form">
         <input type="hidden" name="action" value="<?php echo esc_attr(RulesController::ACTION_SAVE); ?>">
-        <input type="hidden" name="id" value="<?php echo $isNew ? '' : esc_attr((string) $editor->id); ?>">
+        <input type="hidden" name="rule_id" value="<?php echo $isNew ? '' : esc_attr((string) $editor->id); ?>">
         <?php wp_nonce_field(RuleCommandService::NONCE_ACTION); ?>
 
         <table class="form-table" role="presentation">
@@ -103,7 +105,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             <tr>
                 <th scope="row"><label for="contentguard-rule-post-type"><?php echo esc_html__('Applies to', 'contentguard'); ?></label></th>
                 <td>
-                    <select id="contentguard-rule-post-type" name="post_type" required>
+                    <select id="contentguard-rule-post-type" name="target_post_type" required>
                         <?php foreach ($postTypes as $slug => $label) : ?>
                             <option value="<?php echo esc_attr($slug); ?>" <?php selected($editor->postType, $slug); ?>>
                                 <?php echo esc_html($label); ?>

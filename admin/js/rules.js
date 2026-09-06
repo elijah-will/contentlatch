@@ -291,10 +291,125 @@
   form.querySelectorAll("[data-row='condition']").forEach(toggleCondition);
   form.querySelectorAll("[data-row='validation']").forEach(toggleValidation);
 
+  form.addEventListener("submit", function (event) {
+    var message = clientGuardMessage();
+    var notice = document.getElementById("contentguard-rule-client-notice");
+    if (message) {
+      event.preventDefault();
+      if (notice) {
+        var text = notice.querySelector("p");
+        if (text) {
+          text.textContent = message;
+        }
+        notice.hidden = false;
+      }
+      return;
+    }
+    if (notice) {
+      notice.hidden = true;
+    }
+  });
+
   if (postType) {
     postType.addEventListener("change", function () {
       loadFields(postType.value);
     });
     loadFields(postType.value);
+  }
+
+  function clientGuardMessage() {
+    var opsByField = {};
+    var minByField = {};
+    var maxByField = {};
+    var hasThen = false;
+    var error = "";
+
+    form.querySelectorAll("[data-row='condition']").forEach(function (row) {
+      var field = row.querySelector(".contentguard-field");
+      var operator = row.querySelector(".contentguard-operator");
+      if (!field || !operator || !field.value) {
+        return;
+      }
+      if (!opsByField[field.value]) {
+        opsByField[field.value] = [];
+      }
+      opsByField[field.value].push(operator.value);
+    });
+
+    Object.keys(opsByField).forEach(function (key) {
+      var ops = opsByField[key];
+      if (ops.indexOf("is_empty") !== -1 && ops.indexOf("is_not_empty") !== -1) {
+        error = "This rule cannot be saved because a field cannot be both empty and not empty.";
+      }
+    });
+    if (error) {
+      return error;
+    }
+
+    Array.prototype.some.call(form.querySelectorAll("[data-row='validation']"), function (row) {
+      var field = row.querySelector(".contentguard-field");
+      var type = row.querySelector(".contentguard-validator");
+      if (!field || !type) {
+        return false;
+      }
+      if (!field.value && !type.value) {
+        return false;
+      }
+      if (!field.value || !type.value) {
+        error = "Each requirement needs a field and a validator.";
+        return true;
+      }
+      hasThen = true;
+      var key = field.value;
+      var ops = opsByField[key] || [];
+      if (type.value === "required" && ops.indexOf("is_empty") !== -1) {
+        error = "This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.";
+        return true;
+      }
+      if (type.value === "required" && ops.indexOf("is_not_empty") !== -1) {
+        error = "This rule cannot be saved because a field is already required to have a value by the WHEN condition.";
+        return true;
+      }
+      if (type.value === "required" && ops.indexOf("equals") !== -1) {
+        error = "This rule cannot be saved because a field that must already have a specific value does not need to be required.";
+        return true;
+      }
+      if (type.value === "min_length") {
+        var min = row.querySelector(".contentguard-min");
+        if (min && min.value !== "") {
+          minByField[key] = parseInt(min.value, 10);
+        }
+      }
+      if (type.value === "max_length") {
+        var max = row.querySelector(".contentguard-max");
+        if (max && max.value !== "") {
+          maxByField[key] = parseInt(max.value, 10);
+        }
+      }
+      if (type.value === "allowed_values") {
+        var values = row.querySelector(".contentguard-values");
+        if (!values || values.value.replace(/\s+/g, "") === "") {
+          error = "Enter at least one allowed value.";
+          return true;
+        }
+      }
+      return false;
+    });
+    if (error) {
+      return error;
+    }
+
+    Object.keys(minByField).some(function (key) {
+      if (typeof maxByField[key] === "number" && minByField[key] > maxByField[key]) {
+        error = "Minimum length cannot be greater than maximum length.";
+        return true;
+      }
+      return false;
+    });
+    if (error) {
+      return error;
+    }
+
+    return hasThen ? "" : "Each requirement needs a field and a validator.";
   }
 })();

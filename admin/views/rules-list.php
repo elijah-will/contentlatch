@@ -18,6 +18,7 @@ use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
+use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\AdminPresentation;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\StatusPresentation;
@@ -42,7 +43,7 @@ $postTypeLabels = isset($postTypeLabels) && is_array($postTypeLabels) ? $postTyp
     ?>
 
     <?php if ($notice !== null) : ?>
-        <div class="notice notice-<?php echo esc_attr($notice['type']); ?> is-dismissible"><p><?php echo esc_html($notice['message']); ?></p></div>
+        <div class="<?php echo esc_attr(AdminNotice::cssClass($notice['type'])); ?>"><p><?php echo esc_html($notice['message']); ?></p></div>
     <?php endif; ?>
 
     <table class="widefat striped">

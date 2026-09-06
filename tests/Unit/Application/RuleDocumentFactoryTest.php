@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ContentGuard\Tests\Unit\Application;
 
 use ContentGuard\Application\RuleDocumentFactory;
+use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RulePresentation;
 use ContentGuard\Domain\ArrayValueProvider;
 use ContentGuard\Domain\Exception\InvalidRuleException;
@@ -262,12 +263,219 @@ final class RuleDocumentFactoryTest extends TestCase
         );
     }
 
+    public function testTrueFalseEqualsZeroAndOneAreValid(): void
+    {
+        $yes = $this->validInput();
+        $yes['name'] = 'Repair UPC is required';
+        $yes['conditions'] = array();
+        $yes['validations'] = array(
+            array(
+                'field_key' => 'field_repair_upc',
+                'type'      => 'required',
+            ),
+        );
+
+        $created = $this->factory->fromAdminInput($yes);
+        $this->assertSame('field_repair_upc', $created->validations[0]->field->key);
+        $this->assertSame('required', $created->validations[0]->type);
+
+        $whenNo = $this->validInput();
+        $whenNo['conditions'] = array(
+            array(
+                'field_key' => 'field_repair_upc',
+                'operator'  => 'equals',
+                'operand'   => '0',
+            ),
+        );
+        $whenNo['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+            ),
+        );
+
+        $conditional = $this->factory->fromAdminInput($whenNo);
+        $this->assertSame('0', $conditional->conditions[0]->operand);
+        $this->assertSame('field_page_id', $conditional->validations[0]->field->key);
+    }
+
+    public function testShowNewTagYesRequiresPageId(): void
+    {
+        $rule = $this->factory->fromAdminInput($this->showNewTagInput('1'));
+
+        $this->assertSame('1', $rule->conditions[0]->operand);
+        $this->assertSame('field_show_new_tag', $rule->conditions[0]->field->key);
+        $this->assertSame('field_page_id', $rule->validations[0]->field->key);
+        $this->assertSame('required', $rule->validations[0]->type);
+    }
+
+    public function testShowNewTagNoRequiresPageId(): void
+    {
+        $rule = $this->factory->fromAdminInput($this->showNewTagInput('0'));
+
+        $this->assertSame('0', $rule->conditions[0]->operand);
+        $this->assertSame('field_show_new_tag', $rule->conditions[0]->field->key);
+        $this->assertSame('field_page_id', $rule->validations[0]->field->key);
+        $this->assertSame('required', $rule->validations[0]->type);
+    }
+
+    public function testTrueFalseYesNoLabelsNormalizeToBits(): void
+    {
+        $yes = $this->factory->fromAdminInput($this->showNewTagInput('Yes'));
+        $no  = $this->factory->fromAdminInput($this->showNewTagInput('No'));
+
+        $this->assertSame('1', $yes->conditions[0]->operand);
+        $this->assertSame('0', $no->conditions[0]->operand);
+    }
+
+    public function testTargetPostTypeAliasIsAccepted(): void
+    {
+        $input = $this->showNewTagInput('1');
+        $input['target_post_type'] = 'product';
+        unset($input['post_type']);
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('product', $rule->postType);
+    }
+
+    public function testRuleIdAliasIsAcceptedOnCreateInput(): void
+    {
+        $input = $this->validInput();
+        $input['rule_id'] = '12';
+        unset($input['id']);
+
+        $this->assertSame(12, $this->factory->fromAdminInput($input)->id);
+    }
+
+    public function testEmptyPlusSameFieldRequiredIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'operator'  => 'is_empty',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+            ),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED);
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testNotEmptyPlusSameFieldRequiredIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'operator'  => 'is_not_empty',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+            ),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_NOT_EMPTY_AND_REQUIRED);
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testEqualsPlusSameFieldRequiredIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'operator'  => 'equals',
+                'operand'   => '123',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+            ),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_EQUALS_AND_REQUIRED);
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testMinGreaterThanMaxIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array();
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'min_length',
+                'min'       => '50',
+            ),
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'max_length',
+                'max'       => '10',
+            ),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_MIN_GT_MAX);
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testRequiredPlusMinLengthIsValid(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array();
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'required',
+            ),
+            array(
+                'field_key' => 'field_ingredients',
+                'type'      => 'min_length',
+                'min'       => '50',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('required', $rule->validations[0]->type);
+        $this->assertSame('min_length', $rule->validations[1]->type);
+        $this->assertSame(50, $rule->validations[1]->params['min']);
+    }
+
+    public function testMissingThenFieldIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['validations'] = array(
+            array(
+                'field_key' => '',
+                'type'      => 'required',
+            ),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_MISSING_THEN);
+        $this->factory->fromAdminInput($input);
+    }
+
     public function testEmptyOperatorDoesNotNeedAValue(): void
     {
         $input = $this->validInput();
         $input['conditions'] = array(
             array(
-                'field_key' => 'field_ingredients',
+                'field_key' => 'field_show_new_tag',
                 'operator'  => 'is_empty',
                 'operand'   => '',
             ),
@@ -276,6 +484,30 @@ final class RuleDocumentFactoryTest extends TestCase
         $rule = $this->factory->fromAdminInput($input);
         $this->assertSame('is_empty', $rule->conditions[0]->operator);
         $this->assertNull($rule->conditions[0]->operand);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function showNewTagInput(string $operand): array
+    {
+        $input = $this->validInput();
+        $input['name'] = 'Page ID is required when Show New Tag is Yes';
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_show_new_tag',
+                'operator'  => 'equals',
+                'operand'   => $operand,
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+            ),
+        );
+
+        return $input;
     }
 
     /**
@@ -327,6 +559,24 @@ final class RuleDocumentFactoryTest extends TestCase
                         'name'  => 'ingredients',
                         'label' => 'Ingredients',
                         'type'  => 'textarea',
+                    ),
+                    array(
+                        'key'   => 'field_repair_upc',
+                        'name'  => 'repair_upc',
+                        'label' => 'Repair UPC',
+                        'type'  => 'true_false',
+                    ),
+                    array(
+                        'key'   => 'field_show_new_tag',
+                        'name'  => 'show_new_tag',
+                        'label' => 'Show New Tag',
+                        'type'  => 'true_false',
+                    ),
+                    array(
+                        'key'   => 'field_page_id',
+                        'name'  => 'page_id',
+                        'label' => 'Page ID',
+                        'type'  => 'text',
                     ),
                 )
                 : array()

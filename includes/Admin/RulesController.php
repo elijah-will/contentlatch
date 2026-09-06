@@ -9,15 +9,18 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
 use ContentGuard\Application\Exception\RulePersistenceException;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
+use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 
 final class RulesController
 {
@@ -121,26 +124,46 @@ final class RulesController
             return $gated;
         }
 
-        $id = isset($request['id']) && is_numeric($request['id']) ? (int) $request['id'] : 0;
+        $id = self::submittedRuleId($request);
+        $creating = $id <= 0;
 
         try {
             $rule = $this->factory->fromAdminInput($request);
             $saved = $this->commands->save($rule, $this->nonce($request));
-            $this->forgetDrafts($id, (int) $saved->id);
+            $savedId = (int) $saved->id;
+            $reloaded = $savedId > 0 ? $this->rules->find($savedId) : null;
+            if ($reloaded === null) {
+                $details = $this->rules instanceof PostTypeRuleRepository
+                    ? $this->rules->describeRead($savedId)
+                    : array('id' => $savedId, 'store_hit' => false, 'hydrate_ok' => false);
+                RuleMutationPresentation::logDebug('rule save could not be reloaded', $details);
+                $draft = $this->preserveDraft($request, $id, $creating);
+
+                return array(
+                    'ok'      => false,
+                    'message' => RuleMutationPresentation::unreadAfterSaveMessage($creating),
+                    'rule_id' => $id,
+                    'draft'   => $draft,
+                );
+            }
+
+            $this->forgetDrafts($id, $savedId);
 
             return array(
                 'ok'      => true,
-                'rule'    => $saved->toArray(),
-                'rule_id' => $saved->id,
-                'message' => 'Rule saved.',
+                'rule'    => $reloaded->toArray(),
+                'rule_id' => $reloaded->id,
+                'message' => $creating
+                    ? RuleMutationPresentation::addedMessage()
+                    : RuleMutationPresentation::savedMessage(),
             );
         } catch (InvalidRuleException | ForbiddenRuleMutationException | RulePersistenceException $exception) {
-            $draft = RuleEditorState::snapshot($request);
-            $this->drafts?->put($id, $draft);
+            RuleMutationPresentation::logFailure('rule save failed', $exception);
+            $draft = $this->preserveDraft($request, $id, $creating);
 
             return array(
                 'ok'      => false,
-                'message' => $exception->getMessage(),
+                'message' => RuleMutationPresentation::saveFailureMessage($exception, $creating),
                 'rule_id' => $id,
                 'draft'   => $draft,
             );
@@ -268,16 +291,46 @@ final class RulesController
      */
     private function redirectAfterSave(array $request, array $payload = array()): string
     {
-        if (($payload['ok'] ?? false) && isset($payload['rule_id'])) {
+        if (($payload['ok'] ?? false) && isset($payload['rule_id']) && (int) $payload['rule_id'] > 0) {
             return admin_url('admin.php?page=' . RulesPage::SLUG . '&rule=' . (int) $payload['rule_id']);
         }
 
-        $id = isset($request['id']) ? (int) $request['id'] : (int) ($payload['rule_id'] ?? 0);
-        if ($id > 0) {
+        $id = self::submittedRuleId($request);
+        if ($id <= 0) {
+            $id = (int) ($payload['rule_id'] ?? 0);
+        }
+
+        if ($id > 0 && $this->rules->find($id) !== null) {
             return admin_url('admin.php?page=' . RulesPage::SLUG . '&rule=' . $id);
         }
 
         return admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    public static function submittedRuleId(array $request): int
+    {
+        $raw = $request['rule_id'] ?? $request['id'] ?? '';
+
+        return is_numeric($raw) && (int) $raw > 0 ? (int) $raw : 0;
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @return array<string, mixed>
+     */
+    private function preserveDraft(array $request, int $id, bool $creating): array
+    {
+        $draft = RuleEditorState::snapshot($request);
+        if ($creating || ($id > 0 && $this->rules->find($id) === null)) {
+            $draft = RuleMutationPresentation::draftForNewRule($draft) ?? $draft;
+        }
+        $this->drafts?->put($id, $draft);
+        $this->drafts?->put(0, $draft);
+
+        return $draft;
     }
 
     private function forgetDrafts(int $submittedId, int $savedId): void
@@ -300,10 +353,7 @@ final class RulesController
         }
 
         $url = add_query_arg(
-            array(
-                'contentguard_notice' => ($payload['ok'] ?? false) ? 'updated' : 'error',
-                'contentguard_msg'    => rawurlencode((string) ($payload['message'] ?? '')),
-            ),
+            AdminNotice::queryArgs((bool) ($payload['ok'] ?? false), (string) ($payload['message'] ?? '')),
             $url
         );
 

@@ -136,5 +136,9 @@ final class RuleEditorStateTest extends TestCase
         $this->assertArrayNotHasKey('extra', $snapshot);
         $this->assertSame('Kept', $snapshot['name']);
         $this->assertSame('50', $snapshot['validations'][0]['max']);
+        $this->assertSame(
+            'product',
+            RuleEditorState::snapshot(array('target_post_type' => 'product'))['post_type']
+        );
     }
 }

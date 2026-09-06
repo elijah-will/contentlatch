@@ -79,15 +79,18 @@
 .contentguard-page-header {
     align-items: flex-start;
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--cg-space-4);
-    justify-content: space-between;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: var(--cg-space-3);
+    justify-content: flex-start;
     margin: 0 0 var(--cg-space-4);
-    max-width: var(--cg-content-width);
+    max-width: none;
+    width: 100%;
 }
 
 .contentguard-page-header__text {
-    flex: 1 1 16rem;
+    flex: 0 1 auto;
+    max-width: 40rem;
     min-width: 0;
 }
 
@@ -120,9 +123,11 @@
 .contentguard-page-header__actions {
     align-items: center;
     display: flex;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     gap: var(--cg-space-2);
+    justify-content: flex-start;
+    padding-top: 0;
 }
 
 /* -------------------------------------------------------------------------
@@ -346,6 +351,7 @@
     }
 
     .contentguard-page-header__actions {
+        padding-top: 0;
         width: 100%;
     }
 

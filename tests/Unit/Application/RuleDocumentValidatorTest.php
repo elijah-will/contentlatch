@@ -82,4 +82,119 @@ final class RuleDocumentValidatorTest extends TestCase
         $this->expectException(InvalidRuleException::class);
         $this->validator->decode('{not-json');
     }
+
+    public function testEmptyPlusSameFieldRequiredIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED);
+        $this->validator->validateArray($this->sameFieldRule('is_empty', 'required'));
+    }
+
+    public function testNotEmptyPlusSameFieldRequiredIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_NOT_EMPTY_AND_REQUIRED);
+        $this->validator->validateArray($this->sameFieldRule('is_not_empty', 'required'));
+    }
+
+    public function testEqualsPlusSameFieldRequiredIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_EQUALS_AND_REQUIRED);
+        $this->validator->validateArray($this->sameFieldRule('equals', 'required', '1'));
+    }
+
+    public function testMinGreaterThanMaxIsRejected(): void
+    {
+        $document = RuleFactory::document();
+        $document['conditions'] = array();
+        $document['validations'] = array(
+            RuleFactory::validation(array('type' => 'min_length', 'params' => array('min' => 50)))->toArray(),
+            RuleFactory::validation(array(
+                'id'     => 'v2',
+                'type'   => 'max_length',
+                'params' => array('max' => 10),
+            ))->toArray(),
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_MIN_GT_MAX);
+        $this->validator->validateArray($document);
+    }
+
+    public function testRequiredPlusMinLengthOnSameFieldIsValid(): void
+    {
+        $document = RuleFactory::document();
+        $document['conditions'] = array();
+        $document['validations'] = array(
+            RuleFactory::validation(array('type' => 'required'))->toArray(),
+            RuleFactory::validation(array(
+                'id'     => 'v2',
+                'type'   => 'min_length',
+                'params' => array('min' => 50),
+            ))->toArray(),
+        );
+
+        $rule = $this->validator->validateArray($document);
+        $this->assertCount(2, $rule->validations);
+        $this->assertSame('required', $rule->validations[0]->type);
+        $this->assertSame('min_length', $rule->validations[1]->type);
+    }
+
+    public function testConditionalRequiredOnADifferentFieldIsValid(): void
+    {
+        $document = RuleFactory::document();
+        $document['conditions'] = array(
+            RuleFactory::condition(array(
+                'field'    => RuleFactory::field('field_show_new_tag', 'show_new_tag', 'Show New Tag'),
+                'operator' => 'equals',
+                'operand'  => '1',
+            ))->toArray(),
+        );
+        $document['validations'] = array(
+            RuleFactory::validation(array(
+                'field' => RuleFactory::field('field_page_id', 'page_id', 'Page ID'),
+                'type'  => 'required',
+            ))->toArray(),
+        );
+
+        $rule = $this->validator->validateArray($document);
+        $this->assertSame('1', $rule->conditions[0]->operand);
+        $this->assertSame('field_page_id', $rule->validations[0]->field->key);
+    }
+
+    public function testEmptyAllowedValuesAreRejected(): void
+    {
+        $document = RuleFactory::document();
+        $document['validations'][0]['type'] = 'allowed_values';
+        $document['validations'][0]['params'] = array('values' => array());
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_ALLOWED_VALUES);
+        $this->validator->validateArray($document);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sameFieldRule(string $operator, string $validator, ?string $operand = null): array
+    {
+        $field = RuleFactory::field('field_page_id', 'page_id', 'Page ID');
+        $document = RuleFactory::document();
+        $document['conditions'] = array(
+            RuleFactory::condition(array(
+                'field'    => $field,
+                'operator' => $operator,
+                'operand'  => $operand,
+            ))->toArray(),
+        );
+        $document['validations'] = array(
+            RuleFactory::validation(array(
+                'field' => $field,
+                'type'  => $validator,
+            ))->toArray(),
+        );
+
+        return $document;
+    }
 }

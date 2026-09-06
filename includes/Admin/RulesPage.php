@@ -12,8 +12,10 @@ namespace ContentGuard\Admin;
 use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\ContentAuditService;
+use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
+use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RulePresentation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\Exception\InvalidRuleException;
@@ -130,9 +132,7 @@ final class RulesPage
         if ($ruleId > 0) {
             $rule = $this->rules->find($ruleId);
             if ($rule === null) {
-                echo '<div class="wrap"><div class="notice notice-error"><p>'
-                    . esc_html__('Rule not found.', 'contentguard')
-                    . '</p></div></div>';
+                $this->renderMissingRule($ruleId);
 
                 return;
             }
@@ -219,28 +219,62 @@ final class RulesPage
         }
     }
 
-    private function renderEditor(?Rule $rule, int $ruleId): void
+    /**
+     * @param array{type: string, message: string}|null $noticeOverride
+     */
+    private function renderEditor(?Rule $rule, int $ruleId, ?array $noticeOverride = null): void
     {
         $editor    = RuleEditorState::hydrate($this->drafts?->get($ruleId), $rule);
-        $postTypes = $this->factory->allowedPostTypes();
+        $postTypes = $this->factory->selectablePostTypes();
         if ($editor->postType !== '' && !isset($postTypes[$editor->postType])) {
-            $postTypes[$editor->postType] = $editor->postType;
+            $labels = $this->factory->allowedPostTypes();
+            $postTypes[$editor->postType] = $labels[$editor->postType] ?? $editor->postType;
         }
 
         $fields = array();
-        $typeForFields = $editor->postType !== '' ? $editor->postType : '';
+        $typeForFields = $editor->postType !== '' ? $editor->postType : (string) (array_key_first($postTypes) ?? '');
         if ($typeForFields !== '' && isset($this->factory->allowedPostTypes()[$typeForFields])) {
-            $fields = $this->factory->fieldsForPostType($typeForFields);
-        } elseif ($this->factory->allowedPostTypes() !== array()) {
-            $first = array_key_first($this->factory->allowedPostTypes());
-            if (is_string($first)) {
-                $fields = $this->factory->fieldsForPostType($first);
+            try {
+                $fields = $this->factory->fieldsForPostType($typeForFields);
+            } catch (InvalidRuleException) {
+                $fields = array();
             }
         }
 
-        $notice = $this->notice();
+        $notice = $noticeOverride ?? $this->notice();
         $view   = CONTENTGUARD_DIR . 'admin/views/rule-edit.php';
         require $view;
+    }
+
+    private function renderMissingRule(int $ruleId): void
+    {
+        $draft = RuleMutationPresentation::draftForNewRule(
+            $this->drafts?->get($ruleId) ?? $this->drafts?->get(0)
+        );
+        if ($draft !== null) {
+            $this->drafts?->put(0, $draft);
+            $this->renderEditor(
+                null,
+                0,
+                $this->notice() ?? array(
+                    'type'    => 'error',
+                    'message' => RuleMutationPresentation::missingRuleMessage(),
+                )
+            );
+
+            return;
+        }
+
+        $notice = $this->notice() ?? array(
+            'type'    => 'error',
+            'message' => RuleMutationPresentation::missingRuleMessage(),
+        );
+
+        echo '<div class="wrap contentguard"><div class="notice notice-error"><p>'
+            . esc_html($notice['message'])
+            . '</p><p><a href="' . esc_url(admin_url('admin.php?page=' . self::SLUG)) . '">'
+            . esc_html__('Back to rules', 'contentguard')
+            . '</a></p></div></div>';
     }
 
     /**
@@ -248,20 +282,6 @@ final class RulesPage
      */
     private function notice(): ?array
     {
-        if (!isset($_GET['contentguard_notice'], $_GET['contentguard_msg'])) {
-            return null;
-        }
-
-        $type = sanitize_key((string) wp_unslash((string) $_GET['contentguard_notice']));
-        $message = sanitize_text_field((string) wp_unslash((string) rawurldecode((string) $_GET['contentguard_msg'])));
-
-        if ($message === '' || !in_array($type, array('updated', 'error'), true)) {
-            return null;
-        }
-
-        return array(
-            'type'    => $type === 'updated' ? 'success' : 'error',
-            'message' => $message,
-        );
+        return AdminNotice::fromQuery($_GET);
     }
 }

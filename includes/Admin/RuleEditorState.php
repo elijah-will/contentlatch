@@ -126,7 +126,7 @@ final class RuleEditorState
      */
     public static function snapshot(array $input): array
     {
-        $id = $input['id'] ?? '';
+        $id = $input['rule_id'] ?? $input['id'] ?? '';
         if (is_numeric($id) && (int) $id > 0) {
             $id = (int) $id;
         } else {
@@ -136,7 +136,7 @@ final class RuleEditorState
         return array(
             'id'          => $id,
             'name'        => self::scalar($input['name'] ?? ''),
-            'post_type'   => self::scalar($input['post_type'] ?? ''),
+            'post_type'   => self::scalar($input['target_post_type'] ?? $input['post_type'] ?? ''),
             'severity'    => self::scalar($input['severity'] ?? RuleSeverity::Fail->value),
             'status'      => self::scalar($input['status'] ?? RuleStatus::Active->value),
             'message'     => self::scalar($input['message'] ?? ''),
