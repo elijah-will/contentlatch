@@ -128,3 +128,55 @@ if (!function_exists('disabled')) {
         return $html;
     }
 }
+
+if (!function_exists('get_the_title')) {
+    function get_the_title(int|string $post = 0): string
+    {
+        $titles = $GLOBALS['contentguard_test_titles'] ?? array();
+
+        return (string) ($titles[(int) $post] ?? '');
+    }
+}
+
+if (!function_exists('get_edit_post_link')) {
+    function get_edit_post_link(int|string $post = 0, string $context = 'display'): string|null
+    {
+        unset($context);
+        $links = $GLOBALS['contentguard_test_edit_links'] ?? array();
+        if (!array_key_exists((int) $post, $links)) {
+            return null;
+        }
+
+        $link = $links[(int) $post];
+
+        return is_string($link) && $link !== '' ? $link : null;
+    }
+}
+
+if (!function_exists('_n')) {
+    function _n(string $single, string $plural, int $number, string $domain = 'default'): string
+    {
+        unset($domain);
+
+        return $number === 1 ? $single : $plural;
+    }
+}
+
+if (!function_exists('wp_kses_post')) {
+    function wp_kses_post(string $data): string
+    {
+        return $data;
+    }
+}
+
+if (!function_exists('paginate_links')) {
+    /**
+     * @param array<string, mixed> $args
+     */
+    function paginate_links(array $args = array()): string
+    {
+        $base = (string) ($args['base'] ?? 'paged=%#%');
+
+        return '<a class="page-numbers" href="' . $base . '">2</a>';
+    }
+}

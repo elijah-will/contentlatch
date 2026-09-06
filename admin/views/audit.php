@@ -330,7 +330,7 @@ foreach ($postTypes as $type) {
             );
             ?>
         <?php else : ?>
-            <h2><?php echo esc_html__('Issues', 'contentguard'); ?></h2>
+            <h2 id="contentguard-findings-heading"><?php echo esc_html(AuditPresentation::findingsHeading()); ?></h2>
             <form method="get" class="contentguard-filters" action="<?php echo esc_url(admin_url('admin.php')); ?>">
                 <input type="hidden" name="page" value="<?php echo esc_attr(AuditPage::SLUG); ?>">
                 <?php if ($viewingHistory) : ?>
@@ -350,7 +350,7 @@ foreach ($postTypes as $type) {
                         <option value=""><?php echo esc_html__('All rules', 'contentguard'); ?></option>
                         <?php foreach ($ruleImpacts as $impact) : ?>
                             <option value="<?php echo esc_attr((string) $impact->ruleId); ?>" <?php selected($query !== null && (string) $query->ruleId === (string) $impact->ruleId); ?>>
-                                <?php echo esc_html($ruleNames[(string) $impact->ruleId] ?? (string) $impact->ruleId); ?>
+                                <?php echo esc_html($ruleNames[(string) $impact->ruleId] ?? AuditPresentation::ruleName(null, $impact->ruleId)); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -387,48 +387,40 @@ foreach ($postTypes as $type) {
                 </p>
             <?php endif; ?>
 
-            <table class="widefat striped">
-                <thead>
-                    <tr>
-                        <th><?php echo esc_html__('Severity', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Post', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Type', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Rule', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Field', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Message', 'contentguard'); ?></th>
-                        <th><?php echo esc_html__('Edit', 'contentguard'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+            <?php if ($findings === array()) : ?>
+                <?php
+                AdminView::partial(
+                    'empty-state',
+                    array(
+                        'heading' => AuditPresentation::filteredEmptyHeading(),
+                        'text'    => AuditPresentation::filteredEmptyText(),
+                    )
+                );
+                ?>
+            <?php else : ?>
+                <div class="contentguard-findings" aria-labelledby="contentguard-findings-heading">
                     <?php foreach ($findings as $finding) : ?>
                         <?php
                         $title = function_exists('get_the_title') ? (string) get_the_title($finding->postId) : '';
                         $edit  = function_exists('get_edit_post_link') ? get_edit_post_link($finding->postId, 'raw') : '';
                         $field = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey] ?? $finding->fieldKey;
+                        AdminView::partial(
+                            'audit-finding',
+                            array(
+                                'title'    => $title,
+                                'message'  => $finding->message,
+                                'field'    => $field,
+                                'rule'     => $ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId),
+                                'status'   => StatusPresentation::fromSeverity($finding->severity),
+                                'postType' => AdminPresentation::postTypeLabel($finding->postType),
+                                'editUrl'  => is_string($edit) ? $edit : '',
+                                'uid'      => (string) $finding->id,
+                            )
+                        );
                         ?>
-                        <tr>
-                            <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($finding->severity))); ?></td>
-                            <td><?php echo esc_html(AuditPresentation::postTitle($title)); ?></td>
-                            <td><?php echo esc_html(AdminPresentation::postTypeLabel($finding->postType)); ?></td>
-                            <td><?php echo esc_html($ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId)); ?></td>
-                            <td><?php echo esc_html($field); ?></td>
-                            <td><?php echo esc_html($finding->message); ?></td>
-                            <td>
-                                <?php if (is_string($edit) && $edit !== '') : ?>
-                                    <a href="<?php echo esc_url($edit); ?>"><?php echo esc_html__('Edit', 'contentguard'); ?></a>
-                                <?php else : ?>
-                                    <?php echo esc_html__('Unavailable', 'contentguard'); ?>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
                     <?php endforeach; ?>
-                    <?php if ($findings === array()) : ?>
-                        <tr>
-                            <td colspan="7"><?php echo esc_html__('No issues for this filter.', 'contentguard'); ?></td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                </div>
+            <?php endif; ?>
 
             <?php if ($totalPages > 1) : ?>
                 <div class="contentguard-pagination tablenav">

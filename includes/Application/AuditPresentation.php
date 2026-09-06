@@ -53,6 +53,33 @@ final class AuditPresentation
         return $title !== '' ? $title : 'Content no longer available';
     }
 
+    public static function editContentLabel(): string
+    {
+        return 'Edit content';
+    }
+
+    public static function editContentAria(string $title): string
+    {
+        $name = self::postTitle($title);
+
+        return sprintf('Edit content: %s', $name);
+    }
+
+    public static function filteredEmptyHeading(): string
+    {
+        return 'No matching findings';
+    }
+
+    public static function filteredEmptyText(): string
+    {
+        return 'Try changing or clearing your filters.';
+    }
+
+    public static function findingsHeading(): string
+    {
+        return 'Issues';
+    }
+
     public static function firstRunHeading(): string
     {
         return 'Ready to check your content';

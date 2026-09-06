@@ -8,9 +8,13 @@ declare(strict_types=1);
 namespace ContentGuard\Tests\Unit\Admin;
 
 use ContentGuard\Admin\AuditPage;
+use ContentGuard\Application\Audit\AuditFinding;
+use ContentGuard\Application\Audit\AuditFindingQuery;
+use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\AuditPresentation;
+use ContentGuard\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
 final class AuditViewTest extends TestCase
@@ -151,6 +155,227 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
         $this->assertStringNotContainsString('page=contentguard-audit&amp;run=', $html);
         $this->assertStringNotContainsString('name="run"', $html);
+    }
+
+    public function testFindingPresentsContentIssueAndAction(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults());
+
+        $this->assertStringContainsString('contentguard-finding__title', $html);
+        $this->assertStringContainsString('Chocolate Chip Cookies', $html);
+        $this->assertStringContainsString('This field is required when Show &quot;New&quot; Tag is Yes.', $html);
+        $this->assertStringContainsString('Recipe Description', $html);
+        $this->assertStringNotContainsString('field_123abc', $html);
+        $this->assertStringContainsString('Blocking', $html);
+        $this->assertStringContainsString('contentguard-finding--blocking', $html);
+        $this->assertStringContainsString('contentguard-status__text', $html);
+        $this->assertStringContainsString('Rule: New Tag requires description', $html);
+        $this->assertStringContainsString('Edit content', $html);
+        $this->assertStringContainsString('aria-label="Edit content: Chocolate Chip Cookies"', $html);
+        $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit', $html);
+        $this->assertStringNotContainsString('>Edit</a>', $html);
+        $this->assertStringNotContainsString('Unavailable', $html);
+        $this->assertStringNotContainsString(AuditPresentation::filteredEmptyHeading(), $html);
+    }
+
+    public function testWarningFindingUsesWarningLabelAndModifier(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(8 => 'Tomato Sauce');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            8 => 'http://example.test/wp-admin/post.php?post=8&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'severityCounts' => array('fail' => 0, 'warning' => 1),
+            'findings'       => array($this->makeFinding(array(
+                'postId'   => 8,
+                'severity' => RuleSeverity::Warning,
+                'message'  => 'Consider adding a serving size.',
+            ))),
+        )));
+
+        $this->assertStringContainsString('Tomato Sauce', $html);
+        $this->assertStringContainsString('Consider adding a serving size.', $html);
+        $this->assertStringContainsString('Warning', $html);
+        $this->assertStringContainsString('contentguard-finding--warning', $html);
+        $this->assertStringContainsString('contentguard-status--caution', $html);
+        $this->assertStringNotContainsString('contentguard-finding--blocking', $html);
+    }
+
+    public function testDeletedContentAndDeletedRuleStayReadableWithoutBrokenEditLink(): void
+    {
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings'  => array($this->makeFinding(array(
+                'postId'  => 77,
+                'ruleId'  => 99,
+                'message' => 'This field is required.',
+            ))),
+            'ruleNames' => array(),
+            'fieldLabels' => array('99:field_123abc' => 'Recipe Description'),
+            'ruleImpacts' => array(new AuditRuleImpact(99, 1, 1)),
+        )));
+
+        $this->assertStringContainsString('Content no longer available', $html);
+        $this->assertStringContainsString('Deleted rule', $html);
+        $this->assertStringContainsString('Recipe Description', $html);
+        $this->assertStringContainsString('This field is required.', $html);
+        $this->assertStringNotContainsString('Edit content', $html);
+        $this->assertStringNotContainsString('post.php?post=77', $html);
+        $this->assertStringNotContainsString('href=""', $html);
+    }
+
+    public function testZeroFindingsShowsAllClearNotFilteredEmpty(): void
+    {
+        $complete = $this->makeRun(7, AuditRunStatus::Complete, array(
+            'postsScanned' => 12,
+            'postsPassed'  => 12,
+        ));
+
+        $html = $this->renderAudit($this->baseVars(array(
+            'latestComplete' => $complete,
+            'latestRun'      => $complete,
+            'resultsRun'     => $complete,
+        )));
+
+        $this->assertStringContainsString(AuditPresentation::allClearHeading(), $html);
+        $this->assertStringContainsString(AuditPresentation::allClearText(12), $html);
+        $this->assertStringNotContainsString(AuditPresentation::filteredEmptyHeading(), $html);
+        $this->assertStringNotContainsString(AuditPresentation::filteredEmptyText(), $html);
+        $this->assertStringNotContainsString('id="contentguard-findings-heading"', $html);
+        $this->assertStringNotContainsString('class="contentguard-filters"', $html);
+    }
+
+    public function testFilteredEmptyStateExplainsFilters(): void
+    {
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings'     => array(),
+            'findingTotal' => 0,
+            'affectedPosts'=> 0,
+            'query'        => new AuditFindingQuery(7, 'fail'),
+        )));
+
+        $this->assertStringContainsString(AuditPresentation::filteredEmptyHeading(), $html);
+        $this->assertStringContainsString(AuditPresentation::filteredEmptyText(), $html);
+        $this->assertStringContainsString('Clear filters', $html);
+        $this->assertStringContainsString('class="contentguard-filters"', $html);
+        $this->assertStringContainsString(AuditPresentation::findingsHeading(), $html);
+        $this->assertStringNotContainsString(AuditPresentation::allClearHeading(), $html);
+        $this->assertStringNotContainsString('Ready to check your content', $html);
+    }
+
+    public function testPaginationMarkupRemainsIntact(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findingTotal' => 51,
+            'paged'        => 1,
+            'totalPages'   => 2,
+            'filterArgs'   => array('page' => AuditPage::SLUG),
+        )));
+
+        $this->assertSame(50, AuditPage::PAGE_SIZE);
+        $this->assertStringContainsString('contentguard-pagination', $html);
+        $this->assertStringContainsString('paged=%#%', $html);
+        $this->assertStringContainsString('51 issues', $html);
+        $this->assertStringContainsString('Chocolate Chip Cookies', $html);
+    }
+
+    public function testHistoricalFindingsStayTiedToThatAudit(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $latest = $this->makeRun(9, AuditRunStatus::Complete);
+        $older  = $this->makeRun(2, AuditRunStatus::Complete, array(
+            'postsScanned' => 12,
+            'postsFailed'  => 1,
+        ));
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete' => $latest,
+            'latestRun'      => $latest,
+            'resultsRun'     => $older,
+            'viewingHistory' => true,
+            'query'          => new AuditFindingQuery(2),
+            'findings'       => array($this->makeFinding(array('runId' => 2))),
+        )));
+
+        $this->assertStringContainsString('Previous audit', $html);
+        $this->assertStringContainsString(AuditPresentation::historicalNotice(), $html);
+        $this->assertStringContainsString('contentguard-audit--history', $html);
+        $this->assertStringContainsString('name="run"', $html);
+        $this->assertStringContainsString('value="2"', $html);
+        $this->assertStringContainsString('Chocolate Chip Cookies', $html);
+        $this->assertStringContainsString('Back to latest audit', $html);
+        $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['contentguard_test_titles'], $GLOBALS['contentguard_test_edit_links']);
+        parent::tearDown();
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function completedResults(array $overrides = array()): array
+    {
+        $complete = $this->makeRun(7, AuditRunStatus::Complete, array(
+            'postsScanned' => 12,
+            'postsPassed'  => 10,
+            'postsFailed'  => 1,
+            'postsWarned'  => 1,
+        ));
+
+        return $this->baseVars(array_merge(
+            array(
+                'latestComplete'   => $complete,
+                'latestRun'        => $complete,
+                'resultsRun'       => $complete,
+                'allFindingTotal'  => 1,
+                'allAffectedPosts' => 1,
+                'findingTotal'     => 1,
+                'affectedPosts'    => 1,
+                'severityCounts'   => array('fail' => 1, 'warning' => 0),
+                'findings'         => array($this->makeFinding()),
+                'ruleNames'        => array('15' => 'New Tag requires description'),
+                'fieldLabels'      => array('15:field_123abc' => 'Recipe Description'),
+            ),
+            $overrides
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function makeFinding(array $overrides = array()): AuditFinding
+    {
+        return new AuditFinding(
+            (int) ($overrides['id'] ?? 1),
+            (int) ($overrides['runId'] ?? 7),
+            (int) ($overrides['postId'] ?? 42),
+            (string) ($overrides['postType'] ?? 'recipe'),
+            $overrides['ruleId'] ?? 15,
+            (string) ($overrides['fieldKey'] ?? 'field_123abc'),
+            (string) ($overrides['validationId'] ?? 'v1'),
+            (string) ($overrides['code'] ?? 'required'),
+            $overrides['severity'] ?? RuleSeverity::Fail,
+            (string) ($overrides['message'] ?? 'This field is required when Show "New" Tag is Yes.'),
+            (string) ($overrides['createdAt'] ?? '2026-01-01 00:00:00')
+        );
     }
 
     /**

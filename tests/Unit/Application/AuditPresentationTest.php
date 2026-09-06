@@ -71,5 +71,11 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Audit failed', AuditPresentation::failedHeading());
         $this->assertSame('Audit cancelled', AuditPresentation::cancelledHeading());
         $this->assertStringContainsString('not used as the latest completed result', AuditPresentation::cancelledText());
+        $this->assertSame('Issues', AuditPresentation::findingsHeading());
+        $this->assertSame('Edit content', AuditPresentation::editContentLabel());
+        $this->assertSame('Edit content: Tomato Sauce', AuditPresentation::editContentAria('Tomato Sauce'));
+        $this->assertSame('Edit content: Content no longer available', AuditPresentation::editContentAria(''));
+        $this->assertSame('No matching findings', AuditPresentation::filteredEmptyHeading());
+        $this->assertSame('Try changing or clearing your filters.', AuditPresentation::filteredEmptyText());
     }
 }
