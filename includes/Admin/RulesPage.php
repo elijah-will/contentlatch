@@ -17,6 +17,7 @@ use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RulePresentation;
+use ContentGuard\Application\RulePreview;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
@@ -101,16 +102,21 @@ final class RulesPage
                 'nonce'      => wp_create_nonce(RuleCommandService::NONCE_ACTION),
                 'fieldsAction' => RulesController::ACTION_FIELDS,
                 'operators'  => array(
-                    'equals'       => __('equals', 'contentguard'),
-                    'not_equals'   => __('does not equal', 'contentguard'),
+                    'equals'       => __('is', 'contentguard'),
+                    'not_equals'   => __('is not', 'contentguard'),
                     'is_empty'     => __('is empty', 'contentguard'),
                     'is_not_empty' => __('is not empty', 'contentguard'),
                 ),
                 'validators' => array(
-                    'required'       => __('required', 'contentguard'),
-                    'min_length'     => __('Minimum length (characters)', 'contentguard'),
-                    'max_length'     => __('Maximum length (characters)', 'contentguard'),
-                    'allowed_values' => __('allowed values', 'contentguard'),
+                    'required'       => __('is required', 'contentguard'),
+                    'min_length'     => __('Minimum length', 'contentguard'),
+                    'max_length'     => __('Maximum length', 'contentguard'),
+                    'allowed_values' => __('Allowed values', 'contentguard'),
+                ),
+                'preview'    => array(
+                    'needThen'        => RulePreview::needThenMessage(),
+                    'incompleteWhen'  => RulePreview::incompleteWhenMessage(),
+                    'incompleteThen'  => RulePreview::incompleteThenMessage(),
                 ),
             )
         );

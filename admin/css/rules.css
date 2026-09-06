@@ -100,6 +100,123 @@
     .contentguard-rule-item__actions .submitdelete {
         margin-left: 0;
     }
+
+    .contentguard-builder-row {
+        flex-direction: column;
+    }
+
+    .contentguard-builder-row__controls,
+    .contentguard-builder-row select,
+    .contentguard-builder-row input[type="text"],
+    .contentguard-builder-row input[type="number"],
+    .contentguard-builder-field input,
+    .contentguard-builder-field select {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .contentguard-builder-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.contentguard-builder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cg-space-4, 16px);
+    margin-top: var(--cg-space-4, 16px);
+    max-width: 100%;
+}
+
+.contentguard-rule-preview,
+.contentguard-builder-section {
+    max-width: 100%;
+}
+
+.contentguard-rule-preview {
+    border-left: 4px solid var(--cg-info-border, #2271b1);
+}
+
+.contentguard-builder-section__title {
+    font-size: 16px;
+    line-height: var(--cg-line-height-tight, 1.3);
+    margin: 0 0 var(--cg-space-2, 8px);
+}
+
+.contentguard-rule-preview__text {
+    font-size: 14px;
+    line-height: var(--cg-line-height, 1.5);
+    margin: 0;
+}
+
+.contentguard-builder-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cg-space-1, 4px);
+    margin: var(--cg-space-3, 12px) 0 0;
+}
+
+.contentguard-builder-field label {
+    font-weight: 600;
+}
+
+.contentguard-builder-row {
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.contentguard-builder-row__controls {
+    align-items: center;
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2, 8px);
+    min-width: 0;
+}
+
+.contentguard-param-group {
+    align-items: center;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-1, 4px);
+}
+
+.contentguard-param-suffix {
+    color: var(--cg-muted, #646970);
+}
+
+.contentguard-choice-group {
+    border: 0;
+    margin: var(--cg-space-3, 12px) 0 0;
+    min-width: 0;
+    padding: 0;
+}
+
+.contentguard-choice-group legend {
+    font-weight: 600;
+    margin: 0 0 var(--cg-space-2, 8px);
+    padding: 0;
+}
+
+.contentguard-choice {
+    align-items: flex-start;
+    display: flex;
+    gap: var(--cg-space-2, 8px);
+    margin: 0 0 var(--cg-space-2, 8px);
+}
+
+.contentguard-choice__label {
+    display: block;
+    font-weight: 600;
+}
+
+.contentguard-builder-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2, 8px);
 }
 
 .contentguard-rows {

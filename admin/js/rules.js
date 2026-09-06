@@ -12,7 +12,9 @@
   var postType = document.getElementById("contentguard-rule-post-type");
   var conditions = document.getElementById("contentguard-conditions");
   var validations = document.getElementById("contentguard-validations");
+  var preview = document.getElementById("contentguard-rule-preview");
   var fields = [];
+  var previewCopy = config.preview || {};
 
   function option(value, label, selected, type) {
     var node = document.createElement("option");
@@ -43,11 +45,42 @@
     return fieldTypeFor(select.value);
   }
 
-  function fieldSelect(name, selected) {
+  function selectedOptionLabel(select) {
+    if (!select || select.selectedIndex < 0) {
+      return "";
+    }
+    return (select.options[select.selectedIndex].textContent || "").trim();
+  }
+
+  function fieldLabelFor(key, select) {
+    if (select && select.value === key) {
+      var label = selectedOptionLabel(select);
+      if (label && label !== "Choose a field" && label !== "Field") {
+        return label;
+      }
+    }
+    var match = fields.find(function (field) {
+      return field.key === key;
+    });
+    return match ? (match.label || match.name || match.key) : key;
+  }
+
+  function srLabel(text, forId) {
+    var label = document.createElement("label");
+    label.className = "screen-reader-text";
+    label.setAttribute("for", forId);
+    label.textContent = text;
+    return label;
+  }
+
+  function fieldSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-field";
-    select.appendChild(option("", "Field", selected === ""));
+    if (id) {
+      select.id = id;
+    }
+    select.appendChild(option("", "Choose a field", selected === ""));
     fields.forEach(function (field) {
       var label = field.label || field.name || field.key;
       select.appendChild(option(field.key, label, field.key === selected, field.type || ""));
@@ -55,31 +88,40 @@
     return select;
   }
 
-  function operatorSelect(name, selected) {
+  function operatorSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-operator";
+    if (id) {
+      select.id = id;
+    }
     Object.keys(config.operators).forEach(function (value) {
       select.appendChild(option(value, config.operators[value], value === selected));
     });
     return select;
   }
 
-  function validatorSelect(name, selected) {
+  function validatorSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-validator";
+    if (id) {
+      select.id = id;
+    }
     Object.keys(config.validators).forEach(function (value) {
       select.appendChild(option(value, config.validators[value], value === selected));
     });
     return select;
   }
 
-  function operandControl(name, value, fieldType, hidden) {
+  function operandControl(name, value, fieldType, hidden, id) {
     if (fieldType === "true_false") {
       var select = document.createElement("select");
       select.className = "contentguard-operand";
       select.name = name;
+      if (id) {
+        select.id = id;
+      }
       select.appendChild(option("1", "Yes", value === "1" || value === ""));
       select.appendChild(option("0", "No", value === "0"));
       select.hidden = hidden;
@@ -92,7 +134,40 @@
     input.name = name;
     input.value = value;
     input.hidden = hidden;
+    if (id) {
+      input.id = id;
+    }
     return input;
+  }
+
+  function paramGroup(kind, name, value, hidden, id, labelText, suffix) {
+    var group = document.createElement("span");
+    group.className = "contentguard-param-group contentguard-param-group--" + kind;
+    group.hidden = hidden;
+    group.appendChild(srLabel(labelText, id));
+
+    var input = document.createElement("input");
+    input.id = id;
+    input.className = "contentguard-param contentguard-" + kind;
+    input.name = name;
+    input.value = value;
+    if (kind === "values") {
+      input.type = "text";
+      input.placeholder = "value1, value2";
+    } else {
+      input.type = "number";
+      input.min = "0";
+    }
+    group.appendChild(input);
+
+    if (suffix) {
+      var text = document.createElement("span");
+      text.className = "contentguard-param-suffix";
+      text.textContent = suffix;
+      group.appendChild(text);
+    }
+
+    return group;
   }
 
   function syncOperand(row) {
@@ -104,7 +179,7 @@
     }
 
     var needsValue = operator.value === "equals" || operator.value === "not_equals";
-    var next = operandControl(operand.name, operand.value, selectedFieldType(field), !needsValue);
+    var next = operandControl(operand.name, operand.value, selectedFieldType(field), !needsValue, operand.id);
     operand.replaceWith(next);
   }
 
@@ -117,9 +192,9 @@
     if (!type) {
       return;
     }
-    var min = row.querySelector(".contentguard-min");
-    var max = row.querySelector(".contentguard-max");
-    var values = row.querySelector(".contentguard-values");
+    var min = row.querySelector(".contentguard-param-group--min");
+    var max = row.querySelector(".contentguard-param-group--max");
+    var values = row.querySelector(".contentguard-param-group--values");
     if (min) {
       min.hidden = type.value !== "min_length";
     }
@@ -138,91 +213,236 @@
   function addCondition(selected) {
     var index = nextIndex(conditions);
     var row = document.createElement("div");
-    row.className = "contentguard-row";
+    row.className = "contentguard-row contentguard-builder-row";
     row.setAttribute("data-row", "condition");
 
     var id = document.createElement("input");
     id.type = "hidden";
     id.name = "conditions[" + index + "][id]";
     row.appendChild(id);
-    row.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || ""));
-    row.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals"));
-    row.appendChild(operandControl("conditions[" + index + "][operand]", "", fieldTypeFor(selected || ""), false));
+
+    var controls = document.createElement("div");
+    controls.className = "contentguard-builder-row__controls";
+    var fieldId = "contentguard-condition-field-" + index;
+    var operatorId = "contentguard-condition-operator-" + index;
+    var operandId = "contentguard-condition-operand-" + index;
+    controls.appendChild(srLabel("WHEN field", fieldId));
+    controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
+    controls.appendChild(srLabel("Operator", operatorId));
+    controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId));
+    controls.appendChild(srLabel("Value", operandId));
+    controls.appendChild(operandControl("conditions[" + index + "][operand]", "", fieldTypeFor(selected || ""), false, operandId));
+    row.appendChild(controls);
 
     var remove = document.createElement("button");
     remove.type = "button";
     remove.className = "button contentguard-remove";
     remove.textContent = "Remove";
+    remove.setAttribute("aria-label", "Remove condition " + (index + 1));
     row.appendChild(remove);
 
     conditions.appendChild(row);
     toggleCondition(row);
+    updatePreview();
   }
 
   function addValidation(selected) {
     var index = nextIndex(validations);
     var row = document.createElement("div");
-    row.className = "contentguard-row";
+    row.className = "contentguard-row contentguard-builder-row";
     row.setAttribute("data-row", "validation");
 
     var id = document.createElement("input");
     id.type = "hidden";
     id.name = "validations[" + index + "][id]";
     row.appendChild(id);
-    row.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || ""));
-    row.appendChild(validatorSelect("validations[" + index + "][type]", "required"));
 
-    var min = document.createElement("input");
-    min.type = "number";
-    min.min = "0";
-    min.className = "contentguard-param contentguard-min";
-    min.name = "validations[" + index + "][min]";
-    min.placeholder = "Min (characters)";
-    min.hidden = true;
-    row.appendChild(min);
+    var controls = document.createElement("div");
+    controls.className = "contentguard-builder-row__controls";
+    var fieldId = "contentguard-validation-field-" + index;
+    var typeId = "contentguard-validation-type-" + index;
+    controls.appendChild(srLabel("THEN field", fieldId));
+    controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId));
+    controls.appendChild(srLabel("Requirement", typeId));
+    controls.appendChild(validatorSelect("validations[" + index + "][type]", "required", typeId));
+    controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, "Minimum length", "characters"));
+    controls.appendChild(paramGroup("max", "validations[" + index + "][max]", "", true, "contentguard-validation-max-" + index, "Maximum length", "characters"));
+    controls.appendChild(paramGroup("values", "validations[" + index + "][values]", "", true, "contentguard-validation-values-" + index, "Allowed values", ""));
 
-    var max = document.createElement("input");
-    max.type = "number";
-    max.min = "0";
-    max.className = "contentguard-param contentguard-max";
-    max.name = "validations[" + index + "][max]";
-    max.placeholder = "Max (characters)";
-    max.hidden = true;
-    row.appendChild(max);
-
-    var values = document.createElement("input");
-    values.type = "text";
-    values.className = "contentguard-param contentguard-values";
-    values.name = "validations[" + index + "][values]";
-    values.placeholder = "value1, value2";
-    values.hidden = true;
-    row.appendChild(values);
-
+    var messageId = "contentguard-validation-message-" + index;
+    controls.appendChild(srLabel("Custom message (optional)", messageId));
     var message = document.createElement("input");
     message.type = "text";
+    message.id = messageId;
     message.className = "contentguard-validation-message";
     message.name = "validations[" + index + "][message]";
     message.placeholder = "Custom message (optional)";
-    row.appendChild(message);
+    controls.appendChild(message);
+    row.appendChild(controls);
 
     var remove = document.createElement("button");
     remove.type = "button";
     remove.className = "button contentguard-remove";
     remove.textContent = "Remove";
+    remove.setAttribute("aria-label", "Remove requirement " + (index + 1));
     row.appendChild(remove);
 
     validations.appendChild(row);
     toggleValidation(row);
+    updatePreview();
   }
 
   function rebuildFieldSelects() {
     form.querySelectorAll(".contentguard-field").forEach(function (select) {
       var current = select.value;
       var name = select.name;
-      var replacement = fieldSelect(name, current);
+      var replacement = fieldSelect(name, current, select.id);
       select.replaceWith(replacement);
     });
     form.querySelectorAll("[data-row='condition']").forEach(syncOperand);
+    updatePreview();
+  }
+
+  function operandPreviewValue(operand, fieldType) {
+    if (!operand || operand.hidden) {
+      return "";
+    }
+    if (fieldType === "true_false") {
+      if (operand.value === "1") {
+        return "Yes";
+      }
+      if (operand.value === "0") {
+        return "No";
+      }
+    }
+    return (operand.value || "").trim();
+  }
+
+  function conditionPhrase(field, operator, value) {
+    if (operator === "equals") {
+      return field + " is " + value;
+    }
+    if (operator === "not_equals") {
+      return field + " is not " + value;
+    }
+    if (operator === "is_empty") {
+      return field + " is empty";
+    }
+    if (operator === "is_not_empty") {
+      return field + " is not empty";
+    }
+    return field + " " + operator;
+  }
+
+  function validationPhrase(field, type, min, max, values) {
+    if (type === "required") {
+      return field + " is required";
+    }
+    if (type === "min_length") {
+      return field + " must be at least " + min + " characters";
+    }
+    if (type === "max_length") {
+      return field + " must be at most " + max + " characters";
+    }
+    if (type === "allowed_values") {
+      return field + " must be one of: " + values;
+    }
+    return field + " " + type;
+  }
+
+  function updatePreview() {
+    if (!preview) {
+      return;
+    }
+
+    var whenParts = [];
+    var whenIncomplete = false;
+    form.querySelectorAll("[data-row='condition']").forEach(function (row) {
+      var field = row.querySelector(".contentguard-field");
+      var operator = row.querySelector(".contentguard-operator");
+      var operand = row.querySelector(".contentguard-operand");
+      if (!field || !operator) {
+        return;
+      }
+      var fieldKey = field.value;
+      var operandValue = operand && !operand.hidden ? (operand.value || "").trim() : "";
+      var started = fieldKey !== "" || operator.value !== "" || operandValue !== "";
+      if (!started) {
+        return;
+      }
+      if (fieldKey === "" || operator.value === "") {
+        whenIncomplete = true;
+        return;
+      }
+      var needsValue = operator.value === "equals" || operator.value === "not_equals";
+      var fieldType = selectedFieldType(field);
+      var displayValue = operandPreviewValue(operand, fieldType);
+      if (needsValue && displayValue === "") {
+        whenIncomplete = true;
+        return;
+      }
+      whenParts.push(conditionPhrase(fieldLabelFor(fieldKey, field), operator.value, displayValue));
+    });
+
+    var thenParts = [];
+    var thenIncomplete = false;
+    form.querySelectorAll("[data-row='validation']").forEach(function (row) {
+      var field = row.querySelector(".contentguard-field");
+      var type = row.querySelector(".contentguard-validator");
+      var min = row.querySelector(".contentguard-min");
+      var max = row.querySelector(".contentguard-max");
+      var values = row.querySelector(".contentguard-values");
+      if (!field || !type) {
+        return;
+      }
+      var fieldKey = field.value;
+      var minValue = min ? min.value.trim() : "";
+      var maxValue = max ? max.value.trim() : "";
+      var valuesValue = values ? values.value.trim() : "";
+      var started = fieldKey !== "" || minValue !== "" || maxValue !== "" || valuesValue !== "";
+      if (!started && type.value === "") {
+        return;
+      }
+      if (fieldKey === "" || type.value === "") {
+        if (started || type.value !== "") {
+          thenIncomplete = thenParts.length > 0 || started;
+        }
+        return;
+      }
+      if (type.value === "min_length" && minValue === "") {
+        thenIncomplete = true;
+        return;
+      }
+      if (type.value === "max_length" && maxValue === "") {
+        thenIncomplete = true;
+        return;
+      }
+      if (type.value === "allowed_values" && valuesValue.replace(/\s+/g, "") === "") {
+        thenIncomplete = true;
+        return;
+      }
+      thenParts.push(validationPhrase(fieldLabelFor(fieldKey, field), type.value, minValue, maxValue, valuesValue));
+    });
+
+    if (whenIncomplete) {
+      preview.textContent = previewCopy.incompleteWhen || "Finish the WHEN condition to preview this rule.";
+      return;
+    }
+    if (thenParts.length === 0) {
+      preview.textContent = thenIncomplete
+        ? (previewCopy.incompleteThen || "Finish the THEN requirement to preview this rule.")
+        : (previewCopy.needThen || "Add a THEN requirement to preview this rule.");
+      return;
+    }
+    if (thenIncomplete) {
+      preview.textContent = previewCopy.incompleteThen || "Finish the THEN requirement to preview this rule.";
+      return;
+    }
+
+    var thenText = thenParts.join(" and ");
+    preview.textContent = whenParts.length
+      ? "When " + whenParts.join(" and ") + ", " + thenText + "."
+      : thenText + ".";
   }
 
   function loadFields(type) {
@@ -253,6 +473,7 @@
       var row = target.closest(".contentguard-row");
       if (row) {
         row.remove();
+        updatePreview();
       }
     }
   });
@@ -263,15 +484,19 @@
       return;
     }
     var row = target.closest(".contentguard-row");
-    if (!row) {
-      return;
+    if (row) {
+      if (target.classList.contains("contentguard-operator") || target.classList.contains("contentguard-field")) {
+        toggleCondition(row);
+      }
+      if (target.classList.contains("contentguard-validator")) {
+        toggleValidation(row);
+      }
     }
-    if (target.classList.contains("contentguard-operator") || target.classList.contains("contentguard-field")) {
-      toggleCondition(row);
-    }
-    if (target.classList.contains("contentguard-validator")) {
-      toggleValidation(row);
-    }
+    updatePreview();
+  });
+
+  form.addEventListener("input", function () {
+    updatePreview();
   });
 
   var addConditionButton = document.getElementById("contentguard-add-condition");
@@ -290,6 +515,7 @@
 
   form.querySelectorAll("[data-row='condition']").forEach(toggleCondition);
   form.querySelectorAll("[data-row='validation']").forEach(toggleValidation);
+  updatePreview();
 
   form.addEventListener("submit", function (event) {
     var message = clientGuardMessage();
