@@ -59,4 +59,21 @@ final class AdminNoticeTest extends TestCase
         $this->assertSame('Rule added.', $notice['message']);
         $this->assertSame('success', $notice['type']);
     }
+
+    public function testFailedSaveUrlGetsNoticeAnchorAndSuccessDoesNot(): void
+    {
+        $this->assertSame('contentguard-rule-notice', AdminNotice::TARGET_ID);
+        $this->assertSame(
+            'http://example.test/wp-admin/admin.php?page=contentguard&action=new#contentguard-rule-notice',
+            AdminNotice::appendTarget('http://example.test/wp-admin/admin.php?page=contentguard&action=new', false)
+        );
+        $this->assertSame(
+            'http://example.test/wp-admin/admin.php?page=contentguard&rule=7#contentguard-rule-notice',
+            AdminNotice::appendTarget('http://example.test/wp-admin/admin.php?page=contentguard&rule=7#elsewhere', false)
+        );
+        $this->assertSame(
+            'http://example.test/wp-admin/admin.php?page=contentguard&rule=7',
+            AdminNotice::appendTarget('http://example.test/wp-admin/admin.php?page=contentguard&rule=7', true)
+        );
+    }
 }

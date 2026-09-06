@@ -352,10 +352,12 @@ final class RulesController
             $url = admin_url('admin.php?page=' . RulesPage::SLUG . '&rule=' . (int) $payload['rule_id']);
         }
 
+        $ok  = (bool) ($payload['ok'] ?? false);
         $url = add_query_arg(
-            AdminNotice::queryArgs((bool) ($payload['ok'] ?? false), (string) ($payload['message'] ?? '')),
+            AdminNotice::queryArgs($ok, (string) ($payload['message'] ?? '')),
             $url
         );
+        $url = AdminNotice::appendTarget($url, $ok);
 
         if (function_exists('wp_safe_redirect')) {
             wp_safe_redirect($url);

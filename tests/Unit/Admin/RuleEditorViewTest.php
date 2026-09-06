@@ -48,6 +48,11 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('value="active"', $html);
         $this->assertStringContainsString('value="inactive"', $html);
         $this->assertStringContainsString('aria-live="polite"', $html);
+        $this->assertStringContainsString('id="contentguard-rule-client-notice"', $html);
+        $this->assertStringContainsString('<strong>Warning:</strong>', $html);
+        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
+        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
+        $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
     }
 
     public function testEditRuleLoadsQuotedWhenThenAndAddAnotherRule(): void
@@ -126,10 +131,53 @@ final class RuleEditorViewTest extends TestCase
         );
 
         $this->assertStringContainsString('Unsaved draft', $html);
+        $this->assertStringContainsString('<strong>Warning:</strong>', $html);
+        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
+        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
         $this->assertStringContainsString('We could not add this rule.', $html);
+        $this->assertStringContainsString('id="contentguard-rule-notice"', $html);
+        $this->assertStringContainsString('role="alert"', $html);
+        $this->assertStringContainsString('tabindex="-1"', $html);
+        $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
+        $this->assertStringContainsString('#contentguard-rule-notice', $html);
+        $this->assertStringContainsString('id="contentguard-rule-client-notice"', $html);
         $this->assertStringContainsString('value="warning"', $html);
         $this->assertStringContainsString('value="inactive"', $html);
         $this->assertStringContainsString('When Show &quot;New&quot; Tag is No, PowerReviews Page ID is required.', $html);
+    }
+
+    public function testFailedUpdatePreservesSubmittedValuesAndErrorTarget(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'rule_id'          => '7',
+                'name'             => 'Updated draft name',
+                'target_post_type' => 'product',
+                'severity'         => 'warning',
+                'validations'      => array(
+                    array(
+                        'field_key' => 'field_6a05f9e8420ea',
+                        'type'      => 'min_length',
+                        'min'       => '',
+                    ),
+                ),
+            )),
+            array(
+                array('key' => 'field_6a05f9e8420ea', 'name' => 'pr_page_id', 'label' => 'PowerReviews Page ID', 'type' => 'text'),
+            ),
+            array('type' => 'error', 'message' => 'We could not save this rule. Minimum length is not configured.')
+        );
+
+        $this->assertStringContainsString('Updated draft name', $html);
+        $this->assertStringContainsString('<strong>Warning:</strong>', $html);
+        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
+        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
+        $this->assertStringContainsString('We could not save this rule.', $html);
+        $this->assertStringContainsString('id="contentguard-rule-notice"', $html);
+        $this->assertStringContainsString('role="alert"', $html);
+        $this->assertStringContainsString('tabindex="-1"', $html);
+        $this->assertStringContainsString('value="7"', $html);
+        $this->assertThenParam($html, 0, 'min', true);
     }
 
     public function testRequiredThenHidesUnrelatedConfiguration(): void

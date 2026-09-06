@@ -576,18 +576,88 @@
   form.querySelectorAll("[data-row='validation']").forEach(toggleValidation);
   updatePreview();
 
+  function prefersReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  function restoreNoticeHash() {
+    if (!window.history || !window.history.replaceState) {
+      return;
+    }
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search + "#contentguard-rule-notice"
+    );
+  }
+
+  function noticeMessageEl(notice) {
+    var el = notice.querySelector(".contentguard-notice-message");
+    if (el) {
+      return el;
+    }
+    el = document.createElement("p");
+    el.className = "contentguard-notice-message";
+    notice.appendChild(el);
+    return el;
+  }
+
+  function ensureWarningLabel(notice) {
+    if (notice.querySelector(".contentguard-notice-label")) {
+      return;
+    }
+    var label = document.createElement("p");
+    label.className = "contentguard-notice-label";
+    var strong = document.createElement("strong");
+    strong.textContent = "Warning:";
+    label.appendChild(strong);
+    notice.insertBefore(label, notice.firstChild);
+  }
+
+  function revealErrorNotice(notice, message, restoreHash) {
+    if (!notice) {
+      return;
+    }
+    ensureWarningLabel(notice);
+    if (message) {
+      noticeMessageEl(notice).textContent = message;
+    }
+    notice.hidden = false;
+    notice.setAttribute("role", "alert");
+    notice.setAttribute("tabindex", "-1");
+
+    var behavior = prefersReducedMotion() ? "auto" : "smooth";
+    if (typeof notice.scrollIntoView === "function") {
+      notice.scrollIntoView({ block: "start", behavior: behavior });
+    }
+
+    var focusNotice = function () {
+      if (typeof notice.focus === "function") {
+        notice.focus({ preventScroll: true });
+      }
+    };
+    if (behavior === "smooth") {
+      window.setTimeout(focusNotice, 400);
+    } else {
+      focusNotice();
+    }
+
+    if (restoreHash) {
+      restoreNoticeHash();
+    }
+  }
+
+  var serverNotice = document.getElementById("contentguard-rule-notice");
+  if (serverNotice && serverNotice.classList.contains("notice-error")) {
+    revealErrorNotice(serverNotice, "", true);
+  }
+
   form.addEventListener("submit", function (event) {
     var message = clientGuardMessage();
     var notice = document.getElementById("contentguard-rule-client-notice");
     if (message) {
       event.preventDefault();
-      if (notice) {
-        var text = notice.querySelector("p");
-        if (text) {
-          text.textContent = message;
-        }
-        notice.hidden = false;
-      }
+      revealErrorNotice(notice, message, false);
       return;
     }
     if (notice) {

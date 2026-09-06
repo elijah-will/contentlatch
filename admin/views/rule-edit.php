@@ -102,9 +102,32 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     );
     ?>
 
+    <script>
+        (function () {
+            if (window.location.hash !== "#contentguard-rule-notice") {
+                return;
+            }
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, "", window.location.pathname + window.location.search);
+            }
+            window.scrollTo(0, 0);
+            window.contentguardPendingNoticeScroll = true;
+        })();
+    </script>
+
     <?php if ($notice !== null) : ?>
-        <div class="<?php echo esc_attr(AdminNotice::cssClass($notice['type'])); ?>">
-            <p>
+        <div
+            id="<?php echo esc_attr(AdminNotice::TARGET_ID); ?>"
+            class="<?php echo esc_attr(AdminNotice::cssClass($notice['type'])); ?> inline"
+            <?php if ($notice['type'] === 'error') : ?>
+                role="alert"
+                tabindex="-1"
+            <?php endif; ?>
+        >
+            <?php if ($notice['type'] === 'error') : ?>
+                <p class="contentguard-notice-label"><strong><?php echo esc_html__('Warning:', 'contentguard'); ?></strong></p>
+            <?php endif; ?>
+            <p class="contentguard-notice-message">
                 <?php echo esc_html($notice['message']); ?>
                 <?php if ($notice['type'] === 'success') : ?>
                     <a href="<?php echo esc_url($newUrl); ?>"><?php echo esc_html__('Add another rule', 'contentguard'); ?></a>
@@ -112,7 +135,10 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             </p>
         </div>
     <?php endif; ?>
-    <div id="contentguard-rule-client-notice" class="notice notice-error" hidden><p></p></div>
+    <div id="contentguard-rule-client-notice" class="notice notice-error inline" hidden>
+        <p class="contentguard-notice-label"><strong><?php echo esc_html__('Warning:', 'contentguard'); ?></strong></p>
+        <p class="contentguard-notice-message"></p>
+    </div>
 
     <section class="contentguard-panel contentguard-rule-preview" aria-labelledby="contentguard-preview-heading">
         <h2 class="contentguard-builder-section__title" id="contentguard-preview-heading"><?php echo esc_html__('Rule preview', 'contentguard'); ?></h2>

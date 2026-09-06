@@ -57,6 +57,10 @@
     color: var(--cg-text);
 }
 
+.contentguard [hidden] {
+    display: none !important;
+}
+
 .contentguard .contentguard-muted,
 .contentguard .description {
     color: var(--cg-muted);

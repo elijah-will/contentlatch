@@ -11,6 +11,8 @@ namespace ContentGuard\Application;
 
 final class AdminNotice
 {
+    public const TARGET_ID = 'contentguard-rule-notice';
+
     /**
      * @return array{contentguard_notice: string, contentguard_msg: string}
      */
@@ -51,6 +53,21 @@ final class AdminNotice
         return $type === 'success'
             ? 'updated notice notice-success is-dismissible'
             : 'notice notice-error is-dismissible';
+    }
+
+    /**
+     * Failed saves append a fragment so the browser can scroll to the notice without JS.
+     */
+    public static function appendTarget(string $url, bool $ok): string
+    {
+        if ($ok) {
+            return $url;
+        }
+
+        $hash = '#' . self::TARGET_ID;
+        $base = explode('#', $url, 2)[0];
+
+        return $base . $hash;
     }
 
     public static function decodeMessage(string $raw): string

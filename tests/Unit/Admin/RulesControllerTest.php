@@ -173,6 +173,49 @@ final class RulesControllerTest extends TestCase
         $this->assertNull($drafts->get(0));
     }
 
+    public function testInvalidUpdatePreservesSubmittedDraft(): void
+    {
+        $store = array();
+        $drafts = new RuleEditorDraftStore(
+            static function (string $key, mixed $value, int $ttl) use (&$store): void {
+                $store[$key] = $value;
+            },
+            static function (string $key) use (&$store): mixed {
+                return $store[$key] ?? null;
+            },
+            static function (string $key) use (&$store): void {
+                unset($store[$key]);
+            },
+            static fn (): int => 3
+        );
+
+        $controller = $this->controller(true, true, null, $drafts);
+        $created = $controller->dispatch(RulesController::ACTION_SAVE, $this->validRequest());
+        $this->assertTrue($created['ok']);
+
+        $request = $this->validRequest();
+        $request['rule_id'] = '1';
+        $request['name'] = 'Keep the updated name';
+        $request['validations'][0]['type'] = 'min_length';
+        unset($request['validations'][0]['min']);
+
+        $result = $controller->dispatch(RulesController::ACTION_SAVE, $request);
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('We could not save this rule. Minimum length is not configured.', $result['message']);
+        $this->assertSame(1, $result['rule_id']);
+        $this->assertSame('Keep the updated name', $result['draft']['name']);
+        $this->assertSame('min_length', $result['draft']['validations'][0]['type']);
+        $this->assertSame($result['draft'], $drafts->get(1));
+        $this->assertStringContainsString(
+            '#contentguard-rule-notice',
+            \ContentGuard\Application\AdminNotice::appendTarget(
+                'admin.php?page=contentguard&rule=1',
+                false
+            )
+        );
+    }
+
     public function testEmptyCustomMessageDoesNotBlockAValidSave(): void
     {
         $request = $this->validRequest();
