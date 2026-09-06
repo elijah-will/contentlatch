@@ -21,6 +21,7 @@ use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleSeverity;
+use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
 
 final class RulesPage
@@ -172,8 +173,32 @@ final class RulesPage
 
         $notice         = $this->notice();
         $postTypeLabels = $this->factory->allowedPostTypes();
+        $allInactive    = self::allRulesInactive($rules);
         $view           = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
         require $view;
+    }
+
+    /**
+     * @param Rule[] $rules
+     */
+    public static function allRulesInactive(array $rules): bool
+    {
+        if ($rules === array()) {
+            return false;
+        }
+
+        foreach ($rules as $rule) {
+            if ($rule instanceof Rule && $rule->status === RuleStatus::Active) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static function allInactiveNotice(): string
+    {
+        return 'None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content.';
     }
 
     public static function ruleImpactLabel(?AuditRun $latestComplete, Rule $rule, ?AuditRuleImpact $impact): string

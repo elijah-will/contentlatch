@@ -1,3 +1,107 @@
+.contentguard-rule-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cg-space-3, 12px);
+    margin: var(--cg-space-4, 16px) 0 0;
+}
+
+.contentguard-rule-item {
+    max-width: 100%;
+}
+
+.contentguard-rule-item__header {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2, 8px) var(--cg-space-4, 16px);
+    justify-content: space-between;
+}
+
+.contentguard-rule-item__title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: var(--cg-line-height-tight, 1.3);
+    margin: 0;
+}
+
+.contentguard-rule-item__title a {
+    color: var(--cg-text, #1d2327);
+    text-decoration: none;
+}
+
+.contentguard-rule-item__title a:hover {
+    color: var(--cg-accent, #2271b1);
+    text-decoration: underline;
+}
+
+.contentguard-rule-item__applies {
+    color: var(--cg-muted, #646970);
+    font-size: var(--cg-font-size-sm, 12px);
+    line-height: var(--cg-line-height, 1.5);
+    margin: 0;
+}
+
+.contentguard-rule-item__status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2, 8px);
+    margin: var(--cg-space-3, 12px) 0;
+}
+
+.contentguard-rule-item__logic {
+    margin: 0 0 var(--cg-space-3, 12px);
+}
+
+.contentguard-rule-item__logic > div {
+    display: grid;
+    gap: var(--cg-space-1, 4px) var(--cg-space-3, 12px);
+    grid-template-columns: 4.5em 1fr;
+    margin: 0 0 var(--cg-space-2, 8px);
+}
+
+.contentguard-rule-item__logic dt {
+    color: var(--cg-muted, #646970);
+    font-size: var(--cg-font-size-sm, 12px);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+
+.contentguard-rule-item__logic dd {
+    margin: 0;
+}
+
+.contentguard-rule-item__impact {
+    color: var(--cg-muted, #646970);
+    line-height: var(--cg-line-height, 1.5);
+    margin: 0 0 var(--cg-space-4, 16px);
+}
+
+.contentguard-rule-item__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2, 8px);
+}
+
+.contentguard-rule-item__actions .submitdelete {
+    margin-left: auto;
+}
+
+@media screen and (max-width: 782px) {
+    .contentguard-rule-item__header {
+        flex-direction: column;
+    }
+
+    .contentguard-rule-item__logic > div {
+        grid-template-columns: 1fr;
+    }
+
+    .contentguard-rule-item__actions .submitdelete {
+        margin-left: 0;
+    }
+}
+
 .contentguard-rows {
     display: flex;
     flex-direction: column;

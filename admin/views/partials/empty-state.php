@@ -2,7 +2,7 @@
 /**
  * Shared ContentGuard empty state.
  *
- * Established for later screen use. Not required on current screens.
+ * Used by the Rules list when no rules exist.
  *
  * @package ContentGuard
  *

@@ -10,6 +10,7 @@
  * @var array<string, \ContentGuard\Application\Audit\AuditRuleImpact> $impacts
  * @var array<string, string> $postTypeLabels
  * @var array{type: string, message: string}|null $notice
+ * @var bool $allInactive
  */
 
 defined('ABSPATH') || exit;
@@ -21,11 +22,14 @@ use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\AdminPresentation;
 use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\StatusPresentation;
 use ContentGuard\Domain\RuleStatus;
 
 $newUrl         = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
 $postTypeLabels = isset($postTypeLabels) && is_array($postTypeLabels) ? $postTypeLabels : array();
+$rules          = isset($rules) && is_array($rules) ? $rules : array();
+$summaries      = isset($summaries) && is_array($summaries) ? $summaries : array();
+$impacts        = isset($impacts) && is_array($impacts) ? $impacts : array();
+$allInactive    = isset($allInactive) ? (bool) $allInactive : RulesPage::allRulesInactive($rules);
 ?>
 <div class="wrap contentguard" id="contentguard-rules">
     <?php
@@ -46,20 +50,28 @@ $postTypeLabels = isset($postTypeLabels) && is_array($postTypeLabels) ? $postTyp
         <div class="<?php echo esc_attr(AdminNotice::cssClass($notice['type'])); ?>"><p><?php echo esc_html($notice['message']); ?></p></div>
     <?php endif; ?>
 
-    <table class="widefat striped">
-        <thead>
-            <tr>
-                <th><?php echo esc_html__('Rule', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('Post type', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('Severity', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('Status', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('WHEN', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('THEN', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('Latest audit', 'contentguard'); ?></th>
-                <th><?php echo esc_html__('Actions', 'contentguard'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
+    <?php if ($rules === array()) : ?>
+        <?php
+        AdminView::partial(
+            'empty-state',
+            array(
+                'heading' => __('No rules yet', 'contentguard'),
+                'text'    => __('Create a rule to start validating content.', 'contentguard'),
+                'primary' => array(
+                    'label' => __('Add Rule', 'contentguard'),
+                    'href'  => $newUrl,
+                ),
+            )
+        );
+        ?>
+    <?php else : ?>
+        <?php if ($allInactive) : ?>
+            <div class="notice notice-warning">
+                <p><?php echo esc_html(RulesPage::allInactiveNotice()); ?></p>
+            </div>
+        <?php endif; ?>
+
+        <div class="contentguard-rule-list">
             <?php foreach ($rules as $rule) : ?>
                 <?php
                 $edit = admin_url('admin.php?page=' . RulesPage::SLUG . '&rule=' . (int) $rule->id);
@@ -85,41 +97,22 @@ $postTypeLabels = isset($postTypeLabels) && is_array($postTypeLabels) ? $postTyp
                 $affectedUrl = admin_url(
                     'admin.php?page=' . AuditPage::SLUG . '&rule=' . rawurlencode((string) $rule->id)
                 );
+                AdminView::partial(
+                    'rule-list-item',
+                    array(
+                        'rule'          => $rule,
+                        'summary'       => $summary,
+                        'postTypeLabel' => AdminPresentation::postTypeLabel($rule->postType, $postTypeLabels),
+                        'impactLabel'   => $impactLabel,
+                        'editUrl'       => $edit,
+                        'statusUrl'     => $statusUrl,
+                        'deleteUrl'     => $deleteUrl,
+                        'affectedUrl'   => $affectedUrl,
+                        'showAffected'  => $latestComplete !== null && $impact !== null && $impact->postCount > 0,
+                    )
+                );
                 ?>
-                <tr>
-                    <td>
-                        <strong><a href="<?php echo esc_url($edit); ?>"><?php echo esc_html($rule->name); ?></a></strong>
-                    </td>
-                    <td><?php echo esc_html(AdminPresentation::postTypeLabel($rule->postType, $postTypeLabels)); ?></td>
-                    <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?></td>
-                    <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?></td>
-                    <td><?php echo esc_html($summary['conditions']); ?></td>
-                    <td><?php echo esc_html($summary['validations']); ?></td>
-                    <td>
-                        <?php echo esc_html($impactLabel); ?>
-                        <?php if ($latestComplete !== null && $impact !== null && $impact->postCount > 0) : ?>
-                            <br>
-                            <a href="<?php echo esc_url($affectedUrl); ?>"><?php echo esc_html__('View affected content', 'contentguard'); ?></a>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <a href="<?php echo esc_url($edit); ?>"><?php echo esc_html__('Edit', 'contentguard'); ?></a>
-                        |
-                        <a href="<?php echo esc_url($statusUrl); ?>">
-                            <?php echo esc_html($rule->status === RuleStatus::Active ? __('Deactivate', 'contentguard') : __('Activate', 'contentguard')); ?>
-                        </a>
-                        |
-                        <a href="<?php echo esc_url($deleteUrl); ?>" class="submitdelete" onclick="return confirm('<?php echo esc_js(__('Delete this rule? Audit findings for this rule will be kept.', 'contentguard')); ?>');">
-                            <?php echo esc_html__('Delete', 'contentguard'); ?>
-                        </a>
-                    </td>
-                </tr>
             <?php endforeach; ?>
-            <?php if ($rules === array()) : ?>
-                <tr>
-                    <td colspan="8"><?php echo esc_html__('No rules yet. Create a rule to start validating content.', 'contentguard'); ?></td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
+        </div>
+    <?php endif; ?>
 </div>

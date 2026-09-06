@@ -12,6 +12,7 @@ use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Domain\RuleSeverity;
+use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -53,5 +54,30 @@ final class RulesPageTest extends TestCase
             '3 content items with warnings',
             RulesPage::ruleImpactLabel($complete, $warningRule, new AuditRuleImpact(2, 3, 3))
         );
+    }
+
+    public function testAllRulesInactiveIgnoresAnEmptyList(): void
+    {
+        $this->assertFalse(RulesPage::allRulesInactive(array()));
+        $this->assertFalse(RulesPage::allRulesInactive(array(
+            RuleFactory::rule(array('status' => RuleStatus::Active)),
+        )));
+        $this->assertFalse(RulesPage::allRulesInactive(array(
+            RuleFactory::rule(array('status' => RuleStatus::Inactive)),
+            RuleFactory::rule(array('id' => 2, 'status' => RuleStatus::Active)),
+        )));
+        $this->assertTrue(RulesPage::allRulesInactive(array(
+            RuleFactory::rule(array('status' => RuleStatus::Inactive)),
+            RuleFactory::rule(array('id' => 2, 'status' => RuleStatus::Inactive)),
+        )));
+    }
+
+    public function testAllInactiveNoticeExplainsEnforcement(): void
+    {
+        $notice = RulesPage::allInactiveNotice();
+
+        $this->assertStringContainsString('None of these rules are active', $notice);
+        $this->assertStringContainsString('not currently being enforced', $notice);
+        $this->assertStringContainsString('Activate a rule to allow ContentGuard to validate content', $notice);
     }
 }
