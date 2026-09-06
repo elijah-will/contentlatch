@@ -54,10 +54,12 @@ final class AuditPage
             return;
         }
 
+        AdminAssets::enqueueShared();
+
         wp_register_style(
             'contentguard-audit',
             CONTENTGUARD_URL . 'admin/css/audit.css',
-            array(),
+            array(AdminAssets::STYLE),
             \ContentGuard\Plugin::VERSION
         );
         wp_enqueue_style('contentguard-audit');

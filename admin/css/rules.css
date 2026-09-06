@@ -1,14 +1,14 @@
 .contentguard-rows {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 12px 0;
+    gap: var(--cg-space-2, 8px);
+    margin: var(--cg-space-3, 12px) 0;
 }
 
 .contentguard-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--cg-space-2, 8px);
     align-items: center;
 }
 

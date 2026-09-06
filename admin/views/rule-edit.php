@@ -12,6 +12,7 @@
 
 defined('ABSPATH') || exit;
 
+use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\RuleCommandService;
@@ -63,13 +64,25 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     }
 };
 ?>
-<div class="wrap" id="contentguard-rule-editor">
-    <h1><?php echo esc_html($isNew ? __('Add New Rule', 'contentguard') : __('Edit Rule', 'contentguard')); ?></h1>
-    <p>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=' . RulesPage::SLUG)); ?>">
-            <?php echo esc_html__('Back to rules', 'contentguard'); ?>
-        </a>
-    </p>
+<div class="wrap contentguard" id="contentguard-rule-editor">
+    <?php
+    AdminView::partial(
+        'page-header',
+        array(
+            'title'       => $isNew ? __('Add New Rule', 'contentguard') : __('Edit Rule', 'contentguard'),
+            'description' => $isNew
+                ? __('Create a rule that defines when content must meet a requirement.', 'contentguard')
+                : __('Update the rule that defines when content must meet a requirement.', 'contentguard'),
+            'secondary'   => array(
+                array(
+                    'label' => __('Back to rules', 'contentguard'),
+                    'href'  => admin_url('admin.php?page=' . RulesPage::SLUG),
+                    'class' => 'contentguard-button--link',
+                ),
+            ),
+        )
+    );
+    ?>
 
     <?php if ($notice !== null) : ?>
         <div class="notice notice-<?php echo esc_attr($notice['type']); ?> is-dismissible"><p><?php echo esc_html($notice['message']); ?></p></div>
@@ -104,7 +117,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                 <td>
                     <label>
                         <input type="radio" name="severity" value="<?php echo esc_attr(RuleSeverity::Fail->value); ?>" <?php checked($editor->severity === RuleSeverity::Fail->value); ?>>
-                        <?php echo esc_html__('Fail', 'contentguard'); ?>
+                        <?php echo esc_html__('Blocking', 'contentguard'); ?>
                     </label>
                     &nbsp;
                     <label>

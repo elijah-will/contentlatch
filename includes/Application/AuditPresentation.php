@@ -55,10 +55,7 @@ final class AuditPresentation
 
     public static function severityLabel(RuleSeverity $severity): string
     {
-        return match ($severity) {
-            RuleSeverity::Fail    => 'Failed',
-            RuleSeverity::Warning => 'Warning',
-        };
+        return StatusPresentation::label(StatusPresentation::fromSeverity($severity));
     }
 
     private static function fieldRefLabel(string $label, string $name, string $key): string

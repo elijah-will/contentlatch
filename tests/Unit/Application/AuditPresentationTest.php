@@ -51,7 +51,7 @@ final class AuditPresentationTest extends TestCase
     {
         $this->assertSame('Tomato Sauce', AuditPresentation::postTitle('Tomato Sauce'));
         $this->assertSame('Content no longer available', AuditPresentation::postTitle(''));
-        $this->assertSame('Failed', AuditPresentation::severityLabel(RuleSeverity::Fail));
+        $this->assertSame('Blocking', AuditPresentation::severityLabel(RuleSeverity::Fail));
         $this->assertSame('Warning', AuditPresentation::severityLabel(RuleSeverity::Warning));
     }
 }

@@ -8,23 +8,38 @@
  * @var array<string, array{conditions: string, validations: string}> $summaries
  * @var \ContentGuard\Application\Audit\AuditRun|null $latestComplete
  * @var array<string, \ContentGuard\Application\Audit\AuditRuleImpact> $impacts
+ * @var array<string, string> $postTypeLabels
  * @var array{type: string, message: string}|null $notice
  */
 
 defined('ABSPATH') || exit;
 
+use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
+use ContentGuard\Application\AdminPresentation;
 use ContentGuard\Application\RuleCommandService;
+use ContentGuard\Application\StatusPresentation;
 use ContentGuard\Domain\RuleStatus;
 
-$newUrl = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
+$newUrl         = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
+$postTypeLabels = isset($postTypeLabels) && is_array($postTypeLabels) ? $postTypeLabels : array();
 ?>
-<div class="wrap" id="contentguard-rules">
-    <h1 class="wp-heading-inline"><?php echo esc_html__('ContentGuard Rules', 'contentguard'); ?></h1>
-    <a href="<?php echo esc_url($newUrl); ?>" class="page-title-action"><?php echo esc_html__('Add New Rule', 'contentguard'); ?></a>
-    <hr class="wp-header-end">
+<div class="wrap contentguard" id="contentguard-rules">
+    <?php
+    AdminView::partial(
+        'page-header',
+        array(
+            'title'       => __('Rules', 'contentguard'),
+            'description' => __('Define and manage the rules your content must follow.', 'contentguard'),
+            'primary'     => array(
+                'label' => __('Add Rule', 'contentguard'),
+                'href'  => $newUrl,
+            ),
+        )
+    );
+    ?>
 
     <?php if ($notice !== null) : ?>
         <div class="notice notice-<?php echo esc_attr($notice['type']); ?> is-dismissible"><p><?php echo esc_html($notice['message']); ?></p></div>
@@ -74,9 +89,9 @@ $newUrl = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
                     <td>
                         <strong><a href="<?php echo esc_url($edit); ?>"><?php echo esc_html($rule->name); ?></a></strong>
                     </td>
-                    <td><?php echo esc_html($rule->postType); ?></td>
-                    <td><?php echo esc_html($rule->severity->value); ?></td>
-                    <td><?php echo esc_html($rule->status->value); ?></td>
+                    <td><?php echo esc_html(AdminPresentation::postTypeLabel($rule->postType, $postTypeLabels)); ?></td>
+                    <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?></td>
+                    <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?></td>
                     <td><?php echo esc_html($summary['conditions']); ?></td>
                     <td><?php echo esc_html($summary['validations']); ?></td>
                     <td>

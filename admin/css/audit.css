@@ -1,36 +1,37 @@
 .contentguard-health {
-    margin: 16px 0 24px;
+    margin: var(--cg-space-4, 16px) 0 var(--cg-space-5, 24px);
 }
 
 .contentguard-health__stats,
 .contentguard-findings-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    margin: 12px 0 0;
+    gap: var(--cg-space-3, 12px);
+    margin: var(--cg-space-3, 12px) 0 0;
     padding: 0;
     list-style: none;
 }
 
 .contentguard-health__stat {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-left: 4px solid #2271b1;
+    background: var(--cg-surface, #fff);
+    border: var(--cg-border, 1px solid #c3c4c7);
+    border-left: 4px solid var(--cg-accent, #2271b1);
+    border-radius: var(--cg-radius, 2px);
     box-sizing: border-box;
     min-width: 132px;
     padding: 10px 14px;
 }
 
 .contentguard-health__stat--passed {
-    border-left-color: #00a32a;
+    border-left-color: var(--cg-success-border, #00a32a);
 }
 
 .contentguard-health__stat--failed {
-    border-left-color: #d63638;
+    border-left-color: var(--cg-danger-border, #d63638);
 }
 
 .contentguard-health__stat--warning {
-    border-left-color: #dba617;
+    border-left-color: var(--cg-caution-border, #dba617);
 }
 
 .contentguard-health__stat--findings {

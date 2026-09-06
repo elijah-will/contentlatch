@@ -73,10 +73,12 @@ final class RulesPage
             return;
         }
 
+        AdminAssets::enqueueShared();
+
         wp_register_style(
             'contentguard-rules',
             CONTENTGUARD_URL . 'admin/css/rules.css',
-            array(),
+            array(AdminAssets::STYLE),
             \ContentGuard\Plugin::VERSION
         );
         wp_enqueue_style('contentguard-rules');
@@ -168,8 +170,9 @@ final class RulesPage
             }
         }
 
-        $notice = $this->notice();
-        $view   = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
+        $notice         = $this->notice();
+        $postTypeLabels = $this->factory->allowedPostTypes();
+        $view           = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
         require $view;
     }
 

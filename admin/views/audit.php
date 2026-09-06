@@ -29,9 +29,12 @@
 
 defined('ABSPATH') || exit;
 
+use ContentGuard\Admin\AdminView;
 use ContentGuard\Admin\AuditPage;
+use ContentGuard\Application\AdminPresentation;
 use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\AuditPresentation;
+use ContentGuard\Application\StatusPresentation;
 
 $statuses    = implode(', ', \ContentGuard\Application\Audit\ContentAuditService::AUDITED_STATUSES);
 $auditUrl    = static function (array $args): string {
@@ -41,24 +44,44 @@ $completedAt = $resultsRun !== null
     ? AuditPage::formatRunTime($resultsRun->finishedAt ?? $resultsRun->startedAt)
     : '';
 ?>
-<div class="wrap<?php echo $viewingHistory ? ' contentguard-audit--history' : ''; ?>" id="contentguard-audit">
-    <h1><?php echo esc_html__('ContentGuard Audit', 'contentguard'); ?></h1>
+<div class="wrap contentguard<?php echo $viewingHistory ? ' contentguard-audit--history' : ''; ?>" id="contentguard-audit">
+    <?php
+    AdminView::partial(
+        'page-header',
+        array(
+            'title'       => __('Audit', 'contentguard'),
+            'description' => __('Check your existing content against your active rules.', 'contentguard'),
+            'primary'     => array(
+                'label'    => __('Run Audit', 'contentguard'),
+                'attrs'    => array(
+                    'id' => 'contentguard-audit-start',
+                ),
+                'disabled' => !AuditPage::canStart($active, $postTypes),
+            ),
+        )
+    );
+    ?>
 
     <h2><?php echo esc_html__('Start Audit', 'contentguard'); ?></h2>
     <p>
         <?php echo esc_html__('Post types:', 'contentguard'); ?>
-        <strong><?php echo esc_html($postTypes === array() ? __('None with active rules', 'contentguard') : implode(', ', $postTypes)); ?></strong>
+        <strong><?php
+        if ($postTypes === array()) {
+            echo esc_html__('None with active rules', 'contentguard');
+        } else {
+            $typeNames = array();
+            foreach ($postTypes as $type) {
+                $typeNames[] = AdminPresentation::postTypeLabel($type);
+            }
+            echo esc_html(implode(', ', $typeNames));
+        }
+        ?></strong>
         &nbsp;|&nbsp;
         <?php echo esc_html__('Active rules:', 'contentguard'); ?>
         <strong><?php echo esc_html((string) $activeRuleCount); ?></strong>
         &nbsp;|&nbsp;
         <?php echo esc_html__('Statuses:', 'contentguard'); ?>
         <strong><?php echo esc_html($statuses); ?></strong>
-    </p>
-    <p>
-        <button type="button" class="button button-primary" id="contentguard-audit-start" <?php disabled(!AuditPage::canStart($active, $postTypes)); ?>>
-            <?php echo esc_html__('Start Audit', 'contentguard'); ?>
-        </button>
     </p>
     <?php if ($postTypes === array()) : ?>
         <p class="description">
@@ -78,7 +101,7 @@ $completedAt = $resultsRun !== null
         <?php else : ?>
             <p>
                 <?php echo esc_html__('Status:', 'contentguard'); ?>
-                <strong id="contentguard-audit-status"><?php echo esc_html($active->status->value); ?></strong>
+                <strong id="contentguard-audit-status"><?php echo esc_html(StatusPresentation::label(StatusPresentation::fromAuditRunStatus($active->status))); ?></strong>
                 &nbsp;|&nbsp;
                 <?php echo esc_html__('Scanned:', 'contentguard'); ?>
                 <span id="contentguard-audit-scanned"><?php echo esc_html((string) $active->postsScanned); ?></span>
@@ -252,7 +275,7 @@ $completedAt = $resultsRun !== null
                     <span><?php echo esc_html__('Severity', 'contentguard'); ?></span>
                     <select name="severity">
                         <option value=""><?php echo esc_html__('All', 'contentguard'); ?></option>
-                        <option value="fail" <?php selected($query !== null && $query->severity === 'fail'); ?>><?php echo esc_html__('Failures', 'contentguard'); ?></option>
+                        <option value="fail" <?php selected($query !== null && $query->severity === 'fail'); ?>><?php echo esc_html__('Blocking', 'contentguard'); ?></option>
                         <option value="warning" <?php selected($query !== null && $query->severity === 'warning'); ?>><?php echo esc_html__('Warnings', 'contentguard'); ?></option>
                     </select>
                 </label>
@@ -273,7 +296,7 @@ $completedAt = $resultsRun !== null
                         <option value=""><?php echo esc_html__('All types', 'contentguard'); ?></option>
                         <?php foreach ($resultsRun->postTypes as $type) : ?>
                             <option value="<?php echo esc_attr($type); ?>" <?php selected($query !== null && $query->postType === $type); ?>>
-                                <?php echo esc_html($type); ?>
+                                <?php echo esc_html(AdminPresentation::postTypeLabel($type)); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -319,9 +342,9 @@ $completedAt = $resultsRun !== null
                         $field = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey] ?? $finding->fieldKey;
                         ?>
                         <tr>
-                            <td><?php echo esc_html(AuditPresentation::severityLabel($finding->severity)); ?></td>
+                            <td><?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($finding->severity))); ?></td>
                             <td><?php echo esc_html(AuditPresentation::postTitle($title)); ?></td>
-                            <td><?php echo esc_html($finding->postType); ?></td>
+                            <td><?php echo esc_html(AdminPresentation::postTypeLabel($finding->postType)); ?></td>
                             <td><?php echo esc_html($ruleNames[(string) $finding->ruleId] ?? AuditPresentation::ruleName(null, $finding->ruleId)); ?></td>
                             <td><?php echo esc_html($field); ?></td>
                             <td><?php echo esc_html($finding->message); ?></td>
@@ -396,13 +419,7 @@ $completedAt = $resultsRun !== null
             <tbody>
                 <?php foreach ($history as $run) : ?>
                     <?php
-                    $statusLabel = match ($run->status) {
-                        AuditRunStatus::Complete  => __('Completed', 'contentguard'),
-                        AuditRunStatus::Failed    => __('Failed', 'contentguard'),
-                        AuditRunStatus::Cancelled => __('Cancelled', 'contentguard'),
-                        AuditRunStatus::Running   => __('Running', 'contentguard'),
-                        AuditRunStatus::Pending   => __('Pending', 'contentguard'),
-                    };
+                    $statusKey = StatusPresentation::fromAuditRunStatus($run->status);
                     $isLatest    = $latestComplete !== null && $run->id === $latestComplete->id;
                     $viewingThis = $viewingHistory && $resultsRun !== null && $run->id === $resultsRun->id;
                     ?>
@@ -412,7 +429,7 @@ $completedAt = $resultsRun !== null
                         <td><?php echo esc_html((string) $run->postsFailed); ?></td>
                         <td><?php echo esc_html((string) $run->postsWarned); ?></td>
                         <td>
-                            <?php echo esc_html($statusLabel); ?>
+                            <?php AdminView::partial('status-pill', array('status' => $statusKey)); ?>
                             <?php if ($isLatest) : ?>
                                 <span class="description"><?php echo esc_html__('(current)', 'contentguard'); ?></span>
                             <?php endif; ?>

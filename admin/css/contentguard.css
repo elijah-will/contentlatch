@@ -1,0 +1,356 @@
+/**
+ * ContentGuard shared design system.
+ *
+ * Tokens prefer WordPress admin variables. Screens inherit admin theme color.
+ */
+
+.contentguard {
+    --cg-space-1: 4px;
+    --cg-space-2: 8px;
+    --cg-space-3: 12px;
+    --cg-space-4: 16px;
+    --cg-space-5: 24px;
+    --cg-space-6: 32px;
+
+    --cg-radius: 2px;
+    --cg-border-color: #c3c4c7;
+    --cg-border: 1px solid var(--cg-border-color);
+    --cg-shadow: none;
+
+    --cg-font-size: 13px;
+    --cg-font-size-sm: 12px;
+    --cg-font-size-lg: 22px;
+    --cg-line-height: 1.5;
+    --cg-line-height-tight: 1.3;
+
+    --cg-text: #1d2327;
+    --cg-muted: #646970;
+    --cg-surface: #fff;
+    --cg-surface-subtle: #f6f7f7;
+    --cg-page: #f0f0f1;
+
+    --cg-accent: var(--wp-admin-theme-color, #2271b1);
+    --cg-accent-rgb: var(--wp-admin-theme-color--rgb, 34, 113, 177);
+    --cg-focus: var(--wp-admin-theme-color, #2271b1);
+
+    --cg-danger: #8a2424;
+    --cg-danger-surface: #fcf0f1;
+    --cg-danger-border: #d63638;
+    --cg-caution: #614200;
+    --cg-caution-surface: #fcf9e8;
+    --cg-caution-border: #dba617;
+    --cg-success: #1e4620;
+    --cg-success-surface: #edfaef;
+    --cg-success-border: #00a32a;
+    --cg-info: #0a4b78;
+    --cg-info-surface: #f0f6fc;
+    --cg-info-border: var(--wp-admin-theme-color, #2271b1);
+
+    --cg-content-width: 72rem;
+}
+
+/* -------------------------------------------------------------------------
+ * Typography & surfaces
+ * ------------------------------------------------------------------------- */
+
+.contentguard {
+    color: var(--cg-text);
+}
+
+.contentguard .contentguard-muted,
+.contentguard .description {
+    color: var(--cg-muted);
+}
+
+.contentguard-panel {
+    background: var(--cg-surface);
+    border: var(--cg-border);
+    border-radius: var(--cg-radius);
+    box-shadow: var(--cg-shadow);
+    box-sizing: border-box;
+    max-width: var(--cg-content-width);
+    padding: var(--cg-space-4);
+}
+
+/* -------------------------------------------------------------------------
+ * Page header
+ * ------------------------------------------------------------------------- */
+
+.contentguard-page-header {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-4);
+    justify-content: space-between;
+    margin: 0 0 var(--cg-space-4);
+    max-width: var(--cg-content-width);
+}
+
+.contentguard-page-header__text {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.contentguard-page-header__eyebrow {
+    color: var(--cg-muted);
+    font-size: var(--cg-font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: var(--cg-line-height-tight);
+    margin: 0 0 var(--cg-space-1);
+    text-transform: uppercase;
+}
+
+.contentguard-page-header__title {
+    font-size: 1.65em;
+    font-weight: 600;
+    line-height: var(--cg-line-height-tight);
+    margin: 0;
+    padding: 0;
+}
+
+.contentguard-page-header__description {
+    color: var(--cg-muted);
+    font-size: var(--cg-font-size);
+    line-height: var(--cg-line-height);
+    margin: var(--cg-space-2) 0 0;
+    max-width: 40rem;
+}
+
+.contentguard-page-header__actions {
+    align-items: center;
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2);
+}
+
+/* -------------------------------------------------------------------------
+ * Status pills — text is required; color is reinforcement only
+ * ------------------------------------------------------------------------- */
+
+.contentguard-status {
+    background: var(--cg-surface-subtle);
+    border: var(--cg-border);
+    border-radius: var(--cg-radius);
+    color: var(--cg-text);
+    display: inline-block;
+    font-size: var(--cg-font-size-sm);
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+
+.contentguard-status--success {
+    background: var(--cg-success-surface);
+    border-color: var(--cg-success-border);
+    color: var(--cg-success);
+}
+
+.contentguard-status--danger {
+    background: var(--cg-danger-surface);
+    border-color: var(--cg-danger-border);
+    color: var(--cg-danger);
+}
+
+.contentguard-status--caution {
+    background: var(--cg-caution-surface);
+    border-color: var(--cg-caution-border);
+    color: var(--cg-caution);
+}
+
+.contentguard-status--info {
+    background: var(--cg-info-surface);
+    border-color: var(--cg-info-border);
+    color: var(--cg-info);
+}
+
+.contentguard-status--neutral {
+    background: var(--cg-surface-subtle);
+    border-color: var(--cg-border-color);
+    color: #50575e;
+}
+
+.contentguard-status__text {
+    display: inline;
+}
+
+/* -------------------------------------------------------------------------
+ * Stat card foundation (for later Audit use)
+ * ------------------------------------------------------------------------- */
+
+.contentguard-stat-card {
+    background: var(--cg-surface);
+    border: var(--cg-border);
+    border-left: 4px solid var(--cg-accent);
+    border-radius: var(--cg-radius);
+    box-sizing: border-box;
+    min-width: 10rem;
+    padding: var(--cg-space-3) var(--cg-space-4);
+}
+
+.contentguard-stat-card--success {
+    border-left-color: var(--cg-success-border);
+}
+
+.contentguard-stat-card--danger {
+    border-left-color: var(--cg-danger-border);
+}
+
+.contentguard-stat-card--caution {
+    border-left-color: var(--cg-caution-border);
+}
+
+.contentguard-stat-card--neutral {
+    border-left-color: #50575e;
+}
+
+.contentguard-stat-card__label {
+    color: var(--cg-muted);
+    display: block;
+    font-size: var(--cg-font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.contentguard-stat-card__value {
+    display: block;
+    font-size: var(--cg-font-size-lg);
+    font-weight: 600;
+    line-height: var(--cg-line-height-tight);
+    margin-top: var(--cg-space-1);
+}
+
+.contentguard-stat-card__helper {
+    color: var(--cg-muted);
+    display: block;
+    font-size: var(--cg-font-size-sm);
+    line-height: var(--cg-line-height);
+    margin-top: var(--cg-space-1);
+}
+
+.contentguard-stat-card__status {
+    display: block;
+    margin-top: var(--cg-space-2);
+}
+
+/* -------------------------------------------------------------------------
+ * Empty state foundation
+ * ------------------------------------------------------------------------- */
+
+.contentguard-empty {
+    background: var(--cg-surface);
+    border: var(--cg-border);
+    border-radius: var(--cg-radius);
+    box-sizing: border-box;
+    max-width: 36rem;
+    padding: var(--cg-space-5) var(--cg-space-4);
+}
+
+.contentguard-empty__heading {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: var(--cg-line-height-tight);
+    margin: 0 0 var(--cg-space-2);
+}
+
+.contentguard-empty__text {
+    color: var(--cg-muted);
+    line-height: var(--cg-line-height);
+    margin: 0 0 var(--cg-space-4);
+}
+
+.contentguard-empty__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-2);
+}
+
+/* -------------------------------------------------------------------------
+ * Buttons / actions
+ * ------------------------------------------------------------------------- */
+
+.contentguard .contentguard-button--link,
+.contentguard a.contentguard-button--link,
+.contentguard a.button.contentguard-button--link {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--cg-accent);
+    cursor: pointer;
+    min-height: 0;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.contentguard .contentguard-button--link:hover,
+.contentguard a.contentguard-button--link:hover {
+    color: var(--wp-admin-theme-color-darker-10, #135e96);
+}
+
+.contentguard .contentguard-button--destructive,
+.contentguard a.contentguard-button--destructive,
+.contentguard .submitdelete {
+    color: #b32d2e;
+}
+
+.contentguard .contentguard-button--destructive:hover,
+.contentguard a.contentguard-button--destructive:hover,
+.contentguard .submitdelete:hover {
+    color: #8a2424;
+}
+
+/* -------------------------------------------------------------------------
+ * Accessibility
+ * ------------------------------------------------------------------------- */
+
+.contentguard :where(a, button, input, select, textarea, .button, .page-title-action):focus {
+    outline: 2px solid var(--cg-focus);
+    outline-offset: 2px;
+}
+
+.contentguard :where(a, button, input, select, textarea, .button, .page-title-action):focus:not(:focus-visible) {
+    outline: none;
+}
+
+.contentguard :where(a, button, input, select, textarea, .button, .page-title-action):focus-visible {
+    outline: 2px solid var(--cg-focus);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contentguard *,
+    .contentguard *::before,
+    .contentguard *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * Responsive foundation
+ * ------------------------------------------------------------------------- */
+
+.contentguard,
+.contentguard .widefat {
+    max-width: 100%;
+}
+
+@media screen and (max-width: 782px) {
+    .contentguard-page-header {
+        flex-direction: column;
+    }
+
+    .contentguard-page-header__actions {
+        width: 100%;
+    }
+
+    .contentguard-panel,
+    .contentguard-empty {
+        max-width: 100%;
+    }
+}
