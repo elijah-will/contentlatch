@@ -18,20 +18,47 @@ use ContentGuard\Application\EditorAuditIssues;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use WP_REST_Request;
+use WP_REST_Response;
 
 final class EditorAuditNotice
 {
+    public const REST_NAMESPACE = 'contentguard/v1';
+    public const REST_ROUTE     = '/editor-blockers/(?P<id>\d+)';
+
+    /**
+     * @param callable(int $postId): string|null $postTypeOf
+     * @param callable(): bool|null $canManage
+     * @param callable(int $postId): bool|null $canEditPost
+     */
     public function __construct(
         private ContentAuditService $audit,
         private RuleRepositoryInterface $rules,
+        private mixed $postTypeOf = null,
+        private mixed $canManage = null,
+        private mixed $canEditPost = null,
     ) {
     }
 
     public static function register(ContentAuditService $audit, RuleRepositoryInterface $rules): void
     {
-        $page = new self($audit, $rules);
+        $page = new self(
+            $audit,
+            $rules,
+            static function (int $postId): string {
+                if (!function_exists('get_post_type')) {
+                    return '';
+                }
+
+                $type = get_post_type($postId);
+
+                return is_string($type) ? $type : '';
+            }
+        );
         add_action('admin_enqueue_scripts', array($page, 'enqueue'));
         add_action('admin_notices', array($page, 'onAdminNotices'));
+        add_action('rest_api_init', array($page, 'registerRestRoute'));
+        add_filter('redirect_post_location', array($page, 'preserveAuditRunOnRedirect'));
     }
 
     public static function shouldEnqueue(string $hook): bool
@@ -49,16 +76,119 @@ final class EditorAuditNotice
             return array();
         }
 
-        $canManage = Capabilities::currentUserCanManage();
-        $canEdit   = function_exists('current_user_can') && current_user_can('edit_post', $postId);
-
-        if (!EditorAuditIssues::canAccess($postId, $canManage, $canEdit)) {
+        if (!EditorAuditIssues::canAccess($postId, $this->userCanManage(), $this->userCanEdit($postId))) {
             return array();
         }
 
         $findings = $this->audit->blockingFindingsForPost($runId, $postId);
+        if ($findings === array()) {
+            return array();
+        }
 
-        return EditorAuditIssues::fromFindings($findings, $postId, $this->fieldLabels($findings));
+        $persisted = EditorAuditIssues::fromFindings($findings, $postId, $this->fieldLabels($findings));
+        $allowed   = array_values(array_filter(array_map(
+            static fn (array $issue): string => (string) ($issue['fieldKey'] ?? ''),
+            $persisted
+        )));
+
+        $live = $this->liveIssues($postId, $allowed);
+
+        return $live !== null ? $live : $persisted;
+    }
+
+    /**
+     * @param list<string> $allowedKeys
+     * @return list<array{message: string, label: string, fieldKey: string}>|null
+     */
+    private function liveIssues(int $postId, array $allowedKeys): ?array
+    {
+        $postTypeOf = $this->postTypeOf;
+        $postType   = is_callable($postTypeOf) ? (string) $postTypeOf($postId) : '';
+        if ($postType === '') {
+            return null;
+        }
+
+        $evaluation = $this->audit->evaluateStoredPost($postId, $postType);
+        if ($evaluation === null) {
+            return null;
+        }
+
+        return EditorAuditIssues::scopedToFieldKeys(
+            EditorAuditIssues::fromEvaluation($evaluation, $postId),
+            $allowedKeys
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @return array{issues: list<array{message: string, label: string, fieldKey: string}>, html: string, text: string}
+     */
+    public function payloadForRequest(int $postId, array $request): array
+    {
+        return EditorAuditIssues::payload($this->issuesForRequest($postId, $request));
+    }
+
+    public function registerRestRoute(): void
+    {
+        if (!function_exists('register_rest_route')) {
+            return;
+        }
+
+        register_rest_route(
+            self::REST_NAMESPACE,
+            self::REST_ROUTE,
+            array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'restBlockers'),
+                'permission_callback' => function (WP_REST_Request $request): bool {
+                    $id = (int) $request['id'];
+
+                    return $this->userCanEdit($id) && $this->userCanManage();
+                },
+                'args'                => array(
+                    'id'  => array(
+                        'required' => true,
+                        'type'     => 'integer',
+                    ),
+                    'run' => array(
+                        'required' => false,
+                        'type'     => 'integer',
+                    ),
+                ),
+            )
+        );
+    }
+
+    public function restBlockers(WP_REST_Request $request): WP_REST_Response
+    {
+        $postId = (int) $request['id'];
+        $runId  = EditorFieldNavigation::sanitizeRunId($request->get_param('run'));
+
+        return new WP_REST_Response(
+            $this->payloadForRequest(
+                $postId,
+                array(EditorFieldNavigation::AUDIT_RUN_ARG => $runId)
+            ),
+            200
+        );
+    }
+
+    public function preserveAuditRunOnRedirect(string $location): string
+    {
+        $runId = EditorFieldNavigation::requestedRunId(
+            is_array($_REQUEST) ? $_REQUEST : array()
+        );
+        if ($runId <= 0 && isset($_SERVER['HTTP_REFERER'])) {
+            $query = array();
+            parse_str((string) (parse_url((string) $_SERVER['HTTP_REFERER'], PHP_URL_QUERY) ?? ''), $query);
+            $runId = EditorFieldNavigation::requestedRunId($query);
+        }
+
+        if ($runId <= 0) {
+            return $location;
+        }
+
+        return EditorFieldNavigation::appendToEditUrl($location, '', $runId);
     }
 
     public function enqueue(string $hook): void
@@ -84,16 +214,19 @@ final class EditorAuditNotice
         wp_register_script(
             'contentguard-editor-audit',
             CONTENTGUARD_URL . 'admin/js/editor-audit.js',
-            array('wp-data', 'contentguard-editor-field'),
+            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
             \ContentGuard\Plugin::VERSION,
             true
         );
+        $runId = EditorFieldNavigation::requestedRunId($_GET);
         wp_localize_script(
             'contentguard-editor-audit',
             'contentguardEditorAudit',
             array(
-                'html' => EditorAuditIssues::noticeHtml($issues),
-                'text' => EditorAuditIssues::noticeText($issues),
+                'html'     => EditorAuditIssues::noticeHtml($issues),
+                'text'     => EditorAuditIssues::noticeText($issues),
+                'restPath' => self::REST_NAMESPACE . '/editor-blockers/' . $postId
+                    . ($runId > 0 ? '?run=' . $runId : ''),
             )
         );
         wp_enqueue_script('contentguard-editor-audit');
@@ -143,6 +276,24 @@ final class EditorAuditNotice
         }
 
         return $labels;
+    }
+
+    private function userCanManage(): bool
+    {
+        if (is_callable($this->canManage)) {
+            return (bool) ($this->canManage)();
+        }
+
+        return Capabilities::currentUserCanManage();
+    }
+
+    private function userCanEdit(int $postId): bool
+    {
+        if (is_callable($this->canEditPost)) {
+            return (bool) ($this->canEditPost)($postId);
+        }
+
+        return $postId > 0 && function_exists('current_user_can') && current_user_can('edit_post', $postId);
     }
 
     private function editorPostId(): int

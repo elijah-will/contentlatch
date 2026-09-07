@@ -20,10 +20,20 @@ final class EditorAuditScriptTest extends TestCase
         $this->assertStringContainsString('typeof config.text === "string"', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('createNotice("error"', $js);
+        $this->assertStringContainsString('removeNotice', $js);
+        $this->assertStringContainsString('refreshFromRest', $js);
+        $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
+        $this->assertStringContainsString('isAutosavingPost', $js);
+        $this->assertStringContainsString('config.restPath', $js);
         $this->assertStringContainsString('[object Object]', $js);
         $this->assertStringNotContainsString('wp.element.createElement', $js);
         $this->assertStringNotContainsString('JSON.stringify', $js);
         $this->assertStringNotContainsString('createNotice("error", config', $js);
         $this->assertStringNotContainsString('contentguardNavigateToField', $js);
+        $this->assertStringNotContainsString('equals', $js);
+        $this->assertStringNotContainsString('min_length', $js);
+        $this->assertStringContainsString('contentguard-audit-blockers', $js);
+        $this->assertStringNotContainsString('contentguard-warning-', $js);
+        $this->assertStringNotContainsString('createNotice("warning"', $js);
     }
 }

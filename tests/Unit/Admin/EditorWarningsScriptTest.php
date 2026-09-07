@@ -23,6 +23,8 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('warning.text', $js);
         $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
         $this->assertStringContainsString('payload.warnings', $js);
+        $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
+        $this->assertStringContainsString('contentguard-warning-', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('spokenMessage', $js);
         $this->assertStringContainsString('typeof content !== "string"', $js);
@@ -35,5 +37,9 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringNotContainsString('warnings[0].fieldKey', $js);
         $this->assertStringNotContainsString('createNotice("warning", warning', $js);
         $this->assertStringNotContainsString("createNotice('warning', warning", $js);
+        $this->assertStringContainsString('refreshFromRest', $js);
+        $this->assertStringContainsString('isAutosavingPost', $js);
+        $this->assertStringNotContainsString('contentguard-audit-blockers', $js);
+        $this->assertStringNotContainsString('editor-blockers', $js);
     }
 }

@@ -9,6 +9,9 @@ namespace ContentGuard\Tests\Unit\Application;
 
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\EditorAuditIssues;
+use ContentGuard\Domain\ContentEvaluation;
+use ContentGuard\Domain\EvaluationResult;
+use ContentGuard\Domain\EvaluationStatus;
 use ContentGuard\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
@@ -180,6 +183,74 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertSame('', $issues[0]['label']);
         $this->assertFalse(EditorAuditIssues::isClickable($issues[0]));
         $this->assertStringNotContainsString('field_description', EditorAuditIssues::issueText($issues[0]));
+    }
+
+    public function testLiveEvaluationKeepsOnlyCurrentBlockingIssues(): void
+    {
+        $evaluation = new ContentEvaluation(
+            42,
+            \ContentGuard\Domain\ContentStatus::Failed,
+            array(
+                new EvaluationResult(
+                    EvaluationStatus::Failed,
+                    15,
+                    42,
+                    'field_description',
+                    'Description is required',
+                    RuleSeverity::Fail,
+                    'required',
+                    array('field_label' => 'Recipe Description')
+                ),
+                new EvaluationResult(
+                    EvaluationStatus::Warning,
+                    16,
+                    42,
+                    'field_title',
+                    'Title looks thin.',
+                    RuleSeverity::Warning,
+                    'required',
+                    array('field_label' => 'Title')
+                ),
+                new EvaluationResult(
+                    EvaluationStatus::Passed,
+                    17,
+                    42,
+                    'field_yield',
+                    '',
+                    RuleSeverity::Fail,
+                    'required',
+                    array('field_label' => 'Yield')
+                ),
+                new EvaluationResult(
+                    EvaluationStatus::Failed,
+                    18,
+                    42,
+                    'field_ingredients',
+                    'Product Information → Ingredients Accordion is required.',
+                    RuleSeverity::Fail,
+                    'required',
+                    array('field_label' => 'Product Information → Ingredients Accordion')
+                ),
+            )
+        );
+
+        $issues = EditorAuditIssues::fromEvaluation($evaluation, 42);
+
+        $this->assertSame(
+            array('field_description', 'field_ingredients'),
+            array_column($issues, 'fieldKey')
+        );
+        $this->assertSame('Recipe Description', $issues[0]['label']);
+        $this->assertSame('Product Information → Ingredients Accordion', $issues[1]['label']);
+
+        $scoped = EditorAuditIssues::scopedToFieldKeys($issues, array('field_description', 'field_yield'));
+        $this->assertCount(1, $scoped);
+        $this->assertSame('field_description', $scoped[0]['fieldKey']);
+
+        $empty = EditorAuditIssues::scopedToFieldKeys($issues, array('field_yield'));
+        $this->assertSame(array(), $empty);
+        $this->assertSame('', EditorAuditIssues::payload($empty)['html']);
+        $this->assertSame('', EditorAuditIssues::payload($empty)['text']);
     }
 
     /**

@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace ContentGuard\Application;
 
 use ContentGuard\Application\Audit\AuditFinding;
+use ContentGuard\Domain\ContentEvaluation;
+use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Domain\RuleSeverity;
 
 final class EditorAuditIssues
@@ -50,6 +52,111 @@ final class EditorAuditIssues
         }
 
         return $items;
+    }
+
+    /**
+     * Current blocking issues from a live evaluation. Warnings are ignored.
+     *
+     * @return list<array{message: string, label: string, fieldKey: string}>
+     */
+    public static function fromEvaluation(?ContentEvaluation $evaluation, int $postId): array
+    {
+        if ($evaluation === null || $postId <= 0) {
+            return array();
+        }
+
+        $items = array();
+        $seen  = array();
+
+        foreach ($evaluation->results as $result) {
+            if (!$result instanceof EvaluationResult || !$result->isFailed()) {
+                continue;
+            }
+
+            if ($result->postId !== null && $result->postId !== $postId) {
+                continue;
+            }
+
+            $item = self::fromResult($result);
+            $id   = $item['message'] . "\0" . $item['fieldKey'] . "\0" . $item['label'];
+            if (isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $items[]   = $item;
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array{message: string, label: string, fieldKey: string}
+     */
+    public static function fromResult(EvaluationResult $result): array
+    {
+        $message = trim($result->message);
+        if ($message === '') {
+            $message = 'This field is required.';
+        }
+
+        $fieldKey = EditorFieldNavigation::navigableFieldKey($result->fieldId);
+        $label    = trim((string) ($result->context['field_label'] ?? ''));
+
+        return array(
+            'message'  => $message,
+            'label'    => self::humanLabel($label, $fieldKey !== '' ? $fieldKey : (string) $result->fieldId),
+            'fieldKey' => $fieldKey,
+        );
+    }
+
+    /**
+     * Keep the Audit-arrival notice scoped to fields that were in the run.
+     *
+     * @param list<array{message: string, label: string, fieldKey: string}> $issues
+     * @param list<string> $fieldKeys
+     * @return list<array{message: string, label: string, fieldKey: string}>
+     */
+    public static function scopedToFieldKeys(array $issues, array $fieldKeys): array
+    {
+        if ($fieldKeys === array()) {
+            return array();
+        }
+
+        $allowed = array();
+        foreach ($fieldKeys as $key) {
+            $safe = EditorFieldNavigation::navigableFieldKey($key);
+            if ($safe !== '') {
+                $allowed[$safe] = true;
+            }
+        }
+
+        if ($allowed === array()) {
+            return array();
+        }
+
+        $scoped = array();
+        foreach ($issues as $issue) {
+            $key = EditorFieldNavigation::navigableFieldKey($issue['fieldKey'] ?? null);
+            if ($key !== '' && isset($allowed[$key])) {
+                $scoped[] = $issue;
+            }
+        }
+
+        return $scoped;
+    }
+
+    /**
+     * @param list<array{message: string, label: string, fieldKey: string}> $issues
+     * @return array{issues: list<array{message: string, label: string, fieldKey: string}>, html: string, text: string}
+     */
+    public static function payload(array $issues): array
+    {
+        return array(
+            'issues' => $issues,
+            'html'   => self::noticeHtml($issues),
+            'text'   => self::noticeText($issues),
+        );
     }
 
     /**

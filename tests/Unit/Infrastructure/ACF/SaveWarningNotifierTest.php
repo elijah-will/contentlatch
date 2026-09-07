@@ -23,6 +23,17 @@ use PHPUnit\Framework\TestCase;
 
 final class SaveWarningNotifierTest extends TestCase
 {
+    public function testClassicWarningsStayIndependentOfTheAuditNotice(): void
+    {
+        $php = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/ACF/SaveWarningNotifier.php');
+
+        $this->assertStringNotContainsString('EditorAuditNotice', $php);
+        $this->assertStringNotContainsString('editor-blockers', $php);
+        $this->assertStringNotContainsString('contentguard-audit-blockers', $php);
+        $this->assertStringContainsString('classicNoticeHtml', $php);
+        $this->assertStringContainsString('admin_notices', $php);
+    }
+
     public function testWarningMessagesIgnoreFailuresAndPasses(): void
     {
         $engine = RuleEngine::v1();

@@ -236,6 +236,24 @@ final class ContentAuditService
     }
 
     /**
+     * Live stored-value evaluation for the editor notice refresh.
+     *
+     * Does not read or write audit findings.
+     */
+    public function evaluateStoredPost(int $postId, string $postType): ?ContentEvaluation
+    {
+        if ($postId <= 0 || $postType === '') {
+            return null;
+        }
+
+        try {
+            return $this->evaluatePost(new AuditPost($postId, $postType));
+        } catch (AuditException) {
+            return null;
+        }
+    }
+
+    /**
      * @return AuditFinding[]
      */
     public function queryFindings(AuditFindingQuery $query): array

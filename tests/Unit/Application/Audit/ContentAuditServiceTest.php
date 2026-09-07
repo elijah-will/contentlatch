@@ -677,6 +677,26 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame(array(), $service->blockingFindingsForPost($pending->id, 42));
     }
 
+    public function testEvaluateStoredPostUsesCurrentValuesNotPersistedFindings(): void
+    {
+        $this->values = array(
+            10 => array(
+                'field_signature'   => true,
+                'field_description' => 'Filled after the audit',
+            ),
+        );
+        $service = $this->service(
+            array($this->signatureRule()),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+
+        $evaluation = $service->evaluateStoredPost(10, 'recipe');
+        $this->assertNotNull($evaluation);
+        $this->assertTrue($evaluation->isPassed());
+        $this->assertNull($service->evaluateStoredPost(0, 'recipe'));
+        $this->assertNull($service->evaluateStoredPost(10, ''));
+    }
+
     /**
      * @param array<int, \ContentGuard\Domain\Rule> $rules
      * @param array<int, array{id: int, postType: string, status: string}> $posts
