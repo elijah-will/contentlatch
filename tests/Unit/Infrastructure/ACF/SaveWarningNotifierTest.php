@@ -35,6 +35,8 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertStringContainsString('shouldRenderClassicNotices', $php);
         $this->assertStringContainsString("base ?? '') === 'post'", $php);
         $this->assertStringContainsString('shouldEnqueue', $php);
+        $this->assertStringContainsString('navigationExtras', $php);
+        $this->assertStringNotContainsString('contentguard_row', $php);
     }
 
     public function testGutenbergAssetsStayOnTheIndividualPostEditor(): void
@@ -679,6 +681,81 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $warnings[0]['fieldKey']);
         $this->assertSame('Ingredient is missing.', $warnings[0]['message']);
         $this->assertFalse($notifier->shouldRenderClassicNotices());
+        $this->assertArrayNotHasKey('affectedRows', $warnings[0]);
+        $this->assertArrayNotHasKey('layout', $warnings[0]);
+    }
+
+    public function testFlexibleWarningsMergeAffectedRowsAndIgnoreOtherLayouts(): void
+    {
+        $items = SaveWarningNotifier::warningItems($this->evaluationFromWarnings(array(
+            new EvaluationResult(
+                EvaluationStatus::Warning,
+                80,
+                9,
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                'Title looks thin.',
+                RuleSeverity::Warning,
+                'required',
+                array(
+                    'field_label' => 'Modules → Hero → Title',
+                    'layout'      => 'hero',
+                    'display_row' => 1,
+                )
+            ),
+            new EvaluationResult(
+                EvaluationStatus::Warning,
+                80,
+                9,
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                'Title looks thin.',
+                RuleSeverity::Warning,
+                'required',
+                array(
+                    'field_label' => 'Modules → Hero → Title',
+                    'layout'      => 'hero',
+                    'display_row' => 3,
+                )
+            ),
+        )));
+
+        $this->assertCount(1, $items);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $items[0]['fieldKey']);
+        $this->assertSame('hero', $items[0]['layout']);
+        $this->assertSame(array(1, 3), $items[0]['affectedRows']);
+
+        $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
+        $this->assertStringContainsString('data-contentguard-layout="hero"', $html);
+        $this->assertStringContainsString('data-contentguard-display-row="1"', $html);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('>Row 1</button>', $html);
+        $this->assertStringContainsString('>Row 3</button>', $html);
+        $this->assertStringNotContainsString('contentguard_row', $html);
+    }
+
+    public function testSingleFlexibleWarningNavigatesDirectlyToThatRow(): void
+    {
+        $items = SaveWarningNotifier::warningItems($this->evaluationFromWarnings(array(
+            new EvaluationResult(
+                EvaluationStatus::Warning,
+                80,
+                9,
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                'Title looks thin.',
+                RuleSeverity::Warning,
+                'required',
+                array(
+                    'field_label' => 'Modules → Hero → Title',
+                    'layout'      => 'hero',
+                    'display_row' => 3,
+                )
+            ),
+        )));
+
+        $this->assertSame(array(3), $items[0]['affectedRows']);
+        $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
+        $this->assertStringNotContainsString('>Row 3</button>', $html);
     }
 
     /**

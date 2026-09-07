@@ -4,9 +4,12 @@
  *
  * Phase 10A catalogues supported scalar leaves inside Group fields.
  * Phase 10B also catalogues supported scalar leaves inside Repeater fields
- * (top-level Repeater → scalar, and Group → Repeater → scalar). Repeater
- * containers themselves are not selectable. Nested Repeaters, Flexible
- * Content, and Clone remain excluded.
+ * (top-level Repeater → scalar, and Group → Repeater → scalar).
+ * Phase 10C catalogues supported scalar leaves inside Flexible Content
+ * layouts (top-level Flex → scalar, and Flex → Group → scalar).
+ * Containers themselves are not selectable. Nested Repeaters, Repeater
+ * inside Flex, nested Flex, Flex inside Repeater/Group, and Clone remain
+ * excluded.
  *
  * @package ContentGuard
  */
@@ -38,7 +41,6 @@ final class AcfFieldCatalog
     );
 
     private const EXCLUDED_CONTAINERS = array(
-        'flexible_content',
         'clone',
     );
 
@@ -87,7 +89,9 @@ final class AcfFieldCatalog
      * @return array{
      *     paths: array<string, list<string>>,
      *     names: array<string, list<string>>,
-     *     repeater_keys: array<string, string>
+     *     repeater_keys: array<string, string>,
+     *     flex_keys: array<string, string>,
+     *     layouts: array<string, string>
      * }
      */
     public function nestedResolutionMaps(string $postType, array $fieldTypes): array
@@ -95,6 +99,8 @@ final class AcfFieldCatalog
         $paths     = array();
         $names     = array();
         $repeaters = array();
+        $flexKeys  = array();
+        $layouts   = array();
 
         foreach ($this->fieldsForPostType($postType) as $field) {
             if (!isset($fieldTypes[$field->key]) || $field->path === array()) {
@@ -106,12 +112,18 @@ final class AcfFieldCatalog
             if ($field->repeaterKey !== '') {
                 $repeaters[$field->key] = $field->repeaterKey;
             }
+            if ($field->container === FieldRef::CONTAINER_FLEXIBLE && $field->layout !== '') {
+                $flexKeys[$field->key] = $field->path[0];
+                $layouts[$field->key]  = $field->layout;
+            }
         }
 
         return array(
             'paths'         => $paths,
             'names'         => $names,
             'repeater_keys' => $repeaters,
+            'flex_keys'     => $flexKeys,
+            'layouts'       => $layouts,
         );
     }
 
@@ -128,12 +140,24 @@ final class AcfFieldCatalog
         array $ancestorNames,
         array $ancestorLabels,
         string $repeaterKey = '',
+        string $flexKey = '',
+        string $layout = '',
+        string $layoutKey = '',
+        string $layoutLabel = '',
     ): array {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
 
         if ($key === '' || !str_starts_with($key, 'field_')) {
             return array();
+        }
+
+        if ($type === FieldRef::CONTAINER_FLEXIBLE) {
+            if ($repeaterKey !== '' || $flexKey !== '' || $ancestorKeys !== array()) {
+                return array();
+            }
+
+            return $this->collectFlexibleLayouts($field);
         }
 
         if ($type === 'group') {
@@ -146,12 +170,16 @@ final class AcfFieldCatalog
                 $ancestorKeys,
                 $ancestorNames,
                 $ancestorLabels,
-                $repeaterKey
+                $repeaterKey,
+                $flexKey,
+                $layout,
+                $layoutKey,
+                $layoutLabel
             );
         }
 
         if ($type === FieldRef::CONTAINER_REPEATER) {
-            if ($repeaterKey !== '') {
+            if ($repeaterKey !== '' || $flexKey !== '') {
                 return array();
             }
 
@@ -168,7 +196,17 @@ final class AcfFieldCatalog
             return array();
         }
 
-        $definition = $this->mapField($field, $ancestorKeys, $ancestorNames, $ancestorLabels, $repeaterKey);
+        $definition = $this->mapField(
+            $field,
+            $ancestorKeys,
+            $ancestorNames,
+            $ancestorLabels,
+            $repeaterKey,
+            $flexKey,
+            $layout,
+            $layoutKey,
+            $layoutLabel
+        );
 
         return $definition !== null ? array($definition) : array();
     }
@@ -186,6 +224,10 @@ final class AcfFieldCatalog
         array $ancestorNames,
         array $ancestorLabels,
         string $repeaterKey,
+        string $flexKey = '',
+        string $layout = '',
+        string $layoutKey = '',
+        string $layoutLabel = '',
     ): array {
         $name  = (string) ($field['name'] ?? '');
         $label = (string) ($field['label'] ?? '');
@@ -200,8 +242,73 @@ final class AcfFieldCatalog
         $collected  = array();
 
         foreach ($this->subFields($field) as $child) {
-            foreach ($this->collect($child, $nextKeys, $nextNames, $nextLabels, $repeaterKey) as $definition) {
+            foreach ($this->collect(
+                $child,
+                $nextKeys,
+                $nextNames,
+                $nextLabels,
+                $repeaterKey,
+                $flexKey,
+                $layout,
+                $layoutKey,
+                $layoutLabel
+            ) as $definition) {
                 $collected[] = $definition;
+            }
+        }
+
+        return $collected;
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @return list<FieldDefinition>
+     */
+    private function collectFlexibleLayouts(array $field): array
+    {
+        $key  = (string) ($field['key'] ?? '');
+        $name = (string) ($field['name'] ?? '');
+        $label = (string) ($field['label'] ?? '');
+        if ($label === '') {
+            $label = $name !== '' ? $name : $key;
+        }
+
+        $collected = array();
+        $layouts   = $field['layouts'] ?? array();
+        if (!is_array($layouts)) {
+            return array();
+        }
+
+        foreach ($layouts as $layout) {
+            if (!is_array($layout)) {
+                continue;
+            }
+
+            $layoutName  = (string) ($layout['name'] ?? '');
+            if (!FieldRef::isSafeLayoutName($layoutName)) {
+                continue;
+            }
+
+            $layoutKey   = (string) ($layout['key'] ?? '');
+            $layoutLabel = (string) ($layout['label'] ?? '');
+            if ($layoutLabel === '') {
+                $layoutLabel = $layoutName;
+            }
+
+            foreach ($this->subFields($layout) as $child) {
+                foreach ($this->collect(
+                    $child,
+                    array($key),
+                    array($name),
+                    array($label),
+                    '',
+                    $key,
+                    $layoutName,
+                    $layoutKey,
+                    $layoutLabel
+                ) as $definition) {
+                    $collected[] = $definition;
+                }
             }
         }
 
@@ -220,6 +327,10 @@ final class AcfFieldCatalog
         array $ancestorNames,
         array $ancestorLabels,
         string $repeaterKey = '',
+        string $flexKey = '',
+        string $layout = '',
+        string $layoutKey = '',
+        string $layoutLabel = '',
     ): ?FieldDefinition {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
@@ -249,9 +360,13 @@ final class AcfFieldCatalog
             $path       = array_merge($ancestorKeys, array($key));
             $pathNames  = array_merge($ancestorNames, array($name));
             $pathLabels = array_merge($ancestorLabels, array($leafLabel));
-            $container  = $repeaterKey !== ''
-                ? FieldRef::CONTAINER_REPEATER
-                : FieldRef::CONTAINER_GROUP;
+            if ($flexKey !== '') {
+                $container = FieldRef::CONTAINER_FLEXIBLE;
+            } elseif ($repeaterKey !== '') {
+                $container = FieldRef::CONTAINER_REPEATER;
+            } else {
+                $container = FieldRef::CONTAINER_GROUP;
+            }
         }
 
         return new FieldDefinition(
@@ -265,6 +380,9 @@ final class AcfFieldCatalog
             $pathNames,
             $pathLabels,
             $repeaterKey,
+            $layout,
+            $layoutKey,
+            $layoutLabel,
         );
     }
 

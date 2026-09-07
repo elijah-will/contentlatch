@@ -55,6 +55,19 @@ final class ValidationTest extends TestCase
         $this->assertTrue($loaded->isEveryRow());
     }
 
+    public function testFlexibleChildIsEveryInstanceButNotRepeaterEveryRow(): void
+    {
+        $validation = RuleFactory::validation(array(
+            'field' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+            'quantifier' => Validation::QUANTIFIER_EVERY,
+        ));
+
+        $this->assertFalse($validation->isEveryRow());
+        $this->assertTrue($validation->isEveryInstance());
+        $this->assertSame('every', $validation->toArray()['quantifier']);
+        $this->assertSame(1, \ContentGuard\Domain\Rule::SCHEMA_VERSION);
+    }
+
     public function testUnsupportedQuantifierIsRejected(): void
     {
         $this->expectException(InvalidRuleException::class);

@@ -19,6 +19,9 @@ final class EditorFieldNavigationTest extends TestCase
             'field_64f8a42a61f56'
         );
 
+        $this->assertTrue(EditorFieldNavigation::isSafeLayoutName('hero'));
+        $this->assertTrue(EditorFieldNavigation::isSafeLayoutName('content_block'));
+        $this->assertFalse(EditorFieldNavigation::isSafeLayoutName('hero layout'));
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_64f8a42a61f56'));
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_ingredients'));
         $this->assertFalse(EditorFieldNavigation::isSafeFieldKey('field_product_details.field_ingredients'));
@@ -133,5 +136,68 @@ final class EditorFieldNavigationTest extends TestCase
             'contentguard_run' => '7"><script>',
         )));
         $this->assertSame(0, EditorFieldNavigation::sanitizeRunId('Description is required'));
+    }
+
+    public function testFlexibleRowTargetsStayTransientAndNeverEnterUrls(): void
+    {
+        $this->assertSame(array(3), EditorFieldNavigation::displayRowsFromContext(array(
+            'layout'      => 'hero',
+            'display_row' => 3,
+        )));
+        $this->assertSame(
+            array(3),
+            EditorFieldNavigation::sanitizeDisplayRows(array('3', 3, 0, -1, 'row-3'))
+        );
+        $this->assertSame(array(), EditorFieldNavigation::displayRowsFromContext(array(
+            'display_row' => 3,
+        )));
+        $this->assertSame(array(1, 3), EditorFieldNavigation::flexDisplayRowsFromSnapshot(
+            'Title is required in 2 Hero rows (rows 1, 3).'
+        ));
+        $this->assertSame(array(3), EditorFieldNavigation::flexDisplayRowsFromSnapshot(
+            'Title is required in Hero row 3.'
+        ));
+        $this->assertSame(array(), EditorFieldNavigation::flexDisplayRowsFromSnapshot(
+            'Ingredient is required in 3 rows (rows 1, 3, 5).'
+        ));
+        $this->assertSame(
+            'Title is required in 2 Hero rows.',
+            EditorFieldNavigation::snapshotMessageWithoutRows('Title is required in 2 Hero rows (rows 1, 3).')
+        );
+        $this->assertSame('hero', EditorFieldNavigation::layoutFromContext(array('layout' => 'hero')));
+        $this->assertSame('', EditorFieldNavigation::layoutFromContext(array('layout' => 'hero layout')));
+        $this->assertSame(
+            'Go to Modules → Hero → Title, row 3',
+            EditorFieldNavigation::goToLayoutRowAria('Modules → Hero → Title', 3)
+        );
+
+        $url = EditorFieldNavigation::appendToEditUrl(
+            'http://example.test/wp-admin/post.php?post=42&action=edit',
+            'field_66e48d6611345',
+            7
+        );
+        $this->assertSame(
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_66e48d6611345&contentguard_run=7',
+            $url
+        );
+        $this->assertStringNotContainsString('contentguard_row', $url);
+        $this->assertStringNotContainsString('row-2', $url);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', EditorFieldNavigation::fieldTriggerAttributes(
+            'field_66e48d6611345',
+            'hero',
+            3
+        ));
+        $this->assertStringContainsString('Row 1', EditorFieldNavigation::rowButtonsHtml(
+            'field_66e48d6611345',
+            'Modules → Hero → Title',
+            'hero',
+            array(1, 3)
+        ));
+        $this->assertSame('', EditorFieldNavigation::rowButtonsHtml(
+            'field_66e48d6611345',
+            'Modules → Hero → Title',
+            'hero',
+            array(3)
+        ));
     }
 }

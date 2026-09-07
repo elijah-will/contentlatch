@@ -16,8 +16,9 @@ interface FieldValueProviderInterface
     public function get(string $fieldId): mixed;
 
     /**
-     * Evaluation-time values for a field. Repeater children return one item per row.
-     * Scalars return a single instance. Zero Repeater rows return an empty list.
+     * Evaluation-time values for a field. Repeater and Flexible Content
+     * children return one item per matching row. Scalars return a single
+     * instance. Zero matching rows return an empty list.
      *
      * @return list<\ContentGuard\Domain\FieldInstance>
      */

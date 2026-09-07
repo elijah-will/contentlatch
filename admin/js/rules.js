@@ -57,6 +57,13 @@
     if (field.container === "repeater" && String(label).indexOf("(every row)") === -1) {
       label += " (every row)";
     }
+    if (field.container === "flexible_content") {
+      var layoutLabel = field.layout_label || field.layout || "layout";
+      var suffix = "(every " + layoutLabel + " row)";
+      if (String(label).indexOf(suffix) === -1) {
+        label += " " + suffix;
+      }
+    }
     return label;
   }
 
@@ -66,7 +73,7 @@
     }
 
     return fields.filter(function (field) {
-      return field.container !== "repeater";
+      return field.container !== "repeater" && field.container !== "flexible_content";
     });
   }
 

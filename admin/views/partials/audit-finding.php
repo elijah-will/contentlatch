@@ -138,8 +138,33 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
             <?php endif; ?>
         </p>
     <?php endif; ?>
-    <?php if ($summary !== '') : ?>
-        <p class="contentguard-finding__issue"><?php echo esc_html($summary); ?></p>
+    <?php
+    $affectedRows   = array();
+    $summaryDisplay = $summary;
+    foreach ($messages as $snapshot) {
+        $parsed = EditorFieldNavigation::flexDisplayRowsFromSnapshot($snapshot);
+        if (count($parsed) > 1) {
+            $affectedRows = $parsed;
+            if ($summary === $snapshot) {
+                $summaryDisplay = EditorFieldNavigation::snapshotMessageWithoutRows($summary);
+            }
+            break;
+        }
+    }
+    ?>
+    <?php if ($summaryDisplay !== '') : ?>
+        <p class="contentguard-finding__issue">
+            <?php echo esc_html($summaryDisplay); ?>
+            <?php if ($affectedRows !== array()) : ?>
+                <span class="contentguard-finding__rows">
+                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentguard'); ?></span>
+                    <?php foreach ($affectedRows as $index => $row) : ?>
+                        <?php if ($index > 0) : ?><span aria-hidden="true"> · </span><?php endif; ?>
+                        <span><?php echo esc_html(sprintf(/* translators: %d: 1-based Flexible Content row number */ __('Row %d', 'contentguard'), $row)); ?></span>
+                    <?php endforeach; ?>
+                </span>
+            <?php endif; ?>
+        </p>
     <?php endif; ?>
     <p class="contentguard-finding__footer">
         <?php if ($rule !== '') : ?>

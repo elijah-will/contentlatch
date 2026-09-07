@@ -503,6 +503,33 @@ final class AuditViewTest extends TestCase
         $this->assertStringNotContainsString('contentguard-finding__field-name', $html);
     }
 
+    public function testFlexibleFindingShowsAffectedRowsWithoutPuttingThemInTheEditUrl(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings' => array($this->makeFinding(array(
+                'fieldKey' => 'field_66e48d6611345',
+                'message'  => 'Title is required in 2 Hero rows (rows 1, 3).',
+            ))),
+            'fieldLabels' => array('15:field_66e48d6611345' => 'Modules → Hero → Title'),
+            'ruleNames'   => array('15' => 'Hero requirements'),
+        )));
+
+        $this->assertStringContainsString('Title is required in 2 Hero rows.', $html);
+        $this->assertStringContainsString('contentguard-finding__rows', $html);
+        $this->assertStringContainsString('Affected rows:', $html);
+        $this->assertStringContainsString('Row 1', $html);
+        $this->assertStringContainsString('Row 3', $html);
+        $this->assertStringContainsString('contentguard_field=field_66e48d6611345', $html);
+        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertStringNotContainsString('contentguard_row', $html);
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+    }
+
     public function testManyFieldsCollapseWithAMoreCount(): void
     {
         $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');

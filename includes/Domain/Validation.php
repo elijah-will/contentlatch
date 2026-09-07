@@ -45,6 +45,15 @@ final class Validation
             && ($this->quantifier === '' || $this->quantifier === self::QUANTIFIER_EVERY);
     }
 
+    public function isEveryInstance(): bool
+    {
+        if ($this->quantifier !== '' && $this->quantifier !== self::QUANTIFIER_EVERY) {
+            return false;
+        }
+
+        return $this->field->isRepeaterChild() || $this->field->isFlexibleChild();
+    }
+
     /**
      * @return array<string, mixed>
      */

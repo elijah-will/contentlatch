@@ -50,6 +50,15 @@
     margin: 0 0 4px;
 }
 
+.contentguard-warning-rows {
+    display: inline;
+    white-space: nowrap;
+}
+
+.contentguard-warning-row {
+    font-weight: 600;
+}
+
 .notice.contentguard-audit-blockers-notice {
     padding: 8px 12px;
 }

@@ -722,6 +722,123 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
     }
 
+    public function testFlexibleFailuresCollapseToOneFindingWithLayoutSnapshot(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'         => 80,
+            'postType'   => 'page',
+            'conditions' => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
+                    new FieldInstance('', array(
+                        'display_row' => 2,
+                        'layout'      => 'hero',
+                    )),
+                    new FieldInstance('', array(
+                        'display_row' => 5,
+                        'layout'      => 'hero',
+                    )),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'page', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame($run->id, $findings[0]->runId);
+        $this->assertSame(10, $findings[0]->postId);
+        $this->assertSame(80, $findings[0]->ruleId);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $findings[0]->fieldKey);
+        $this->assertSame('v-required', $findings[0]->validationId);
+        $this->assertSame('required', $findings[0]->code);
+        $this->assertSame('Title is required in 2 Hero rows (rows 2, 5).', $findings[0]->message);
+        $this->assertObjectNotHasProperty('instanceKey', $findings[0]);
+        $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
+        $this->assertObjectNotHasProperty('layout', $findings[0]);
+    }
+
+    public function testFlexibleSingleRowSnapshotNamesTheLayoutRowWithoutPersistingIt(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'         => 82,
+            'postType'   => 'page',
+            'conditions' => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
+                    new FieldInstance('', array(
+                        'display_row' => 3,
+                        'layout'      => 'hero',
+                    )),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'page', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame('Title is required in Hero row 3.', $findings[0]->message);
+        $this->assertObjectNotHasProperty('display_row', $findings[0]);
+        $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
+        $this->assertObjectNotHasProperty('layout', $findings[0]);
+    }
+
+    public function testFlexibleZeroLayoutsCreateNoFinding(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'         => 81,
+            'postType'   => 'page',
+            'conditions' => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'page', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $this->assertSame(array(), $this->store->findFindings($run->id));
+    }
+
     public function testRepeaterOneRowAndZeroRowAuditMessages(): void
     {
         $rule = RuleFactory::rule(array(

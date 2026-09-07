@@ -117,8 +117,8 @@ final class RuleEngine
         FieldValueProviderInterface $provider,
         ?int $postId,
     ): array {
-        if ($validation->isEveryRow()) {
-            return $this->evaluateEveryRow($rule, $validation, $provider, $postId);
+        if ($validation->isEveryInstance()) {
+            return $this->evaluateEveryInstance($rule, $validation, $provider, $postId);
         }
 
         return array(
@@ -134,7 +134,7 @@ final class RuleEngine
     /**
      * @return EvaluationResult[]
      */
-    private function evaluateEveryRow(
+    private function evaluateEveryInstance(
         Rule $rule,
         Validation $validation,
         FieldValueProviderInterface $provider,
@@ -142,6 +142,10 @@ final class RuleEngine
     ): array {
         $instances = $provider->instances($validation->field->key);
         if ($instances === array()) {
+            if (!$validation->isEveryRow()) {
+                return array();
+            }
+
             $context = array(
                 'field_name'    => $validation->field->name,
                 'field_label'   => $validation->field->label,

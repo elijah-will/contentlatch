@@ -22,10 +22,31 @@
     return typeof fieldKey === "string" && /^field_[A-Za-z0-9]+$/.test(fieldKey);
   }
 
-  function navigate(fieldKey) {
+  function navigate(fieldKey, layout, displayRow) {
     if (typeof window.contentguardNavigateToField === "function") {
-      window.contentguardNavigateToField(fieldKey);
+      window.contentguardNavigateToField(fieldKey, layout, displayRow);
     }
+  }
+
+  function safeLayout(layout) {
+    return typeof layout === "string" && /^[A-Za-z0-9_-]+$/.test(layout) ? layout : "";
+  }
+
+  function sanitizeDisplayRows(rows) {
+    if (!Array.isArray(rows)) {
+      return [];
+    }
+
+    var seen = {};
+    var safe = [];
+    rows.forEach(function (value) {
+      var row = parseInt(value, 10);
+      if (row > 0 && !seen[row]) {
+        seen[row] = true;
+        safe.push(row);
+      }
+    });
+    return safe;
   }
 
   function warningText(warning) {
@@ -66,23 +87,61 @@
     );
   }
 
+  function fieldTriggerAttributes(fieldKey, layout, displayRow) {
+    var attrs = 'data-contentguard-field="' + escapeHtml(fieldKey) + '"';
+    if (safeLayout(layout)) {
+      attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';
+    }
+    if (displayRow > 0) {
+      attrs += ' data-contentguard-display-row="' + displayRow + '"';
+    }
+    return attrs;
+  }
+
+  function rowButtonsHtml(fieldKey, label, layout, rows) {
+    if (rows.length < 2) {
+      return "";
+    }
+
+    var buttons = rows.map(function (row) {
+      var aria = "Go to " + label + ", row " + row;
+      return (
+        '<button type="button" class="contentguard-warning-field contentguard-warning-row" ' +
+        fieldTriggerAttributes(fieldKey, layout, row) +
+        ' aria-label="' +
+        escapeHtml(aria) +
+        '">Row ' +
+        row +
+        "</button>"
+      );
+    });
+
+    return ' <span class="contentguard-warning-rows">' + buttons.join('<span aria-hidden="true"> · </span>') + "</span>";
+  }
+
   function warningHtml(warning) {
     var label = asString(warning.label);
     var message = asString(warning.message) || "Content warning.";
     var fieldKey = asString(warning.fieldKey);
+    var layout = safeLayout(asString(warning.layout));
+    var rows = sanitizeDisplayRows(warning.affectedRows);
     var prefix = (config.i18n && config.i18n.warning) || "Warning";
-    var aria = ((config.i18n && config.i18n.goToField) || "Go to field: %s").replace("%s", label);
+    var primaryRow = rows.length === 1 ? rows[0] : rows[0] || 0;
+    var aria = rows.length === 1
+      ? "Go to " + label + ", row " + primaryRow
+      : ((config.i18n && config.i18n.goToField) || "Go to field: %s").replace("%s", label);
 
     return (
       escapeHtml(prefix) +
-      ': <button type="button" class="contentguard-warning-field" data-contentguard-field="' +
-      escapeHtml(fieldKey) +
-      '" aria-label="' +
+      ': <button type="button" class="contentguard-warning-field" ' +
+      fieldTriggerAttributes(fieldKey, layout, primaryRow) +
+      ' aria-label="' +
       escapeHtml(aria) +
       '">' +
       escapeHtml(label) +
       "</button> — " +
-      escapeHtml(message)
+      escapeHtml(message) +
+      rowButtonsHtml(fieldKey, label, layout, rows)
     );
   }
 
@@ -163,7 +222,11 @@
     if (event && event.stopPropagation) {
       event.stopPropagation();
     }
-    navigate(fieldKey);
+    navigate(
+      fieldKey,
+      trigger.getAttribute("data-contentguard-layout") || "",
+      trigger.getAttribute("data-contentguard-display-row") || 0
+    );
   });
 
   if (!window.wp || !wp.data || !wp.data.subscribe || !editorSelect()) {

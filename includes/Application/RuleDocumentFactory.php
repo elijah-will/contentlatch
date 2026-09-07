@@ -198,6 +198,9 @@ final class RuleDocumentFactory
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
+            if ($field->isFlexibleChild()) {
+                throw new InvalidRuleException('Flexible Content fields cannot be used in WHEN conditions.');
+            }
             if ($field->isRepeaterChild()) {
                 throw new InvalidRuleException('Repeater fields cannot be used in WHEN conditions.');
             }
@@ -284,7 +287,7 @@ final class RuleDocumentFactory
                 'params'  => $this->validationParams($type, $row),
                 'message' => $message,
             );
-            if ($field->isRepeaterChild()) {
+            if ($field->isRepeaterChild() || $field->isFlexibleChild()) {
                 $item['quantifier'] = \ContentGuard\Domain\Validation::QUANTIFIER_EVERY;
             }
             $validations[] = $item;
@@ -381,12 +384,18 @@ final class RuleDocumentFactory
             $label = $breadcrumb;
         }
 
+        $container = (string) ($field['container'] ?? '');
+        $layout    = $container === FieldRef::CONTAINER_FLEXIBLE
+            ? (string) ($field['layout'] ?? '')
+            : '';
+
         return new FieldRef(
             $key,
             (string) ($field['name'] ?? ''),
             $label,
             $this->fieldPath($field),
-            (string) ($field['container'] ?? '')
+            $container,
+            $layout
         );
     }
 

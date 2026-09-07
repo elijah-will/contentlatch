@@ -12,6 +12,7 @@ use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\ContentEvaluator;
+use ContentGuard\Application\EditorAuditIssues;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\RuleEngine;
@@ -106,6 +107,51 @@ final class EditorAuditNoticeRefreshTest extends TestCase
         );
 
         $this->assertSame(array(), $this->notice($values)->issuesForRequest(42, array()));
+    }
+
+    public function testFlexibleRowTargetsRefreshAfterTheFirstRowIsFixed(): void
+    {
+        $values = array(
+            42 => array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                    array(
+                        'acf_fc_layout' => 'cta',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => 'Shop',
+                    ),
+                    array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                ),
+            ),
+        );
+
+        $notice  = $this->flexibleNotice($values);
+        $request = array(EditorFieldNavigation::AUDIT_RUN_ARG => 1);
+
+        $before = $notice->issuesForRequest(42, $request);
+        $this->assertCount(1, $before);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $before[0]['fieldKey']);
+        $this->assertSame('hero', $before[0]['layout']);
+        $this->assertSame(array(1, 3), $before[0]['affectedRows']);
+        $this->assertStringContainsString('data-contentguard-display-row="1"', EditorAuditIssues::issueHtml($before[0]));
+        $this->assertStringContainsString('data-contentguard-display-row="3"', EditorAuditIssues::issueHtml($before[0]));
+
+        $values[42][\ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES][0][\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE] = 'Welcome';
+
+        $after = $notice->issuesForRequest(42, $request);
+        $this->assertCount(1, $after);
+        $this->assertSame(array(3), $after[0]['affectedRows']);
+        $this->assertSame('hero', $after[0]['layout']);
+        $html = EditorAuditIssues::issueHtml($after[0]);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringNotContainsString('data-contentguard-display-row="1"', $html);
+        $this->assertStringNotContainsString('>Row 1</button>', $html);
+        $this->assertStringNotContainsString('contentguard_row', $html);
     }
 
     public function testSuccessfulSaveRedirectKeepsTheAuditRun(): void
@@ -237,6 +283,86 @@ final class EditorAuditNoticeRefreshTest extends TestCase
             $service,
             $repository,
             static fn (int $postId): string => $postId === 42 ? 'recipe' : '',
+            static fn (): bool => true,
+            static fn (int $postId): bool => $postId === 42
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $values
+     */
+    private function flexibleNotice(array &$values): EditorAuditNotice
+    {
+        $rules = array(
+            RuleFactory::rule(array(
+                'id'          => 80,
+                'postType'    => 'page',
+                'conditions'  => array(),
+                'validations' => array(
+                    RuleFactory::validation(array(
+                        'id'         => 'v-hero-title',
+                        'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                        'type'       => 'required',
+                        'quantifier' => 'every',
+                    )),
+                ),
+            )),
+        );
+
+        $store      = new InMemoryAuditStore();
+        $repository = new InMemoryRuleRepository($rules);
+        $catalog    = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+        $service    = new ContentAuditService(
+            $store,
+            new InMemoryAuditPostScanner(array()),
+            new InMemoryAuditLock(),
+            $repository,
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $catalog,
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$values): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+                unset($fieldTypes);
+                $maps = $catalog->nestedResolutionMaps($postType, $catalog->fieldTypesForPostType($postType));
+
+                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                    $postId,
+                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    $catalog->fieldTypesForPostType($postType),
+                    static fn (string $key): mixed => $values[$postId][$key] ?? null,
+                    $maps['paths'],
+                    $maps['names'],
+                    $maps['repeater_keys'] ?? array(),
+                    $maps['flex_keys'] ?? array(),
+                    $maps['layouts'] ?? array()
+                );
+            },
+            static function (array $ids): void {
+                unset($ids);
+            },
+            static fn (): int => 1_000_000
+        );
+
+        $run = $store->insertRun(1, array('page'), 1, '2026-01-01 00:00:00');
+        $store->saveRun($run->withStatus(AuditRunStatus::Complete, '2026-01-01 00:01:00'));
+        $store->replaceFindingsForPosts(1, array(42), array(
+            new AuditFinding(
+                0,
+                1,
+                42,
+                'page',
+                80,
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                'v-hero-title',
+                'required',
+                RuleSeverity::Fail,
+                'Title is required in 2 Hero rows (rows 1, 3).',
+                '2026-01-01 00:00:00'
+            ),
+        ));
+
+        return new EditorAuditNotice(
+            $service,
+            $repository,
+            static fn (int $postId): string => $postId === 42 ? 'page' : '',
             static fn (): bool => true,
             static fn (int $postId): bool => $postId === 42
         );

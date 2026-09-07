@@ -49,6 +49,36 @@ final class SelectablePostTypesTest extends TestCase
         $this->assertNotEmpty($this->factory()->fieldsForPostType('recipe'));
     }
 
+    public function testFlexibleContentScalarsMakeAPostTypeSelectableNaturally(): void
+    {
+        $catalog = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+        $factory = RuleDocumentFactory::v1(
+            static fn (): array => array(
+                'page'    => 'Page',
+                'product' => 'Product',
+                'empty'   => 'Empty',
+            ),
+            static function (string $postType) use ($catalog): array {
+                $fields = array();
+                foreach ($catalog->fieldsForPostType($postType) as $field) {
+                    $fields[] = $field->toCatalogArray();
+                }
+
+                return $fields;
+            }
+        );
+
+        $selectable = $factory->selectablePostTypes();
+        $this->assertArrayHasKey('page', $selectable);
+        $this->assertSame('Page', $selectable['page']);
+        $this->assertArrayNotHasKey('empty', $selectable);
+
+        $fields = $factory->fieldsForPostType('page');
+        $keys   = array_column($fields, 'key');
+        $this->assertContains(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $keys);
+        $this->assertNotContains(\ContentGuard\Tests\Support\AcfFlexibleFixtures::ACCORDION_TITLE, $keys);
+    }
+
     private function factory(): RuleDocumentFactory
     {
         $catalog = new AcfFieldCatalog(

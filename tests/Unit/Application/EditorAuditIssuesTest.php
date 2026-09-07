@@ -253,6 +253,113 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertSame('', EditorAuditIssues::payload($empty)['text']);
     }
 
+    public function testFlexibleEvaluationMergesAffectedRowsWithoutChangingIdentity(): void
+    {
+        $evaluation = new ContentEvaluation(
+            42,
+            \ContentGuard\Domain\ContentStatus::Failed,
+            array(
+                $this->flexFailure(1, 'This field is required.'),
+                $this->flexFailure(3, 'This field is required.'),
+                new EvaluationResult(
+                    EvaluationStatus::Failed,
+                    80,
+                    42,
+                    'field_66e48d6611345',
+                    'Must be at least 4 characters',
+                    RuleSeverity::Fail,
+                    'min_length',
+                    array(
+                        'field_label' => 'Modules → Hero → Title',
+                        'layout'      => 'hero',
+                        'display_row' => 3,
+                    )
+                ),
+            )
+        );
+
+        $issues = EditorAuditIssues::fromEvaluation($evaluation, 42);
+        $this->assertCount(2, $issues);
+        $this->assertSame('field_66e48d6611345', $issues[0]['fieldKey']);
+        $this->assertSame('hero', $issues[0]['layout']);
+        $this->assertSame(array(1, 3), $issues[0]['affectedRows']);
+        $this->assertSame('This field is required.', $issues[0]['message']);
+        $this->assertSame(array(3), $issues[1]['affectedRows']);
+
+        $html = EditorAuditIssues::noticeHtml($issues);
+        $this->assertStringContainsString('data-contentguard-layout="hero"', $html);
+        $this->assertStringContainsString('data-contentguard-display-row="1"', $html);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('Go to Modules → Hero → Title, row 1', $html);
+        $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
+        $this->assertStringContainsString('>Row 1</button>', $html);
+        $this->assertStringContainsString('>Row 3</button>', $html);
+        $this->assertStringNotContainsString('contentguard_row', $html);
+    }
+
+    public function testSingleFlexibleRowNavigatesDirectlyWithoutRowButtons(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array($this->flexFailure(3, 'This field is required.'))
+            ),
+            42
+        );
+
+        $this->assertSame(array(3), $issues[0]['affectedRows']);
+        $html = EditorAuditIssues::issueHtml($issues[0]);
+        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
+        $this->assertStringNotContainsString('>Row 3</button>', $html);
+        $this->assertStringNotContainsString('contentguard-warning-rows', $html);
+    }
+
+    public function testPersistedFlexibleSnapshotExposesRowsAndRepeaterSnapshotsDoNot(): void
+    {
+        $flex = EditorAuditIssues::fromFindings(
+            array($this->finding(array(
+                'fieldKey' => 'field_66e48d6611345',
+                'message'  => 'Title is required in 2 Hero rows (rows 1, 3).',
+            ))),
+            42,
+            array('15:field_66e48d6611345' => 'Modules → Hero → Title')
+        );
+        $this->assertSame(array(1, 3), $flex[0]['affectedRows']);
+        $this->assertArrayNotHasKey('layout', $flex[0]);
+
+        $repeater = EditorAuditIssues::fromFindings(
+            array($this->finding(array(
+                'fieldKey' => 'field_ingredients',
+                'message'  => 'Ingredient is required in 3 rows (rows 1, 3, 5).',
+            ))),
+            42,
+            array('15:field_ingredients' => 'Ingredients')
+        );
+        $this->assertArrayNotHasKey('affectedRows', $repeater[0]);
+        $this->assertArrayNotHasKey('layout', $repeater[0]);
+        $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($repeater[0]));
+    }
+
+    private function flexFailure(int $row, string $message): EvaluationResult
+    {
+        return new EvaluationResult(
+            EvaluationStatus::Failed,
+            80,
+            42,
+            'field_66e48d6611345',
+            $message,
+            RuleSeverity::Fail,
+            'required',
+            array(
+                'field_label' => 'Modules → Hero → Title',
+                'layout'      => 'hero',
+                'display_row' => $row,
+            )
+        );
+    }
+
     /**
      * @param array<string, mixed> $overrides
      */

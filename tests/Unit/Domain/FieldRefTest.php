@@ -79,6 +79,90 @@ final class FieldRefTest extends TestCase
         $this->assertTrue($loaded->isRepeaterChild());
     }
 
+    public function testFlexibleChildSerializesLayoutAndKeepsFieldKeyPath(): void
+    {
+        $ref = new FieldRef(
+            'field_66e48d6611345',
+            'title',
+            'Modules → Hero → Title',
+            array('field_660d684429de1', 'field_66e48d6611345'),
+            FieldRef::CONTAINER_FLEXIBLE,
+            'hero'
+        );
+
+        $this->assertTrue($ref->isFlexibleChild());
+        $this->assertFalse($ref->isRepeaterChild());
+        $this->assertSame(
+            array(
+                'key'       => 'field_66e48d6611345',
+                'name'      => 'title',
+                'label'     => 'Modules → Hero → Title',
+                'path'      => array('field_660d684429de1', 'field_66e48d6611345'),
+                'container' => 'flexible_content',
+                'layout'    => 'hero',
+            ),
+            $ref->toArray()
+        );
+
+        $loaded = FieldRef::fromArray($ref->toArray());
+        $this->assertSame('hero', $loaded->layout);
+        $this->assertSame('flexible_content', $loaded->container);
+        $this->assertSame($ref->path, $loaded->path);
+    }
+
+    public function testExistingGroupDocumentsDoNotGainLayout(): void
+    {
+        $ref = new FieldRef(
+            'field_ingredients',
+            'ingredients',
+            'Product Details → Ingredients',
+            array('field_product_details', 'field_ingredients'),
+            'group'
+        );
+
+        $this->assertArrayNotHasKey('layout', $ref->toArray());
+        $this->assertSame('', $ref->layout);
+    }
+
+    public function testLayoutIsRejectedOnNonFlexibleContainers(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        new FieldRef(
+            'field_ingredients',
+            'ingredients',
+            'Ingredients',
+            array('field_product_details', 'field_ingredients'),
+            'group',
+            'hero'
+        );
+    }
+
+    public function testFlexibleChildRequiresASafeLayoutName(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        new FieldRef(
+            'field_66e48d6611345',
+            'title',
+            'Title',
+            array('field_660d684429de1', 'field_66e48d6611345'),
+            FieldRef::CONTAINER_FLEXIBLE,
+            ''
+        );
+    }
+
+    public function testLayoutKeyCannotBeStoredInPath(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        new FieldRef(
+            'field_66e48d6611345',
+            'title',
+            'Title',
+            array('field_660d684429de1', 'layout_66e48d4511343', 'field_66e48d6611345'),
+            FieldRef::CONTAINER_FLEXIBLE,
+            'hero'
+        );
+    }
+
     public function testInvalidPathsAreRejected(): void
     {
         $cases = array(

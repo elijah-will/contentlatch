@@ -46,7 +46,7 @@ final class SaveWarningNotifier
     public const REST_ROUTE     = '/warnings/(?P<id>\d+)';
 
     /**
-     * @var array<int, list<array{text: string, message: string, label: string, fieldKey: string}>>
+     * @var array<int, list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>>
      */
     private array $pageCache = array();
 
@@ -142,7 +142,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return array{messages: list<string>, warnings: list<array{text: string, message: string, label: string, fieldKey: string}>}
+     * @return array{messages: list<string>, warnings: list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>}
      */
     public function payloadForPost(int $postId): array
     {
@@ -176,7 +176,7 @@ final class SaveWarningNotifier
             return;
         }
 
-        EditorFieldFocus::enqueueAssets($_GET);
+        EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));
 
         wp_register_script(
             'contentguard-editor-warnings',
@@ -237,7 +237,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
+     * @return list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public function warningsForPost(int $postId): array
     {
@@ -283,7 +283,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
+     * @return list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public static function warningItems(ContentEvaluation $evaluation): array
     {
@@ -298,10 +298,11 @@ final class SaveWarningNotifier
             $item = self::warningItem($result);
             $id   = $item['text'] . "\0" . $item['fieldKey'];
             if (isset($seen[$id])) {
+                $items[$seen[$id]] = EditorFieldNavigation::mergeRowTargets($items[$seen[$id]], $item);
                 continue;
             }
 
-            $seen[$id] = true;
+            $seen[$id] = count($items);
             $items[]   = $item;
         }
 
@@ -351,18 +352,26 @@ final class SaveWarningNotifier
         $message  = (string) ($warning['message'] ?? '');
         $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
 
+        $layout = EditorFieldNavigation::layoutFromItem($warning);
+        $rows   = EditorFieldNavigation::affectedRowsFromItem($warning);
+
         if ($fieldKey === '' || $label === '') {
             return self::escapeHtml(self::displayText($warning));
         }
 
         $warningLabel = function_exists('__') ? __('Warning', 'contentguard') : 'Warning';
+        $primaryRow   = EditorFieldNavigation::primaryDisplayRow($rows);
+        $aria         = count($rows) === 1
+            ? EditorFieldNavigation::goToLayoutRowAria($label, $primaryRow)
+            : EditorFieldNavigation::goToFieldAria($label);
 
-        return self::escapeHtml($warningLabel) . ': <button type="button" class="contentguard-warning-field" data-contentguard-field="'
-            . self::escapeAttr($fieldKey)
-            . '" aria-label="' . self::escapeAttr(EditorFieldNavigation::goToFieldAria($label)) . '">'
+        return self::escapeHtml($warningLabel) . ': <button type="button" class="contentguard-warning-field" '
+            . EditorFieldNavigation::fieldTriggerAttributes($fieldKey, $layout, $primaryRow)
+            . ' aria-label="' . self::escapeAttr($aria) . '">'
             . self::escapeHtml($label)
             . '</button> — '
-            . self::escapeHtml($message !== '' ? $message : 'Content warning.');
+            . self::escapeHtml($message !== '' ? $message : 'Content warning.')
+            . EditorFieldNavigation::rowButtonsHtml($fieldKey, $label, $layout, $rows);
     }
 
     public static function isPublishedStatus(string $status): bool
@@ -371,7 +380,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return list<array{text: string, message: string, label: string, fieldKey: string}>
+     * @return list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     private function evaluateWarnings(int $postId): array
     {
@@ -416,7 +425,9 @@ final class SaveWarningNotifier
                 $this->reader,
                 $maps['paths'],
                 $maps['names'],
-                $maps['repeater_keys']
+                $maps['repeater_keys'],
+                $maps['flex_keys'] ?? array(),
+                $maps['layouts'] ?? array()
             )
         );
 
@@ -424,19 +435,46 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return array{text: string, message: string, label: string, fieldKey: string}
+     * @return array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}
      */
     private static function warningItem(EvaluationResult $result): array
     {
         $label   = trim((string) ($result->context['field_label'] ?? ''));
         $message = $result->message !== '' ? $result->message : 'Content warning.';
 
-        return array(
-            'text'     => self::formatWarning($result),
-            'message'  => $message,
-            'label'    => $label,
-            'fieldKey' => EditorFieldNavigation::navigableFieldKey($result->fieldId),
+        return EditorFieldNavigation::withEvaluationRowTargets(
+            array(
+                'text'     => self::formatWarning($result),
+                'message'  => $message,
+                'label'    => $label,
+                'fieldKey' => EditorFieldNavigation::navigableFieldKey($result->fieldId),
+            ),
+            $result->context
         );
+    }
+
+    /**
+     * @param list<array{text?: string, message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>}> $warnings
+     * @return array{layout?: string, displayRow?: int}
+     */
+    private static function navigationExtras(array $warnings): array
+    {
+        if (count($warnings) !== 1) {
+            return array();
+        }
+
+        $extra  = array();
+        $layout = EditorFieldNavigation::layoutFromItem($warnings[0]);
+        if ($layout !== '') {
+            $extra['layout'] = $layout;
+        }
+
+        $rows = EditorFieldNavigation::affectedRowsFromItem($warnings[0]);
+        if (count($rows) === 1) {
+            $extra['displayRow'] = $rows[0];
+        }
+
+        return $extra;
     }
 
     private function editorPostId(): int

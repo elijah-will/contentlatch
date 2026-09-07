@@ -1,6 +1,7 @@
 <?php
 /**
- * Scrolls the WordPress editor to an ACF field (top-level or Group child).
+ * Scrolls the WordPress editor to an ACF field (top-level, Group, Repeater,
+ * or Flexible Content child).
  *
  * Used by Audit "Edit content" (URL query) and by clickable editor warnings.
  *
@@ -12,6 +13,7 @@ declare(strict_types=1);
 namespace ContentGuard\Admin;
 
 use ContentGuard\Application\EditorFieldNavigation;
+use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 
 final class EditorFieldFocus
 {
@@ -38,14 +40,19 @@ final class EditorFieldFocus
 
     /**
      * @param array<string, mixed> $request
+     * @param array{layout?: string, displayRow?: int} $extra Transient editor-only navigation hints.
      */
-    public static function enqueueAssets(array $request = array()): void
+    public static function enqueueAssets(array $request = array(), array $extra = array()): void
     {
         if (!function_exists('wp_register_style') || !function_exists('wp_register_script')) {
             return;
         }
 
-        $fieldKey = self::autoNavigateFieldKey($request);
+        $fieldKey   = self::autoNavigateFieldKey($request);
+        $layout     = isset($extra['layout']) && EditorFieldNavigation::isSafeLayoutName((string) $extra['layout'])
+            ? (string) $extra['layout']
+            : self::layoutForField($fieldKey, $request);
+        $displayRow = EditorFieldNavigation::sanitizeDisplayRow($extra['displayRow'] ?? 0);
 
         wp_register_style(
             'contentguard-editor-field',
@@ -67,6 +74,8 @@ final class EditorFieldFocus
             'contentguardEditorField',
             array(
                 'fieldKey'     => $fieldKey,
+                'layout'       => $layout,
+                'displayRow'   => $displayRow,
                 'autoNavigate' => $fieldKey !== '',
                 'i18n'         => array(
                     'navigated' => __('Moved to the field that needs attention.', 'contentguard'),
@@ -83,5 +92,37 @@ final class EditorFieldFocus
         }
 
         self::enqueueAssets($_GET);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    private static function layoutForField(string $fieldKey, array $request): string
+    {
+        if ($fieldKey === '' || !function_exists('get_post_type')) {
+            return '';
+        }
+
+        $postId = 0;
+        if (isset($request['post']) && is_numeric($request['post'])) {
+            $postId = (int) $request['post'];
+        }
+
+        if ($postId <= 0) {
+            return '';
+        }
+
+        $postType = get_post_type($postId);
+        if (!is_string($postType) || $postType === '') {
+            return '';
+        }
+
+        foreach ((new AcfFieldCatalog())->fieldsForPostType($postType) as $field) {
+            if ($field->key === $fieldKey && EditorFieldNavigation::isSafeLayoutName($field->layout)) {
+                return $field->layout;
+            }
+        }
+
+        return '';
     }
 }

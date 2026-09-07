@@ -1,6 +1,7 @@
 <?php
 /**
- * One evaluation-time field value. Repeater rows use this; scalars use one instance.
+ * One evaluation-time field value. Repeater and Flexible Content rows use
+ * this; scalars use one instance.
  *
  * Row identity lives here only. It is never stored as FieldRef.key or finding identity.
  *

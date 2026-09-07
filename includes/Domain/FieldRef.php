@@ -13,8 +13,9 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 
 final class FieldRef
 {
-    public const CONTAINER_GROUP    = 'group';
-    public const CONTAINER_REPEATER = 'repeater';
+    public const CONTAINER_GROUP     = 'group';
+    public const CONTAINER_REPEATER  = 'repeater';
+    public const CONTAINER_FLEXIBLE  = 'flexible_content';
 
     /**
      * @param list<string> $path Root-to-leaf ACF field keys. Empty means top-level.
@@ -25,6 +26,7 @@ final class FieldRef
         public readonly string $label = '',
         public readonly array $path = array(),
         public readonly string $container = '',
+        public readonly string $layout = '',
     ) {
         if ($this->key === '') {
             throw new InvalidRuleException('Field key is required.');
@@ -49,6 +51,10 @@ final class FieldRef
             $data['container'] = $this->container;
         }
 
+        if ($this->container === self::CONTAINER_FLEXIBLE && $this->layout !== '') {
+            $data['layout'] = $this->layout;
+        }
+
         return $data;
     }
 
@@ -63,6 +69,7 @@ final class FieldRef
             (string) ($data['label'] ?? ''),
             self::pathFromArray($data['path'] ?? array()),
             (string) ($data['container'] ?? ''),
+            (string) ($data['layout'] ?? ''),
         );
     }
 
@@ -104,6 +111,10 @@ final class FieldRef
                 throw new InvalidRuleException('Field container requires a path.');
             }
 
+            if ($this->layout !== '') {
+                throw new InvalidRuleException('Layout is only valid for Flexible Content fields.');
+            }
+
             return;
         }
 
@@ -121,14 +132,40 @@ final class FieldRef
             throw new InvalidRuleException('Invalid field path.');
         }
 
-        if ($this->container !== self::CONTAINER_GROUP && $this->container !== self::CONTAINER_REPEATER) {
+        if (
+            $this->container !== self::CONTAINER_GROUP
+            && $this->container !== self::CONTAINER_REPEATER
+            && $this->container !== self::CONTAINER_FLEXIBLE
+        ) {
             throw new InvalidRuleException('Unsupported field container.');
+        }
+
+        if ($this->container === self::CONTAINER_FLEXIBLE) {
+            if (!self::isSafeLayoutName($this->layout)) {
+                throw new InvalidRuleException('Flexible Content fields require a layout.');
+            }
+
+            return;
+        }
+
+        if ($this->layout !== '') {
+            throw new InvalidRuleException('Layout is only valid for Flexible Content fields.');
         }
     }
 
     public function isRepeaterChild(): bool
     {
         return $this->container === self::CONTAINER_REPEATER;
+    }
+
+    public function isFlexibleChild(): bool
+    {
+        return $this->container === self::CONTAINER_FLEXIBLE;
+    }
+
+    public static function isSafeLayoutName(string $layout): bool
+    {
+        return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $layout);
     }
 
     private static function isSafeFieldKey(string $key): bool

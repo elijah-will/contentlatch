@@ -78,6 +78,20 @@ final class AcfNestedField
         return (bool) preg_match('/^(row-\d+|[A-Za-z0-9_-]+)$/', $key);
     }
 
+    public static function rowLayout(mixed $row): string
+    {
+        if (!is_array($row)) {
+            return '';
+        }
+
+        return (string) ($row['acf_fc_layout'] ?? '');
+    }
+
+    public static function isDisabledFlexRow(mixed $row): bool
+    {
+        return is_array($row) && !empty($row['acf_fc_layout_disabled']);
+    }
+
     /**
      * @return list<array{key: string, row: mixed}>
      */

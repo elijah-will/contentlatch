@@ -78,7 +78,9 @@ final class ContentAuditService
                     null,
                     $maps['paths'],
                     $maps['names'],
-                    $maps['repeater_keys']
+                    $maps['repeater_keys'],
+                    $maps['flex_keys'] ?? array(),
+                    $maps['layouts'] ?? array()
                 );
             },
             static function (array $ids): void {
@@ -516,6 +518,13 @@ final class ContentAuditService
         $first = $results[0];
         $base  = $this->instanceMessage($first);
         if (count($results) === 1) {
+            $row         = $first->context['display_row'] ?? null;
+            $row         = is_int($row) || (is_numeric($row) && (int) $row > 0) ? (int) $row : 0;
+            $layoutLabel = $this->layoutLabel($first);
+            if ($row > 0 && $layoutLabel !== '') {
+                return sprintf('%s in %s row %d.', rtrim($base, '.'), $layoutLabel, $row);
+            }
+
             return $base;
         }
 
@@ -530,6 +539,17 @@ final class ContentAuditService
 
         if ($rows === array()) {
             return $base;
+        }
+
+        $layoutLabel = $this->layoutLabel($first);
+        if ($layoutLabel !== '') {
+            return sprintf(
+                '%s in %d %s rows (rows %s).',
+                rtrim($base, '.'),
+                count($rows),
+                $layoutLabel,
+                implode(', ', $rows)
+            );
         }
 
         return sprintf(
@@ -558,6 +578,19 @@ final class ContentAuditService
         }
 
         return $result->message !== '' ? $result->message : 'This field is required.';
+    }
+
+    private function layoutLabel(EvaluationResult $result): string
+    {
+        $layout = trim((string) ($result->context['layout'] ?? ''));
+        if ($layout === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s*→\s*/u', (string) ($result->context['field_label'] ?? '')) ?: array();
+        $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
+
+        return $parts[1] ?? $layout;
     }
 
     private function leafLabel(string $breadcrumb): string

@@ -21,7 +21,7 @@ final class EditorAuditIssues
     /**
      * @param AuditFinding[] $findings
      * @param array<string, string> $fieldLabels
-     * @return list<array{message: string, label: string, fieldKey: string}>
+     * @return list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public static function fromFindings(array $findings, int $postId, array $fieldLabels = array()): array
     {
@@ -57,7 +57,7 @@ final class EditorAuditIssues
     /**
      * Current blocking issues from a live evaluation. Warnings are ignored.
      *
-     * @return list<array{message: string, label: string, fieldKey: string}>
+     * @return list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public static function fromEvaluation(?ContentEvaluation $evaluation, int $postId): array
     {
@@ -80,10 +80,11 @@ final class EditorAuditIssues
             $item = self::fromResult($result);
             $id   = $item['message'] . "\0" . $item['fieldKey'] . "\0" . $item['label'];
             if (isset($seen[$id])) {
+                $items[$seen[$id]] = EditorFieldNavigation::mergeRowTargets($items[$seen[$id]], $item);
                 continue;
             }
 
-            $seen[$id] = true;
+            $seen[$id] = count($items);
             $items[]   = $item;
         }
 
@@ -91,7 +92,7 @@ final class EditorAuditIssues
     }
 
     /**
-     * @return array{message: string, label: string, fieldKey: string}
+     * @return array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}
      */
     public static function fromResult(EvaluationResult $result): array
     {
@@ -103,19 +104,22 @@ final class EditorAuditIssues
         $fieldKey = EditorFieldNavigation::navigableFieldKey($result->fieldId);
         $label    = trim((string) ($result->context['field_label'] ?? ''));
 
-        return array(
-            'message'  => $message,
-            'label'    => self::humanLabel($label, $fieldKey !== '' ? $fieldKey : (string) $result->fieldId),
-            'fieldKey' => $fieldKey,
+        return EditorFieldNavigation::withEvaluationRowTargets(
+            array(
+                'message'  => $message,
+                'label'    => self::humanLabel($label, $fieldKey !== '' ? $fieldKey : (string) $result->fieldId),
+                'fieldKey' => $fieldKey,
+            ),
+            $result->context
         );
     }
 
     /**
      * Keep the Audit-arrival notice scoped to fields that were in the run.
      *
-     * @param list<array{message: string, label: string, fieldKey: string}> $issues
+     * @param list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}> $issues
      * @param list<string> $fieldKeys
-     * @return list<array{message: string, label: string, fieldKey: string}>
+     * @return list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public static function scopedToFieldKeys(array $issues, array $fieldKeys): array
     {
@@ -147,8 +151,8 @@ final class EditorAuditIssues
     }
 
     /**
-     * @param list<array{message: string, label: string, fieldKey: string}> $issues
-     * @return array{issues: list<array{message: string, label: string, fieldKey: string}>, html: string, text: string}
+     * @param list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}> $issues
+     * @return array{issues: list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>, html: string, text: string}
      */
     public static function payload(array $issues): array
     {
@@ -161,7 +165,7 @@ final class EditorAuditIssues
 
     /**
      * @param array<string, string> $fieldLabels
-     * @return array{message: string, label: string, fieldKey: string}
+     * @return array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}
      */
     public static function fromFinding(AuditFinding $finding, array $fieldLabels = array()): array
     {
@@ -174,10 +178,13 @@ final class EditorAuditIssues
             ?? $fieldLabels[$finding->fieldKey]
             ?? '';
 
-        return array(
-            'message'  => $message,
-            'label'    => self::humanLabel((string) $rawLabel, $finding->fieldKey),
-            'fieldKey' => EditorFieldNavigation::navigableFieldKey($finding->fieldKey),
+        return EditorFieldNavigation::withSnapshotRowTargets(
+            array(
+                'message'  => $message,
+                'label'    => self::humanLabel((string) $rawLabel, $finding->fieldKey),
+                'fieldKey' => EditorFieldNavigation::navigableFieldKey($finding->fieldKey),
+            ),
+            $message
         );
     }
 
@@ -264,18 +271,26 @@ final class EditorAuditIssues
         $label    = trim((string) ($issue['label'] ?? ''));
         $message  = trim((string) ($issue['message'] ?? ''));
         $fieldKey = EditorFieldNavigation::navigableFieldKey($issue['fieldKey'] ?? null);
+        $layout   = EditorFieldNavigation::layoutFromItem($issue);
+        $rows     = EditorFieldNavigation::affectedRowsFromItem($issue);
         $text     = self::issueText($issue);
 
         if ($fieldKey === '' || $label === '') {
             return self::escapeHtml($text);
         }
 
-        return '<button type="button" class="contentguard-warning-field" data-contentguard-field="'
-            . self::escapeAttr($fieldKey)
-            . '" aria-label="' . self::escapeAttr(EditorFieldNavigation::goToFieldAria($label)) . '">'
+        $primaryRow = EditorFieldNavigation::primaryDisplayRow($rows);
+        $aria       = count($rows) === 1
+            ? EditorFieldNavigation::goToLayoutRowAria($label, $primaryRow)
+            : EditorFieldNavigation::goToFieldAria($label);
+
+        return '<button type="button" class="contentguard-warning-field" '
+            . EditorFieldNavigation::fieldTriggerAttributes($fieldKey, $layout, $primaryRow)
+            . ' aria-label="' . self::escapeAttr($aria) . '">'
             . self::escapeHtml($label)
             . '</button> — '
-            . self::escapeHtml($message !== '' ? $message : 'This field is required.');
+            . self::escapeHtml($message !== '' ? $message : 'This field is required.')
+            . EditorFieldNavigation::rowButtonsHtml($fieldKey, $label, $layout, $rows);
     }
 
     public static function classicNoticeHtml(array $issues): string
@@ -296,7 +311,7 @@ final class EditorAuditIssues
     /**
      * @param AuditFinding[] $findings
      * @param array<string, string> $fieldLabels
-     * @return list<array{message: string, label: string, fieldKey: string}>
+     * @return list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>
      */
     public static function resolve(
         array $findings,

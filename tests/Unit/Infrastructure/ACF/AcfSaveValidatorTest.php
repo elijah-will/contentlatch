@@ -836,6 +836,213 @@ final class AcfSaveValidatorTest extends TestCase
     /**
      * @param array<string, mixed> $request
      */
+    public function testFlexibleChildTargetsExactPostedRowInput(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->publishRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    'row-0' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                    'row-1' => array(
+                        'acf_fc_layout' => 'cta',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => '',
+                    ),
+                    '67a1b2c3d4e5f' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                    'acfcloneindex' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => 'Clone',
+                    ),
+                    'row-9' => array(
+                        'acf_fc_layout' => 'hero',
+                        'acf_fc_layout_disabled' => '1',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                    'message' => 'Modules → Hero → Title is required.',
+                ),
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                    'message' => 'Modules → Hero → Title is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testFlexibleGroupChildTargetsNestedPostedInput(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->contentBlockHeadlineRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->publishRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    'row-5' => array(
+                        'acf_fc_layout' => 'content_block',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 => array(
+                            \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE => '',
+                        ),
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
+                        . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
+                        . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
+                    'message' => 'Modules → Content Block → Content Block 1 → Headline is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testFlexibleZeroLayoutsDoNotError(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->publishRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    'acfcloneindex' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testFlexibleDraftAllowedPublishAndPrivateBlocked(): void
+    {
+        $payload = array(
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                'row-0' => array(
+                    'acf_fc_layout' => 'hero',
+                    \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                ),
+            ),
+        );
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->request(array(
+                'post_type'   => 'page',
+                'post_status' => 'draft',
+                'save'        => 'Save Draft',
+            )),
+            $payload
+        );
+        $this->assertSame(array(), $this->errors);
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->publishRequest(array('post_type' => 'page')),
+            $payload
+        );
+        $this->assertNotSame(array(), $this->errors);
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->request(array(
+                'post_type'   => 'page',
+                'post_status' => 'draft',
+                'private'     => 'Private',
+            )),
+            $payload
+        );
+        $this->assertNotSame(array(), $this->errors);
+    }
+
+    public function testFlexibleWarningRemainsNonBlocking(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule(array(
+                'severity' => RuleSeverity::Warning,
+            )))),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->publishRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    'row-0' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function heroTitleRule(array $overrides = array()): Rule
+    {
+        return RuleFactory::rule(
+            array_merge(
+                array(
+                    'id'          => 80,
+                    'name'        => 'Hero title required',
+                    'postType'    => 'page',
+                    'conditions'  => array(),
+                    'validations' => array(
+                        RuleFactory::validation(
+                            array(
+                                'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                                'type'       => 'required',
+                                'quantifier' => 'every',
+                            )
+                        ),
+                    ),
+                ),
+                $overrides
+            )
+        );
+    }
+
+    private function contentBlockHeadlineRule(): Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 81,
+            'name'        => 'Content block headline required',
+            'postType'    => 'page',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::contentBlockHeadlineRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+    }
+
     private function validateWith(
         RuleRepositoryInterface $repository,
         AcfFieldCatalog $catalog,

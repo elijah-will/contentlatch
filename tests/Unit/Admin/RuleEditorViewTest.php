@@ -53,9 +53,10 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('class="contentguard-notice-label"', $html);
         $this->assertStringContainsString('class="contentguard-notice-message"', $html);
         $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
-        $this->assertStringContainsString('Repeater children can be used in THEN and apply to every row.', $html);
-        $this->assertStringContainsString('Flexible Content and Clone fields are not supported yet.', $html);
-        $this->assertStringNotContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
+        $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
+        $this->assertStringContainsString('They cannot be used in WHEN', $html);
+        $this->assertStringContainsString('Clone fields are not supported yet.', $html);
+        $this->assertStringNotContainsString('Flexible Content and Clone fields are not supported yet.', $html);
     }
 
     public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
@@ -116,7 +117,7 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringNotContainsString('field_product_details.field_ingredients', $html);
         $this->assertStringNotContainsString('>field_ingredients<', $html);
         $this->assertStringNotContainsString('>field_calories<', $html);
-        $this->assertStringContainsString('Repeater children can be used in THEN and apply to every row.', $html);
+        $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
     }
 
     public function testRepeaterChildAppearsInThenWithEveryRowAndNotInWhen(): void
@@ -171,6 +172,61 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringNotContainsString('field_product_size', $match[1]);
         $this->assertStringNotContainsString('(every row)', $match[1]);
         $this->assertStringContainsString('field_type', $match[1]);
+    }
+
+    public function testFlexibleChildAppearsInThenWithEveryLayoutRowAndNotInWhen(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Hero titles',
+                'target_post_type' => 'page',
+                'conditions'       => array(
+                    array(
+                        'field_key' => '',
+                        'operator'  => '',
+                    ),
+                ),
+                'validations'      => array(
+                    array(
+                        'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'   => 'field_page_type',
+                    'name'  => 'page_type',
+                    'label' => 'Page Type',
+                    'type'  => 'select',
+                ),
+                array(
+                    'key'          => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'name'         => 'title',
+                    'label'        => 'Title',
+                    'type'         => 'text',
+                    'path'         => array(
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES,
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    ),
+                    'container'    => 'flexible_content',
+                    'layout'       => 'hero',
+                    'layout_label' => 'Hero',
+                    'breadcrumb'   => 'Modules → Hero → Title',
+                    'group_label'  => 'Modules → Hero',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('Modules → Hero → Title (every Hero row)', $html);
+        $this->assertStringContainsString('<optgroup label="Modules → Hero">', $html);
+        $this->assertStringNotContainsString('field_660d684429de1', $html);
+        $this->assertStringNotContainsString('layout_66e48d4511343', $html);
+        if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('WHEN field select missing');
+        }
+        $this->assertStringNotContainsString(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $match[1]);
+        $this->assertStringNotContainsString('(every Hero row)', $match[1]);
     }
 
     public function testEditRuleLoadsQuotedWhenThenAndAddAnotherRule(): void

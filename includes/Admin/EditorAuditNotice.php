@@ -98,7 +98,7 @@ final class EditorAuditNotice
 
     /**
      * @param list<string> $allowedKeys
-     * @return list<array{message: string, label: string, fieldKey: string}>|null
+     * @return list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>|null
      */
     private function liveIssues(int $postId, array $allowedKeys): ?array
     {
@@ -121,7 +121,7 @@ final class EditorAuditNotice
 
     /**
      * @param array<string, mixed> $request
-     * @return array{issues: list<array{message: string, label: string, fieldKey: string}>, html: string, text: string}
+     * @return array{issues: list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>, html: string, text: string}
      */
     public function payloadForRequest(int $postId, array $request): array
     {
@@ -209,7 +209,7 @@ final class EditorAuditNotice
             return;
         }
 
-        EditorFieldFocus::enqueueAssets($_GET);
+        EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($issues));
 
         wp_register_script(
             'contentguard-editor-audit',
@@ -246,6 +246,32 @@ final class EditorAuditNotice
         }
 
         echo function_exists('wp_kses_post') ? wp_kses_post($html) : $html;
+    }
+
+    /**
+     * Single failing Flex row can auto-navigate without putting a row in the URL.
+     *
+     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>}> $issues
+     * @return array{layout?: string, displayRow?: int}
+     */
+    private static function navigationExtras(array $issues): array
+    {
+        if (count($issues) !== 1) {
+            return array();
+        }
+
+        $extra = array();
+        $layout = EditorFieldNavigation::layoutFromItem($issues[0]);
+        if ($layout !== '') {
+            $extra['layout'] = $layout;
+        }
+
+        $rows = EditorFieldNavigation::affectedRowsFromItem($issues[0]);
+        if (count($rows) === 1) {
+            $extra['displayRow'] = $rows[0];
+        }
+
+        return $extra;
     }
 
     /**

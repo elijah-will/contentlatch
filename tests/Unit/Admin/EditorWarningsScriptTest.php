@@ -21,6 +21,10 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('warning.message', $js);
         $this->assertStringContainsString('warning.label', $js);
         $this->assertStringContainsString('warning.text', $js);
+        $this->assertStringContainsString('warning.layout', $js);
+        $this->assertStringContainsString('warning.affectedRows', $js);
+        $this->assertStringContainsString('data-contentguard-display-row', $js);
+        $this->assertStringContainsString('data-contentguard-layout', $js);
         $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
         $this->assertStringContainsString('payload.warnings', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
@@ -41,5 +45,6 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('isAutosavingPost', $js);
         $this->assertStringNotContainsString('contentguard-audit-blockers', $js);
         $this->assertStringNotContainsString('editor-blockers', $js);
+        $this->assertStringNotContainsString('contentguard_row', $js);
     }
 }

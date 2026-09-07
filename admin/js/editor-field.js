@@ -9,21 +9,130 @@
     return typeof fieldKey === "string" && /^field_[A-Za-z0-9]+$/.test(fieldKey);
   }
 
-  function findField(fieldKey) {
-    if (!isSafeFieldKey(fieldKey)) {
-      return null;
-    }
+  function isSafeLayout(layout) {
+    return typeof layout === "string" && /^[A-Za-z0-9_-]+$/.test(layout);
+  }
 
-    var nodes = document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]');
+  function sanitizeDisplayRow(value) {
+    var row = parseInt(value, 10);
+    return row > 0 ? row : 0;
+  }
+
+  function isRealLayout(node) {
+    return !!(
+      node &&
+      node.classList &&
+      node.classList.contains("layout") &&
+      !node.classList.contains("acf-clone") &&
+      !node.closest(".acf-clone")
+    );
+  }
+
+  function firstRealField(nodes) {
     for (var i = 0; i < nodes.length; i++) {
       if (!nodes[i].closest(".acf-clone")) {
         return nodes[i];
       }
     }
 
+    return null;
+  }
+
+  function realChildLayouts(container) {
+    var values = container.querySelector(".values") || container;
+    var children = values.children || [];
+    var rows = [];
+    for (var i = 0; i < children.length; i++) {
+      if (isRealLayout(children[i])) {
+        rows.push(children[i]);
+      }
+    }
+
+    return rows;
+  }
+
+  function findFieldInLayout(fieldKey, layout) {
+    var layouts = document.querySelectorAll('.layout[data-layout="' + layout + '"]');
+    for (var i = 0; i < layouts.length; i++) {
+      if (!isRealLayout(layouts[i])) {
+        continue;
+      }
+
+      var match = firstRealField(layouts[i].querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+      if (match) {
+        return match;
+      }
+    }
+
+    return null;
+  }
+
+  function seedLayout(fieldKey, layout) {
+    if (isSafeLayout(layout)) {
+      var layouts = document.querySelectorAll('.layout[data-layout="' + layout + '"]');
+      for (var i = 0; i < layouts.length; i++) {
+        if (isRealLayout(layouts[i])) {
+          return layouts[i];
+        }
+      }
+    }
+
+    var field = firstRealField(document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+    return field ? field.closest(".layout") : null;
+  }
+
+  function findFieldAtDisplayRow(fieldKey, layout, displayRow) {
+    var seed = seedLayout(fieldKey, layout);
+    if (!seed) {
+      return null;
+    }
+
+    var flex = seed.closest(".acf-flexible-content");
+    if (!flex) {
+      return null;
+    }
+
+    var rows = realChildLayouts(flex);
+    var row = rows[displayRow - 1];
+    if (!isRealLayout(row)) {
+      return null;
+    }
+
+    if (isSafeLayout(layout) && row.getAttribute("data-layout") !== layout) {
+      return null;
+    }
+
+    return firstRealField(row.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+  }
+
+  function findField(fieldKey, layout, displayRow) {
+    if (!isSafeFieldKey(fieldKey)) {
+      return null;
+    }
+
+    displayRow = sanitizeDisplayRow(displayRow);
+    if (displayRow > 0) {
+      var targeted = findFieldAtDisplayRow(fieldKey, layout, displayRow);
+      if (targeted) {
+        return targeted;
+      }
+    }
+
+    if (isSafeLayout(layout)) {
+      var scoped = findFieldInLayout(fieldKey, layout);
+      if (scoped) {
+        return scoped;
+      }
+    }
+
+    var fallback = firstRealField(document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+    if (fallback) {
+      return fallback;
+    }
+
     var cloneChild = document.querySelector('.acf-clone .acf-field[data-key="' + fieldKey + '"]');
     if (cloneChild) {
-      return cloneChild.closest(".acf-field-repeater");
+      return cloneChild.closest(".acf-field-repeater, .acf-flexible-content, .layout");
     }
 
     return null;
@@ -47,6 +156,13 @@
   function openCollapsedAncestors(field) {
     var node = field.parentElement;
     while (node && node !== document.documentElement) {
+      if (node.classList && node.classList.contains("layout") && node.classList.contains("-collapsed")) {
+        node.classList.remove("-collapsed");
+        var layoutToggle = node.querySelector('[data-name="collapse-layout"]');
+        if (layoutToggle && typeof layoutToggle.click === "function") {
+          layoutToggle.click();
+        }
+      }
       if (node.classList && node.classList.contains("acf-row") && node.classList.contains("-collapsed")) {
         node.classList.remove("-collapsed");
         var rowToggle = node.querySelector('[data-event="collapse-row"]');
@@ -65,7 +181,7 @@
     }
   }
 
-  function announce(field) {
+  function announce(field, displayRow) {
     var live = document.getElementById("contentguard-field-nav-status");
     if (!live) {
       live = document.createElement("div");
@@ -86,14 +202,18 @@
     if (label !== "") {
       message = message + " " + label;
     }
+    displayRow = sanitizeDisplayRow(displayRow);
+    if (displayRow > 0) {
+      message = message + " (row " + displayRow + ")";
+    }
     live.textContent = "";
     live.textContent = message;
   }
 
-  function reveal(field) {
+  function reveal(field, displayRow) {
     openClosedPostbox(field);
     openCollapsedAncestors(field);
-    announce(field);
+    announce(field, displayRow);
 
     var behavior = prefersReducedMotion() ? "auto" : "smooth";
     if (typeof field.scrollIntoView === "function") {
@@ -101,10 +221,10 @@
     }
   }
 
-  function tryFocus(fieldKey, attemptsLeft) {
-    var field = findField(fieldKey);
+  function tryFocus(fieldKey, layout, displayRow, attemptsLeft) {
+    var field = findField(fieldKey, layout, displayRow);
     if (field) {
-      reveal(field);
+      reveal(field, displayRow);
       return;
     }
 
@@ -113,16 +233,16 @@
     }
 
     window.setTimeout(function () {
-      tryFocus(fieldKey, attemptsLeft - 1);
+      tryFocus(fieldKey, layout, displayRow, attemptsLeft - 1);
     }, 250);
   }
 
-  function navigateToField(fieldKey) {
+  function navigateToField(fieldKey, layout, displayRow) {
     if (!isSafeFieldKey(fieldKey)) {
       return;
     }
 
-    tryFocus(fieldKey, 20);
+    tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20);
   }
 
   window.contentguardNavigateToField = navigateToField;
@@ -141,7 +261,11 @@
     }
 
     event.preventDefault();
-    navigateToField(fieldKey);
+    navigateToField(
+      fieldKey,
+      trigger.getAttribute("data-contentguard-layout") || config.layout || "",
+      trigger.getAttribute("data-contentguard-display-row") || config.displayRow || 0
+    );
   });
 
   var autoStarted = false;
@@ -150,7 +274,7 @@
       return;
     }
     autoStarted = true;
-    navigateToField(config.fieldKey);
+    navigateToField(config.fieldKey, config.layout || "", config.displayRow || 0);
   }
 
   if (window.acf && typeof window.acf.addAction === "function") {

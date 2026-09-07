@@ -41,6 +41,17 @@ $fieldOptionLabel = static function (array $field): string {
         $label .= ' (every row)';
     }
 
+    if (($field['container'] ?? '') === 'flexible_content') {
+        $layoutLabel = trim((string) ($field['layout_label'] ?? ''));
+        if ($layoutLabel === '') {
+            $layoutLabel = (string) ($field['layout'] ?? 'layout');
+        }
+        $suffix = '(every ' . $layoutLabel . ' row)';
+        if (!str_contains($label, $suffix)) {
+            $label .= ' ' . $suffix;
+        }
+    }
+
     return $label;
 };
 
@@ -85,7 +96,7 @@ if (!$isNew) {
  */
 $conditionFields = array();
 foreach ($fields as $field) {
-    if (($field['container'] ?? '') !== 'repeater') {
+    if (($field['container'] ?? '') !== 'repeater' && ($field['container'] ?? '') !== 'flexible_content') {
         $conditionFields[] = $field;
     }
 }
@@ -216,7 +227,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
             <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Repeater children can be used in THEN and apply to every row. Flexible Content and Clone fields are not supported yet.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Repeater and Flexible Content children can be used in THEN and apply to every matching row. They cannot be used in WHEN. Clone fields are not supported yet.', 'contentguard'); ?></p>
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php

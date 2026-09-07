@@ -112,7 +112,9 @@ final class AcfSaveValidator
                 $fieldTypes,
                 $fieldPaths,
                 $nestedMaps['names'],
-                $nestedMaps['repeater_keys']
+                $nestedMaps['repeater_keys'],
+                $nestedMaps['flex_keys'] ?? array(),
+                $nestedMaps['layouts'] ?? array()
             )
         );
 

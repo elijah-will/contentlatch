@@ -15,6 +15,7 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Domain\RuleStatus;
+use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleDocumentFactoryTest extends TestCase
@@ -755,6 +756,67 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->assertSame('repeater', $loaded->validations[0]->field->container);
     }
 
+    public function testFlexibleChildValidationPersistsLayoutAndEveryQuantifier(): void
+    {
+        $factory = $this->flexibleFactory();
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Hero title required',
+            'post_type'  => 'page',
+            'status'     => 'active',
+            'severity'   => 'fail',
+            'validations' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $field = $rule->validations[0]->field;
+        $this->assertSame(1, $rule->schemaVersion);
+        $this->assertSame('flexible_content', $field->container);
+        $this->assertSame('hero', $field->layout);
+        $this->assertSame('Modules → Hero → Title', $field->label);
+        $this->assertSame(
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES,
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+            ),
+            $field->path
+        );
+        $this->assertSame('every', $rule->validations[0]->quantifier);
+        $this->assertTrue($rule->validations[0]->isEveryInstance());
+        $this->assertFalse($rule->validations[0]->isEveryRow());
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame(1, $loaded->schemaVersion);
+        $this->assertSame('hero', $loaded->validations[0]->field->layout);
+        $this->assertArrayNotHasKey('layout', RuleFactory::validation()->field->toArray());
+    }
+
+    public function testFlexibleChildCannotBeUsedAsWhenCondition(): void
+    {
+        $factory = $this->flexibleFactory();
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Flexible Content fields cannot be used in WHEN conditions.');
+        $factory->fromAdminInput(array(
+            'name'       => 'Bad when',
+            'post_type'  => 'page',
+            'validations' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+            'conditions' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'operator'  => 'is_empty',
+                ),
+            ),
+        ));
+    }
+
     public function testRepeaterChildCannotBeUsedAsWhenCondition(): void
     {
         $factory = $this->repeaterFactory();
@@ -808,6 +870,23 @@ final class RuleDocumentFactoryTest extends TestCase
                     'min'       => '3',
                 ),
             ),
+        );
+    }
+
+    private function flexibleFactory(): RuleDocumentFactory
+    {
+        $catalog = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+
+        return RuleDocumentFactory::v1(
+            static fn (): array => array('page' => 'Page'),
+            static function (string $postType) use ($catalog): array {
+                $fields = array();
+                foreach ($catalog->fieldsForPostType($postType) as $field) {
+                    $fields[] = $field->toCatalogArray();
+                }
+
+                return $fields;
+            }
         );
     }
 

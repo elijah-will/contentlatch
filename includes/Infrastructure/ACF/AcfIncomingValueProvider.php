@@ -27,6 +27,8 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
      * @param array<string, list<string>> $fieldPaths Trusted catalog paths keyed by leaf field key.
      * @param array<string, list<string>> $fieldPathNames Parallel field names for name-keyed payloads.
      * @param array<string, string> $repeaterKeys Leaf field key => Repeater field key.
+     * @param array<string, string> $flexKeys Leaf field key => Flexible Content field key.
+     * @param array<string, string> $layouts Leaf field key => trusted layout name.
      */
     public function __construct(
         mixed $payload,
@@ -35,6 +37,8 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
         private array $fieldPaths = array(),
         private array $fieldPathNames = array(),
         private array $repeaterKeys = array(),
+        private array $flexKeys = array(),
+        private array $layouts = array(),
     ) {
         $this->payload = is_array($payload) ? $payload : array();
     }
@@ -76,6 +80,11 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
             return array();
         }
 
+        $flexKey = $this->flexKeys[$fieldId] ?? '';
+        if ($flexKey !== '') {
+            return $this->flexInstances($fieldId, $flexKey);
+        }
+
         $repeaterKey = $this->repeaterKeys[$fieldId] ?? '';
         $path        = $this->pathFor($fieldId);
         if ($repeaterKey === '' || count($path) < 2) {
@@ -109,6 +118,57 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
                     'row_index'   => $index,
                     'display_row' => $index + 1,
                     'input_name'  => AcfNestedField::instanceInputName($path, $repeaterKey, $entry['key']),
+                )
+            );
+        }
+
+        return $instances;
+    }
+
+    /**
+     * @return list<FieldInstance>
+     */
+    private function flexInstances(string $fieldId, string $flexKey): array
+    {
+        $layout = $this->layouts[$fieldId] ?? '';
+        $path   = $this->pathFor($fieldId);
+        if ($layout === '' || count($path) < 2) {
+            return array();
+        }
+
+        $flexIndex = array_search($flexKey, $path, true);
+        if ($flexIndex === false) {
+            return array();
+        }
+
+        $pathToFlex  = array_slice($path, 0, $flexIndex + 1);
+        $namesToFlex = array_slice($this->namesFor($fieldId), 0, $flexIndex + 1);
+        $found       = AcfNestedField::read($this->payload, $pathToFlex, $namesToFlex);
+        if (!$found['found']) {
+            return array();
+        }
+
+        $childPath  = array_slice($path, $flexIndex + 1);
+        $childNames = array_slice($this->namesFor($fieldId), $flexIndex + 1);
+        $instances  = array();
+
+        foreach (AcfNestedField::rows($found['value']) as $index => $entry) {
+            $row = $entry['row'];
+            if (AcfNestedField::isDisabledFlexRow($row) || AcfNestedField::rowLayout($row) !== $layout) {
+                continue;
+            }
+
+            $raw = is_array($row)
+                ? AcfNestedField::walkStored($row, $childPath, $childNames)
+                : null;
+            $instances[] = new FieldInstance(
+                $this->normalizer->normalize($raw, $this->fieldTypes[$fieldId]),
+                array(
+                    'row_key'     => $entry['key'],
+                    'row_index'   => $index,
+                    'display_row' => $index + 1,
+                    'input_name'  => AcfNestedField::instanceInputName($path, $flexKey, $entry['key']),
+                    'layout'      => $layout,
                 )
             );
         }

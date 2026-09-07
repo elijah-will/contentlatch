@@ -364,6 +364,11 @@
     margin: 0 0 2px;
 }
 
+.contentguard-finding__rows {
+    color: var(--cg-muted, #646970);
+    font-size: var(--cg-font-size-sm, 12px);
+}
+
 .contentguard-finding__field {
     color: var(--cg-text, #1d2327);
     font-size: var(--cg-font-size-sm, 12px);

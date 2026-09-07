@@ -34,6 +34,8 @@ final class EditorAuditNoticeTest extends TestCase
         $this->assertStringNotContainsString('AcfSaveValidator', $php);
         $this->assertStringNotContainsString('SaveWarningNotifier', $php);
         $this->assertStringNotContainsString('editor-warnings', $php);
+        $this->assertStringContainsString('navigationExtras', $php);
+        $this->assertStringNotContainsString('contentguard_row', $php);
     }
 
     public function testSuccessfulSaveRedirectKeepsTheAuditRun(): void
