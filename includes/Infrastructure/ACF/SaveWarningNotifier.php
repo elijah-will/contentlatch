@@ -11,7 +11,9 @@
  * block editor does not reload — and hides most PHP notices behind its chrome.
  *
  * V1 display:
- * - Classic: evaluate stored values on the editor request and print admin_notices.
+ * - Classic: evaluate stored values on the individual post editor (post.php)
+ *   and print admin_notices there only. List screens and other admin pages
+ *   must not show these notices.
  * - Gutenberg: localize those messages and refresh them via REST after save,
  *   then show wp.data core/notices (not snackbars).
  *
@@ -54,6 +56,7 @@ final class SaveWarningNotifier
      * @param callable(array<int, string> $messages): void $storeMessages
      * @param callable(): array<int, string> $pullMessages
      * @param callable(string $fieldKey, int $postId): mixed|null $reader
+     * @param callable(): object|null|null $screenOf Optional get_current_screen() double.
      */
     public function __construct(
         private ContentEvaluator $evaluator,
@@ -64,6 +67,7 @@ final class SaveWarningNotifier
         private mixed $storeMessages,
         private mixed $pullMessages,
         private mixed $reader = null,
+        private mixed $screenOf = null,
     ) {
     }
 
@@ -148,9 +152,14 @@ final class SaveWarningNotifier
         );
     }
 
+    public static function shouldEnqueue(string $hook): bool
+    {
+        return $hook === 'post.php' || $hook === 'post-new.php';
+    }
+
     public function onAdminEnqueue(string $hook): void
     {
-        if ($hook !== 'post.php' && $hook !== 'post-new.php') {
+        if (!self::shouldEnqueue($hook)) {
             return;
         }
 
@@ -193,9 +202,14 @@ final class SaveWarningNotifier
         wp_enqueue_script('contentguard-editor-warnings');
     }
 
+    public function shouldRenderClassicNotices(): bool
+    {
+        return $this->isIndividualPostEditorScreen() && !$this->isBlockEditorScreen();
+    }
+
     public function onAdminNotices(): void
     {
-        if ($this->isBlockEditorScreen()) {
+        if (!$this->shouldRenderClassicNotices()) {
             return;
         }
 
@@ -431,6 +445,14 @@ final class SaveWarningNotifier
             return (int) $_GET['post'];
         }
 
+        if (isset($_GET['post_ID']) && is_numeric($_GET['post_ID'])) {
+            return (int) $_GET['post_ID'];
+        }
+
+        if (!$this->isIndividualPostEditorScreen()) {
+            return 0;
+        }
+
         if (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
             return (int) $GLOBALS['post']->ID;
         }
@@ -438,15 +460,40 @@ final class SaveWarningNotifier
         return 0;
     }
 
-    private function isBlockEditorScreen(): bool
+    private function isIndividualPostEditorScreen(): bool
     {
+        $screen = $this->currentScreen();
+        if ($screen !== null) {
+            return ($screen->base ?? '') === 'post';
+        }
+
+        $page = isset($GLOBALS['pagenow']) ? (string) $GLOBALS['pagenow'] : '';
+
+        return $page === 'post.php' || $page === 'post-new.php';
+    }
+
+    private function currentScreen(): ?object
+    {
+        if (is_callable($this->screenOf)) {
+            $screen = ($this->screenOf)();
+
+            return is_object($screen) ? $screen : null;
+        }
+
         if (!function_exists('get_current_screen')) {
-            return false;
+            return null;
         }
 
         $screen = get_current_screen();
 
-        return is_object($screen) && !empty($screen->is_block_editor);
+        return is_object($screen) ? $screen : null;
+    }
+
+    private function isBlockEditorScreen(): bool
+    {
+        $screen = $this->currentScreen();
+
+        return $screen !== null && !empty($screen->is_block_editor);
     }
 
     /**

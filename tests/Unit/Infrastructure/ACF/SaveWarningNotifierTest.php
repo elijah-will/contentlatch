@@ -32,6 +32,19 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertStringNotContainsString('contentguard-audit-blockers', $php);
         $this->assertStringContainsString('classicNoticeHtml', $php);
         $this->assertStringContainsString('admin_notices', $php);
+        $this->assertStringContainsString('shouldRenderClassicNotices', $php);
+        $this->assertStringContainsString("base ?? '') === 'post'", $php);
+        $this->assertStringContainsString('shouldEnqueue', $php);
+    }
+
+    public function testGutenbergAssetsStayOnTheIndividualPostEditor(): void
+    {
+        $this->assertTrue(SaveWarningNotifier::shouldEnqueue('post.php'));
+        $this->assertTrue(SaveWarningNotifier::shouldEnqueue('post-new.php'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('edit.php'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('index.php'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('toplevel_page_contentguard'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('contentguard_page_contentguard-audit'));
     }
 
     public function testWarningMessagesIgnoreFailuresAndPasses(): void
@@ -463,10 +476,215 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertSame(array(), $stored);
     }
 
+    public function testClassicNoticeRendersOnTheIndividualPostEditor(): void
+    {
+        $stored = array();
+        $html = $this->renderClassicNotices(
+            $this->notifier('publish', $stored, '', $this->screen('post', false)),
+            array('post' => '42')
+        );
+
+        $this->assertStringContainsString('notice notice-warning', $html);
+        $this->assertStringContainsString('Ingredients', $html);
+        $this->assertStringContainsString('This looks thin.', $html);
+        $this->assertStringContainsString('data-contentguard-field="field_ingredients"', $html);
+        $this->assertSame(array(), $stored);
+    }
+
+    public function testClassicNoticeDoesNotRenderOnEditPhpEvenWhenAPostGlobalExists(): void
+    {
+        $stored = array();
+        $previousPost = $GLOBALS['post'] ?? null;
+        $GLOBALS['post'] = (object) array('ID' => 42);
+
+        try {
+            $html = $this->renderClassicNotices(
+                $this->notifier('publish', $stored, '', $this->screen('edit', false)),
+                array()
+            );
+        } finally {
+            if ($previousPost === null) {
+                unset($GLOBALS['post']);
+            } else {
+                $GLOBALS['post'] = $previousPost;
+            }
+        }
+
+        $this->assertSame('', $html);
+    }
+
+    public function testClassicNoticeDoesNotRenderOnContentGuardRules(): void
+    {
+        $stored = array();
+        $html = $this->renderClassicNotices(
+            $this->notifier('publish', $stored, '', $this->screen('toplevel_page_contentguard', false)),
+            array('post' => '42')
+        );
+
+        $this->assertSame('', $html);
+    }
+
+    public function testClassicNoticeDoesNotRenderOnContentGuardAudit(): void
+    {
+        $stored = array();
+        $html = $this->renderClassicNotices(
+            $this->notifier('publish', $stored, '', $this->screen('contentguard_page_contentguard-audit', false)),
+            array('post' => '42')
+        );
+
+        $this->assertSame('', $html);
+    }
+
+    public function testClassicNoticeDoesNotRenderOnTheDashboard(): void
+    {
+        $stored = array();
+        $html = $this->renderClassicNotices(
+            $this->notifier('publish', $stored, '', $this->screen('dashboard', false)),
+            array('post' => '42')
+        );
+
+        $this->assertSame('', $html);
+    }
+
+    public function testBlockEditorDoesNotPrintPhpAdminNotices(): void
+    {
+        $stored = array();
+        $html = $this->renderClassicNotices(
+            $this->notifier('publish', $stored, '', $this->screen('post', true)),
+            array('post' => '42')
+        );
+
+        $this->assertSame('', $html);
+        $this->assertTrue(SaveWarningNotifier::shouldEnqueue('post.php'));
+    }
+
+    public function testListScreenDoesNotUseAnotherPostsGlobalAsTheEditorTarget(): void
+    {
+        $stored = array();
+        $previousPost = $GLOBALS['post'] ?? null;
+        $GLOBALS['post'] = (object) array('ID' => 99);
+
+        try {
+            $notifier = $this->notifier('publish', $stored, '', $this->screen('edit', false));
+            $this->assertFalse($notifier->shouldRenderClassicNotices());
+            $this->assertSame('', $this->renderClassicNotices($notifier, array()));
+            $this->assertNotSame(array(), $notifier->warningsForPost(42));
+        } finally {
+            if ($previousPost === null) {
+                unset($GLOBALS['post']);
+            } else {
+                $GLOBALS['post'] = $previousPost;
+            }
+        }
+    }
+
+    public function testGroupChildWarningsStillEvaluateForTheEditorPayload(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 21,
+            'postType'    => 'product',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => new \ContentGuard\Domain\FieldRef(
+                        'field_ingredients',
+                        'ingredients',
+                        'Product Details → Ingredients',
+                        array('field_product_details', 'field_ingredients'),
+                        'group'
+                    ),
+                    'message' => 'Ingredients look thin.',
+                )),
+            ),
+        ));
+        $repository = new InMemoryRuleRepository(array($rule), RuleDocumentValidator::v1());
+        $notifier = new SaveWarningNotifier(
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $repository,
+            new AcfFieldCatalog(
+                static fn (): array => array(
+                    array(
+                        'key'        => 'field_product_details',
+                        'name'       => 'product_details',
+                        'label'      => 'Product Details',
+                        'type'       => 'group',
+                        'sub_fields' => array(
+                            array(
+                                'key'   => 'field_ingredients',
+                                'name'  => 'ingredients',
+                                'label' => 'Ingredients',
+                                'type'  => 'textarea',
+                            ),
+                        ),
+                    ),
+                )
+            ),
+            static fn (int $postId): string => 'product',
+            static fn (int $postId): string => 'publish',
+            static function (array $messages): void {
+            },
+            static fn (): array => array(),
+            static fn (string $fieldKey, int $postId): mixed => $fieldKey === 'field_product_details'
+                ? array('field_ingredients' => '')
+                : null
+        );
+
+        $warnings = $notifier->warningsForPost(636);
+        $this->assertCount(1, $warnings);
+        $this->assertSame('field_ingredients', $warnings[0]['fieldKey']);
+        $this->assertSame('Product Details → Ingredients', $warnings[0]['label']);
+        $this->assertSame('Ingredients look thin.', $warnings[0]['message']);
+    }
+
+    public function testRepeaterChildWarningsStillEvaluateForTheEditorPayload(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 22,
+            'postType'    => 'recipe',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                    'message'    => 'Ingredient is missing.',
+                )),
+            ),
+        ));
+        $repository = new InMemoryRuleRepository(array($rule), RuleDocumentValidator::v1());
+        $catalog = \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
+        $notifier = new SaveWarningNotifier(
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $repository,
+            $catalog,
+            static fn (int $postId): string => 'recipe',
+            static fn (int $postId): string => 'publish',
+            static function (array $messages): void {
+            },
+            static fn (): array => array(),
+            static function (string $fieldKey, int $postId): mixed {
+                unset($postId);
+                return $fieldKey === \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
+                    ? array(
+                        array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    )
+                    : null;
+            }
+        );
+
+        $warnings = $notifier->warningsForPost(12325);
+        $this->assertCount(1, $warnings);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $warnings[0]['fieldKey']);
+        $this->assertSame('Ingredient is missing.', $warnings[0]['message']);
+        $this->assertFalse($notifier->shouldRenderClassicNotices());
+    }
+
     /**
      * @param array<int, string> $stored
      */
-    private function notifier(string $status, array &$stored, string $ingredients): SaveWarningNotifier
+    private function notifier(string $status, array &$stored, string $ingredients, mixed $screenOf = null): SaveWarningNotifier
     {
         $rule = RuleFactory::rule(array(
             'id'          => 1,
@@ -508,8 +726,38 @@ final class SaveWarningNotifierTest extends TestCase
                 $stored = $messages;
             },
             static fn (): array => array(),
-            static fn (string $fieldKey, int $postId): mixed => $ingredients
+            static fn (string $fieldKey, int $postId): mixed => $ingredients,
+            $screenOf
         );
+    }
+
+    /**
+     * @return callable(): object
+     */
+    private function screen(string $base, bool $isBlockEditor): mixed
+    {
+        return static fn (): object => (object) array(
+            'base'            => $base,
+            'is_block_editor' => $isBlockEditor,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     */
+    private function renderClassicNotices(SaveWarningNotifier $notifier, array $query): string
+    {
+        $previous = $_GET;
+        $_GET     = $query;
+
+        try {
+            ob_start();
+            $notifier->onAdminNotices();
+
+            return (string) ob_get_clean();
+        } finally {
+            $_GET = $previous;
+        }
     }
 
     /**
