@@ -154,12 +154,7 @@ final class SelectablePostTypesTest extends TestCase
             static function (string $postType) use ($catalog): array {
                 $fields = array();
                 foreach ($catalog->fieldsForPostType($postType) as $field) {
-                    $fields[] = array(
-                        'key'   => $field->key,
-                        'name'  => $field->name,
-                        'label' => $field->label,
-                        'type'  => $field->type,
-                    );
+                    $fields[] = $field->toCatalogArray();
                 }
 
                 return $fields;

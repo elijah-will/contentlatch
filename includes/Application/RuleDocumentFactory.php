@@ -367,11 +367,42 @@ final class RuleDocumentFactory
 
         $field = $fields[$key];
 
+        $label      = (string) ($field['label'] ?? '');
+        $breadcrumb = trim((string) ($field['breadcrumb'] ?? ''));
+        if ($breadcrumb !== '') {
+            $label = $breadcrumb;
+        }
+
         return new FieldRef(
             $key,
             (string) ($field['name'] ?? ''),
-            (string) ($field['label'] ?? '')
+            $label,
+            $this->fieldPath($field),
+            (string) ($field['container'] ?? '')
         );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @return list<string>
+     */
+    private function fieldPath(array $field): array
+    {
+        $raw = $field['path'] ?? array();
+        if (!is_array($raw) || $raw === array()) {
+            return array();
+        }
+
+        $path = array();
+        foreach ($raw as $segment) {
+            if (!is_string($segment)) {
+                throw new InvalidRuleException('Invalid field path.');
+            }
+
+            $path[] = $segment;
+        }
+
+        return $path;
     }
 
     private static function normalizeConditionOperand(mixed $operand, string $fieldType): string

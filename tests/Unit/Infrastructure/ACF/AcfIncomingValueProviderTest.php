@@ -99,12 +99,139 @@ final class AcfIncomingValueProviderTest extends TestCase
         $this->assertNull($provider->get('product_type'));
     }
 
-    private function provider(mixed $payload): AcfIncomingValueProvider
+    public function testGroupChildUsesNestedPayload(): void
     {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $provider = $this->provider(
+            array(
+                'field_product_details' => array(
+                    'field_ingredients' => 'Salt, tomatoes',
+                ),
+            ),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertTrue($provider->has('field_ingredients'));
+        $this->assertSame('Salt, tomatoes', $provider->get('field_ingredients'));
+    }
+
+    public function testNestedGroupChildUsesDeepPayload(): void
+    {
+        $this->fieldTypes['field_calories'] = 'number';
+        $provider = $this->provider(
+            array(
+                'field_product_details' => array(
+                    'field_nutrition' => array(
+                        'field_calories' => '120',
+                    ),
+                ),
+            ),
+            array(
+                'field_calories' => array('field_product_details', 'field_nutrition', 'field_calories'),
+            )
+        );
+
+        $this->assertTrue($provider->has('field_calories'));
+        $this->assertSame('120', $provider->get('field_calories'));
+    }
+
+    public function testMissingParentIsAbsent(): void
+    {
+        $provider = $this->provider(
+            array(),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertFalse($provider->has('field_ingredients'));
+        $this->assertNull($provider->get('field_ingredients'));
+    }
+
+    public function testMissingChildIsAbsent(): void
+    {
+        $provider = $this->provider(
+            array(
+                'field_product_details' => array(),
+            ),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertFalse($provider->has('field_ingredients'));
+        $this->assertNull($provider->get('field_ingredients'));
+    }
+
+    public function testEmptyNestedScalarNormalizesAsNull(): void
+    {
+        $provider = $this->provider(
+            array(
+                'field_product_details' => array(
+                    'field_ingredients' => '',
+                ),
+            ),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertTrue($provider->has('field_ingredients'));
+        $this->assertNull($provider->get('field_ingredients'));
+    }
+
+    public function testGroupChildCanResolveNameKeyedPayload(): void
+    {
+        $provider = $this->provider(
+            array(
+                'field_product_details' => array(
+                    'item_ingredients' => 'Salt, tomatoes',
+                ),
+            ),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            ),
+            array(
+                'field_ingredients' => array('product_information', 'item_ingredients'),
+            )
+        );
+
+        $this->assertTrue($provider->has('field_ingredients'));
+        $this->assertSame('Salt, tomatoes', $provider->get('field_ingredients'));
+    }
+
+    public function testNonArrayParentIsAbsent(): void
+    {
+        $provider = $this->provider(
+            array(
+                'field_product_details' => 'not-a-group',
+            ),
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertFalse($provider->has('field_ingredients'));
+        $this->assertNull($provider->get('field_ingredients'));
+    }
+
+    /**
+     * @param array<string, list<string>> $fieldPaths
+     * @param array<string, list<string>> $fieldPathNames
+     */
+    private function provider(
+        mixed $payload,
+        array $fieldPaths = array(),
+        array $fieldPathNames = array(),
+    ): AcfIncomingValueProvider {
         return new AcfIncomingValueProvider(
             $payload,
             new AcfValueNormalizer(),
-            $this->fieldTypes
+            $this->fieldTypes,
+            $fieldPaths,
+            $fieldPathNames
         );
     }
 }

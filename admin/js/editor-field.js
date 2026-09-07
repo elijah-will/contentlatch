@@ -32,6 +32,20 @@
     postbox.classList.remove("closed");
   }
 
+  function openCollapsedAncestors(field) {
+    var node = field.parentElement;
+    while (node && node !== document.documentElement) {
+      if (node.classList && node.classList.contains("acf-field") && node.classList.contains("-collapsed")) {
+        node.classList.remove("-collapsed");
+        var toggle = node.querySelector(".-collapse, [data-name=\"collapse\"], .acf-field-header");
+        if (toggle && toggle.getAttribute("aria-expanded") === "false") {
+          toggle.setAttribute("aria-expanded", "true");
+        }
+      }
+      node = node.parentElement;
+    }
+  }
+
   function announce(field) {
     var live = document.getElementById("contentguard-field-nav-status");
     if (!live) {
@@ -59,6 +73,7 @@
 
   function reveal(field) {
     openClosedPostbox(field);
+    openCollapsedAncestors(field);
     announce(field);
 
     var behavior = prefersReducedMotion() ? "auto" : "smooth";

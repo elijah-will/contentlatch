@@ -53,6 +53,69 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('class="contentguard-notice-label"', $html);
         $this->assertStringContainsString('class="contentguard-notice-message"', $html);
         $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
+        $this->assertStringContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
+        $this->assertStringNotContainsString('Fields inside Groups, Repeaters', $html);
+    }
+
+    public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Sauce ingredients',
+                'target_post_type' => 'product',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'field_type',
+                        'operator'  => 'equals',
+                        'operand'   => 'sauce',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'   => 'field_type',
+                    'name'  => 'product_type',
+                    'label' => 'Product Type',
+                    'type'  => 'select',
+                ),
+                array(
+                    'key'        => 'field_ingredients',
+                    'name'       => 'ingredients',
+                    'label'      => 'Ingredients',
+                    'type'       => 'textarea',
+                    'path'       => array('field_product_details', 'field_ingredients'),
+                    'container'  => 'group',
+                    'breadcrumb' => 'Product Details → Ingredients',
+                    'group_label'=> 'Product Details',
+                ),
+                array(
+                    'key'        => 'field_calories',
+                    'name'       => 'calories',
+                    'label'      => 'Calories',
+                    'type'       => 'number',
+                    'path'       => array('field_product_details', 'field_nutrition', 'field_calories'),
+                    'container'  => 'group',
+                    'breadcrumb' => 'Product Details → Nutrition → Calories',
+                    'group_label'=> 'Product Details → Nutrition',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('Product Details → Ingredients', $html);
+        $this->assertStringContainsString('Product Details → Nutrition → Calories', $html);
+        $this->assertStringContainsString('<optgroup label="Product Details">', $html);
+        $this->assertStringContainsString('<optgroup label="Product Details → Nutrition">', $html);
+        $this->assertStringContainsString('When Product Type is sauce, Product Details → Ingredients is required.', $html);
+        $this->assertStringNotContainsString('field_product_details.field_ingredients', $html);
+        $this->assertStringNotContainsString('>field_ingredients<', $html);
+        $this->assertStringNotContainsString('>field_calories<', $html);
+        $this->assertStringContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
     }
 
     public function testEditRuleLoadsQuotedWhenThenAndAddAnotherRule(): void

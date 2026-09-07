@@ -410,8 +410,12 @@ a.contentguard-finding__field:focus-visible {
     max-width: none;
 }
 
+#contentguard-audit .contentguard-page-header__text,
 #contentguard-audit .contentguard-page-header__description,
-#contentguard-audit .contentguard-audit-action > p,
+#contentguard-audit .contentguard-audit-action > p {
+    max-width: none;
+}
+
 #contentguard-audit .contentguard-empty {
     max-width: 48rem;
 }

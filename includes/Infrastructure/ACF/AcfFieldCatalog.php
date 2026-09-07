@@ -2,12 +2,18 @@
 /**
  * Discovers V1-supported ACF fields for a post type.
  *
+ * Phase 10A also catalogues supported scalar leaves inside Group fields.
+ * Group containers themselves are not selectable. Repeater, Flexible Content,
+ * and Clone fields (and their children) remain excluded.
+ *
  * @package ContentGuard
  */
 
 declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
+
+use ContentGuard\Domain\FieldRef;
 
 final class AcfFieldCatalog
 {
@@ -29,6 +35,12 @@ final class AcfFieldCatalog
         'color_picker',
     );
 
+    private const EXCLUDED_CONTAINERS = array(
+        'repeater',
+        'flexible_content',
+        'clone',
+    );
+
     /**
      * @param callable(string $postType): array<int, array<string, mixed>>|null $source
      */
@@ -44,8 +56,7 @@ final class AcfFieldCatalog
         $definitions = array();
 
         foreach ($this->loadRaw($postType) as $field) {
-            $definition = $this->mapField($field);
-            if ($definition !== null) {
+            foreach ($this->collect($field, array(), array(), array()) as $definition) {
                 $definitions[] = $definition;
             }
         }
@@ -68,10 +79,94 @@ final class AcfFieldCatalog
     }
 
     /**
-     * @param array<string, mixed> $field
+     * Trusted nested-resolution maps for catalogued fields that are also
+     * referenced by the current evaluation.
+     *
+     * @param array<string, string> $fieldTypes
+     * @return array{paths: array<string, list<string>>, names: array<string, list<string>>}
      */
-    private function mapField(array $field): ?FieldDefinition
+    public function nestedResolutionMaps(string $postType, array $fieldTypes): array
     {
+        $paths = array();
+        $names = array();
+
+        foreach ($this->fieldsForPostType($postType) as $field) {
+            if (!isset($fieldTypes[$field->key]) || $field->path === array()) {
+                continue;
+            }
+
+            $paths[$field->key] = $field->path;
+            $names[$field->key] = $field->pathNames;
+        }
+
+        return array(
+            'paths' => $paths,
+            'names' => $names,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @param list<string>         $ancestorKeys
+     * @param list<string>         $ancestorNames
+     * @param list<string>         $ancestorLabels
+     * @return list<FieldDefinition>
+     */
+    private function collect(
+        array $field,
+        array $ancestorKeys,
+        array $ancestorNames,
+        array $ancestorLabels,
+    ): array {
+        $key  = (string) ($field['key'] ?? '');
+        $type = (string) ($field['type'] ?? '');
+
+        if ($key === '' || !str_starts_with($key, 'field_')) {
+            return array();
+        }
+
+        if ($type === 'group') {
+            $name  = (string) ($field['name'] ?? '');
+            $label = (string) ($field['label'] ?? '');
+            if ($label === '') {
+                $label = $name !== '' ? $name : $key;
+            }
+
+            $nextKeys   = array_merge($ancestorKeys, array($key));
+            $nextNames  = array_merge($ancestorNames, array($name));
+            $nextLabels = array_merge($ancestorLabels, array($label));
+            $collected  = array();
+
+            foreach ($this->subFields($field) as $child) {
+                foreach ($this->collect($child, $nextKeys, $nextNames, $nextLabels) as $definition) {
+                    $collected[] = $definition;
+                }
+            }
+
+            return $collected;
+        }
+
+        if (in_array($type, self::EXCLUDED_CONTAINERS, true)) {
+            return array();
+        }
+
+        $definition = $this->mapField($field, $ancestorKeys, $ancestorNames, $ancestorLabels);
+
+        return $definition !== null ? array($definition) : array();
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @param list<string>         $ancestorKeys
+     * @param list<string>         $ancestorNames
+     * @param list<string>         $ancestorLabels
+     */
+    private function mapField(
+        array $field,
+        array $ancestorKeys,
+        array $ancestorNames,
+        array $ancestorLabels,
+    ): ?FieldDefinition {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
 
@@ -87,12 +182,32 @@ final class AcfFieldCatalog
             return null;
         }
 
+        $name  = (string) ($field['name'] ?? '');
+        $label = (string) ($field['label'] ?? '');
+
+        $path       = array();
+        $pathNames  = array();
+        $pathLabels = array();
+        $container  = '';
+
+        if ($ancestorKeys !== array()) {
+            $leafLabel  = $label !== '' ? $label : ($name !== '' ? $name : $key);
+            $path       = array_merge($ancestorKeys, array($key));
+            $pathNames  = array_merge($ancestorNames, array($name));
+            $pathLabels = array_merge($ancestorLabels, array($leafLabel));
+            $container  = FieldRef::CONTAINER_GROUP;
+        }
+
         return new FieldDefinition(
             $key,
-            (string) ($field['name'] ?? ''),
-            (string) ($field['label'] ?? ''),
+            $name,
+            $label,
             $type,
             $this->choices($field),
+            $path,
+            $container,
+            $pathNames,
+            $pathLabels,
         );
     }
 
@@ -117,6 +232,17 @@ final class AcfFieldCatalog
         }
 
         return $choices;
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @return array<int, array<string, mixed>>
+     */
+    private function subFields(array $field): array
+    {
+        $raw = $field['sub_fields'] ?? array();
+
+        return is_array($raw) ? $this->onlyMaps($raw) : array();
     }
 
     /**

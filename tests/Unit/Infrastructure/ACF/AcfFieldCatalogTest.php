@@ -190,11 +190,11 @@ final class AcfFieldCatalogTest extends TestCase
         $keys   = array_map(static fn ($field): string => $field->key, $fields);
 
         $this->assertSame(
-            array('field_type', 'field_ingredients', 'field_video', 'field_swatch'),
+            array('field_type', 'field_ingredients', 'field_video', 'field_swatch', 'field_group_title'),
             $keys
         );
         $this->assertNotContains('field_group', $keys);
-        $this->assertNotContains('field_group_title', $keys);
+        $this->assertContains('field_group_title', $keys);
         $this->assertNotContains('field_repeater', $keys);
         $this->assertNotContains('field_repeater_title', $keys);
         $this->assertNotContains('field_flex', $keys);
@@ -225,9 +225,113 @@ final class AcfFieldCatalogTest extends TestCase
                 'field_ingredients' => 'textarea',
                 'field_video'       => 'url',
                 'field_swatch'      => 'color_picker',
+                'field_group_title' => 'text',
             ),
             $types
         );
+
+        $groupChild = $fields[4];
+        $this->assertSame('field_group_title', $groupChild->key);
+        $this->assertSame('title', $groupChild->name);
+        $this->assertSame('Title', $groupChild->label);
+        $this->assertSame(array('field_group', 'field_group_title'), $groupChild->path);
+        $this->assertSame('group', $groupChild->container);
+        $this->assertSame('Meta → Title', $groupChild->breadcrumb());
+        $this->assertSame('Meta', $groupChild->groupLabel());
+    }
+
+    public function testNestedGroupChildIsCataloguedAndUnsupportedChildrenAreNot(): void
+    {
+        $catalog = new AcfFieldCatalog(
+            static function (): array {
+                return array(
+                    array(
+                        'key'   => 'field_title',
+                        'name'  => 'title',
+                        'label' => 'Title',
+                        'type'  => 'text',
+                    ),
+                    array(
+                        'key'        => 'field_product_details',
+                        'name'       => 'product_details',
+                        'label'      => 'Product Details',
+                        'type'       => 'group',
+                        'sub_fields' => array(
+                            array(
+                                'key'   => 'field_ingredients',
+                                'name'  => 'ingredients',
+                                'label' => 'Ingredients',
+                                'type'  => 'textarea',
+                            ),
+                            array(
+                                'key'   => 'field_gallery',
+                                'name'  => 'photos',
+                                'label' => 'Photos',
+                                'type'  => 'gallery',
+                            ),
+                            array(
+                                'key'        => 'field_nutrition',
+                                'name'       => 'nutrition',
+                                'label'      => 'Nutrition',
+                                'type'       => 'group',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'   => 'field_calories',
+                                        'name'  => 'calories',
+                                        'label' => 'Calories',
+                                        'type'  => 'number',
+                                    ),
+                                ),
+                            ),
+                            array(
+                                'key'        => 'field_nested_repeater',
+                                'name'       => 'rows',
+                                'label'      => 'Rows',
+                                'type'       => 'repeater',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'   => 'field_row_title',
+                                        'name'  => 'title',
+                                        'label' => 'Row Title',
+                                        'type'  => 'text',
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                );
+            }
+        );
+
+        $fields = $catalog->fieldsForPostType('product');
+        $byKey  = array();
+        foreach ($fields as $field) {
+            $byKey[$field->key] = $field;
+        }
+
+        $this->assertArrayHasKey('field_title', $byKey);
+        $this->assertSame(array(), $byKey['field_title']->path);
+        $this->assertSame('', $byKey['field_title']->container);
+        $this->assertSame('Title', $byKey['field_title']->breadcrumb());
+
+        $this->assertArrayHasKey('field_ingredients', $byKey);
+        $this->assertSame(array('field_product_details', 'field_ingredients'), $byKey['field_ingredients']->path);
+        $this->assertSame('group', $byKey['field_ingredients']->container);
+        $this->assertSame('Product Details → Ingredients', $byKey['field_ingredients']->breadcrumb());
+
+        $this->assertArrayHasKey('field_calories', $byKey);
+        $this->assertSame(
+            array('field_product_details', 'field_nutrition', 'field_calories'),
+            $byKey['field_calories']->path
+        );
+        $this->assertSame('Product Details → Nutrition → Calories', $byKey['field_calories']->breadcrumb());
+        $this->assertSame('Product Details → Nutrition', $byKey['field_calories']->groupLabel());
+
+        $this->assertArrayNotHasKey('field_product_details', $byKey);
+        $this->assertArrayNotHasKey('field_nutrition', $byKey);
+        $this->assertArrayNotHasKey('field_gallery', $byKey);
+        $this->assertArrayNotHasKey('field_nested_repeater', $byKey);
+        $this->assertArrayNotHasKey('field_row_title', $byKey);
     }
 
     public function testAllSupportedTypesAreIncluded(): void
@@ -279,5 +383,7 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertSame('field_abc', $ref->key);
         $this->assertSame('cta_url', $ref->name);
         $this->assertSame('CTA URL', $ref->label);
+        $this->assertSame(array(), $ref->path);
+        $this->assertSame('', $ref->container);
     }
 }

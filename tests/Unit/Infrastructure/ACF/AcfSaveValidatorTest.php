@@ -10,6 +10,7 @@ namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RuleRepositoryInterface;
+use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
@@ -509,6 +510,122 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertSame(array(), $this->errors);
     }
 
+    public function testGroupRequiredFieldBlocksPublishWithNestedInputName(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->groupIngredientsRule())),
+            $this->productGroupCatalog(),
+            $this->publishRequest(array('post_type' => 'product')),
+            array(
+                'field_type' => 'sauce',
+                'field_product_details' => array(
+                    'field_ingredients' => '',
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_product_details][field_ingredients]',
+                    'message' => 'Product Details → Ingredients is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testGroupRequiredFieldPopulatedOnPublishDoesNotError(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->groupIngredientsRule())),
+            $this->productGroupCatalog(),
+            $this->publishRequest(array('post_type' => 'product')),
+            array(
+                'field_type' => 'sauce',
+                'field_product_details' => array(
+                    'field_ingredients' => 'Tomatoes, salt',
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testGroupRequiredFieldAllowsDraft(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->groupIngredientsRule())),
+            $this->productGroupCatalog(),
+            $this->request(
+                array(
+                    'post_type'   => 'product',
+                    'post_status' => 'draft',
+                    'save'        => 'Save Draft',
+                )
+            ),
+            array(
+                'field_type' => 'sauce',
+                'field_product_details' => array(
+                    'field_ingredients' => '',
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testGroupWarningRemainsNonBlocking(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->groupIngredientsRule(array(
+                'severity' => RuleSeverity::Warning,
+            )))),
+            $this->productGroupCatalog(),
+            $this->publishRequest(array('post_type' => 'product')),
+            array(
+                'field_type' => 'sauce',
+                'field_product_details' => array(
+                    'field_ingredients' => '',
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testNestedGroupRequiredFieldBlocksPrivate(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->nestedCaloriesRule())),
+            $this->productGroupCatalog(),
+            $this->request(
+                array(
+                    'post_type'   => 'product',
+                    'post_status' => 'draft',
+                    'private'     => 'Private',
+                )
+            ),
+            array(
+                'field_product_details' => array(
+                    'field_nutrition' => array(
+                        'field_calories' => '',
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_product_details][field_nutrition][field_calories]',
+                    'message' => 'Product Details → Nutrition → Calories is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
     /**
      * @param array<string, mixed> $request
      * @param Rule[]               $rules
@@ -629,6 +746,120 @@ final class AcfSaveValidatorTest extends TestCase
                 'post_status' => 'draft',
             ),
             $overrides
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function groupIngredientsRule(array $overrides = array()): Rule
+    {
+        return RuleFactory::rule(
+            array_merge(
+                array(
+                    'id'         => 21,
+                    'name'       => 'Sauce products need ingredients',
+                    'postType'   => 'product',
+                    'conditions' => array(
+                        RuleFactory::condition(
+                            array(
+                                'field'    => RuleFactory::field('field_type', 'product_type', 'Product Type'),
+                                'operator' => 'equals',
+                                'operand'  => 'sauce',
+                            )
+                        ),
+                    ),
+                    'validations' => array(
+                        RuleFactory::validation(
+                            array(
+                                'field' => new FieldRef(
+                                    'field_ingredients',
+                                    'ingredients',
+                                    'Product Details → Ingredients',
+                                    array('field_product_details', 'field_ingredients'),
+                                    'group'
+                                ),
+                                'type'  => 'required',
+                            )
+                        ),
+                    ),
+                ),
+                $overrides
+            )
+        );
+    }
+
+    private function nestedCaloriesRule(): Rule
+    {
+        return RuleFactory::rule(
+            array(
+                'id'         => 22,
+                'name'       => 'Calories required',
+                'postType'   => 'product',
+                'conditions' => array(),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'field' => new FieldRef(
+                                'field_calories',
+                                'calories',
+                                'Product Details → Nutrition → Calories',
+                                array('field_product_details', 'field_nutrition', 'field_calories'),
+                                'group'
+                            ),
+                            'type'  => 'required',
+                        )
+                    ),
+                ),
+            )
+        );
+    }
+
+    private function productGroupCatalog(): AcfFieldCatalog
+    {
+        return new AcfFieldCatalog(
+            static function (string $postType): array {
+                if ($postType !== 'product') {
+                    return array();
+                }
+
+                return array(
+                    array(
+                        'key'   => 'field_type',
+                        'name'  => 'product_type',
+                        'label' => 'Product Type',
+                        'type'  => 'select',
+                    ),
+                    array(
+                        'key'        => 'field_product_details',
+                        'name'       => 'product_details',
+                        'label'      => 'Product Details',
+                        'type'       => 'group',
+                        'sub_fields' => array(
+                            array(
+                                'key'   => 'field_ingredients',
+                                'name'  => 'ingredients',
+                                'label' => 'Ingredients',
+                                'type'  => 'textarea',
+                            ),
+                            array(
+                                'key'        => 'field_nutrition',
+                                'name'       => 'nutrition',
+                                'label'      => 'Nutrition',
+                                'type'       => 'group',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'   => 'field_calories',
+                                        'name'  => 'calories',
+                                        'label' => 'Calories',
+                                        'type'  => 'number',
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                );
+            }
         );
     }
 

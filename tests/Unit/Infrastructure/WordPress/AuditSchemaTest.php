@@ -36,6 +36,8 @@ final class AuditSchemaTest extends TestCase
         $this->assertStringContainsString('KEY rule_id (rule_id)', $findings);
         $this->assertStringNotContainsString('`', $runs);
         $this->assertStringNotContainsString('`', $findings);
+        $this->assertStringNotContainsString('instance_key', $findings);
+        $this->assertStringNotContainsString('row_index', $findings);
     }
 
     public function testSchemaVersionAndLockOptionNames(): void

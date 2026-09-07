@@ -30,11 +30,23 @@ $listUrl     = admin_url('admin.php?page=' . RulesPage::SLUG);
 $fieldKeys   = array();
 $fieldTypes  = array();
 $fieldMeta   = array();
+$fieldOptionLabel = static function (array $field): string {
+    $breadcrumb = trim((string) ($field['breadcrumb'] ?? ''));
+    if ($breadcrumb !== '') {
+        return $breadcrumb;
+    }
+
+    $label = (string) ($field['label'] ?? '');
+    if ($label !== '') {
+        return $label;
+    }
+
+    return (string) ($field['name'] ?? $field['key'] ?? '');
+};
+
 foreach ($fields as $field) {
     $key = (string) ($field['key'] ?? '');
-    $label = (string) ($field['label'] ?? '') !== ''
-        ? (string) $field['label']
-        : (string) ($field['name'] ?? $key);
+    $label = $fieldOptionLabel($field);
     $type = (string) ($field['type'] ?? '');
     $fieldKeys[$key] = true;
     $fieldTypes[$key] = $type;
@@ -71,18 +83,41 @@ if (!$isNew) {
  * @param array<int, array<string, mixed>> $fields
  * @param array<string, true> $fieldKeys
  */
-$renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected): void {
+$renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected) use ($fieldOptionLabel): void {
     echo '<option value="">' . esc_html__('Choose a field', 'contentguard') . '</option>';
+
+    $ungrouped = array();
+    $groups    = array();
     foreach ($fields as $field) {
-        $key = (string) ($field['key'] ?? '');
-        $type = (string) ($field['type'] ?? '');
-        $label = (string) ($field['label'] ?? '') !== ''
-            ? (string) $field['label']
-            : (string) ($field['name'] ?? $key);
+        $group = (string) ($field['group_label'] ?? '');
+        if ($group === '') {
+            $ungrouped[] = $field;
+        } else {
+            $groups[$group][] = $field;
+        }
+    }
+
+    $renderOption = static function (array $field, string $selected) use ($fieldOptionLabel): void {
+        $key   = (string) ($field['key'] ?? '');
+        $type  = (string) ($field['type'] ?? '');
+        $label = $fieldOptionLabel($field);
         echo '<option value="' . esc_attr($key) . '" data-type="' . esc_attr($type) . '" ' . selected($selected, $key, false) . '>'
             . esc_html($label)
             . '</option>';
+    };
+
+    foreach ($ungrouped as $field) {
+        $renderOption($field, $selected);
     }
+
+    foreach ($groups as $groupLabel => $groupFields) {
+        echo '<optgroup label="' . esc_attr((string) $groupLabel) . '">';
+        foreach ($groupFields as $field) {
+            $renderOption($field, $selected);
+        }
+        echo '</optgroup>';
+    }
+
     if ($selected !== '' && !isset($fieldKeys[$selected])) {
         echo '<option value="' . esc_attr($selected) . '" selected>' . esc_html($selected) . '</option>';
     }
@@ -174,7 +209,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
             <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Fields inside Groups, Repeaters, and Flexible Content are not supported yet.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', 'contentguard'); ?></p>
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php

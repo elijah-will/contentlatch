@@ -21,6 +21,8 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('prefers-reduced-motion', $js);
         $this->assertStringContainsString('aria-live', $js);
         $this->assertStringContainsString('postbox.closed', $js);
+        $this->assertStringContainsString('openCollapsedAncestors', $js);
+        $this->assertStringContainsString('-collapsed', $js);
         $this->assertStringContainsString('contentguardNavigateToField', $js);
         $this->assertStringContainsString('data-contentguard-field', $js);
         $this->assertStringContainsString('autoNavigate', $js);

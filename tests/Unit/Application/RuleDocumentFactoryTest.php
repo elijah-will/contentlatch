@@ -631,6 +631,92 @@ final class RuleDocumentFactoryTest extends TestCase
         return $input;
     }
 
+    public function testNestedFieldRefPersistsPathAndBreadcrumbLabel(): void
+    {
+        $factory = $this->nestedFactory();
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Sauce Products Must Have Ingredients',
+            'post_type'  => 'product',
+            'status'     => 'active',
+            'severity'   => 'fail',
+            'conditions' => array(
+                array(
+                    'field_key' => 'field_type',
+                    'operator'  => 'equals',
+                    'operand'   => 'sauce',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $field = $rule->validations[0]->field;
+        $this->assertSame('field_ingredients', $field->key);
+        $this->assertSame('ingredients', $field->name);
+        $this->assertSame('Product Details → Ingredients', $field->label);
+        $this->assertSame(array('field_product_details', 'field_ingredients'), $field->path);
+        $this->assertSame('group', $field->container);
+
+        $serialized = $field->toArray();
+        $this->assertSame(array('field_product_details', 'field_ingredients'), $serialized['path']);
+        $this->assertSame('group', $serialized['container']);
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame($field->path, $loaded->validations[0]->field->path);
+        $this->assertSame('Product Details → Ingredients is required', RulePresentation::validationsSummary($loaded));
+    }
+
+    public function testInvalidCatalogPathIsRejected(): void
+    {
+        $factory = RuleDocumentFactory::v1(
+            static fn (): array => array('product' => 'Product'),
+            static fn (): array => array(
+                array(
+                    'key'       => 'field_ingredients',
+                    'name'      => 'ingredients',
+                    'label'     => 'Ingredients',
+                    'type'      => 'textarea',
+                    'path'      => array('field_group.field_child', 'field_ingredients'),
+                    'container' => 'group',
+                ),
+            )
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Invalid field path.');
+        $factory->fromAdminInput(array(
+            'name'        => 'Bad path',
+            'post_type'   => 'product',
+            'validations' => array(
+                array(
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+    }
+
+    public function testExistingTopLevelDocumentLoadsWithoutOptionalMetadata(): void
+    {
+        $rule = $this->factory->fromAdminInput($this->validInput());
+        $field = $rule->validations[0]->field;
+
+        $this->assertSame('field_ingredients', $field->key);
+        $this->assertSame('Ingredients', $field->label);
+        $this->assertSame(array(), $field->path);
+        $this->assertSame('', $field->container);
+        $this->assertArrayNotHasKey('path', $field->toArray());
+        $this->assertArrayNotHasKey('container', $field->toArray());
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame(array(), $loaded->validations[0]->field->path);
+        $this->assertArrayNotHasKey('path', $loaded->validations[0]->field->toArray());
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -660,6 +746,32 @@ final class RuleDocumentFactoryTest extends TestCase
                     'min'       => '3',
                 ),
             ),
+        );
+    }
+
+    private function nestedFactory(): RuleDocumentFactory
+    {
+        return RuleDocumentFactory::v1(
+            static fn (): array => array('product' => 'Product'),
+            static fn (string $postType): array => $postType === 'product'
+                ? array(
+                    array(
+                        'key'   => 'field_type',
+                        'name'  => 'product_type',
+                        'label' => 'Product Type',
+                        'type'  => 'select',
+                    ),
+                    array(
+                        'key'        => 'field_ingredients',
+                        'name'       => 'ingredients',
+                        'label'      => 'Ingredients',
+                        'type'       => 'textarea',
+                        'path'       => array('field_product_details', 'field_ingredients'),
+                        'container'  => 'group',
+                        'breadcrumb' => 'Product Details → Ingredients',
+                    ),
+                )
+                : array()
         );
     }
 

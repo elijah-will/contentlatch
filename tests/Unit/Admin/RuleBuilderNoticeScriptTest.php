@@ -24,5 +24,9 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('contentguard-notice-label', $js);
         $this->assertStringContainsString('Warning:', $js);
         $this->assertStringContainsString('#contentguard-rule-notice', $js);
+        $this->assertStringContainsString('field.breadcrumb', $js);
+        $this->assertStringContainsString('group_label', $js);
+        $this->assertStringContainsString('optgroup', $js);
+        $this->assertStringNotContainsString('field_123.field_456', $js);
     }
 }

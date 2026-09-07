@@ -16,7 +16,7 @@
  *   then show wp.data core/notices (not snackbars).
  *
  * Clickable field labels reuse EditorFieldFocus / editor-field.js. Top-level
- * ACF fields only.
+ * ACF fields and Group children (leaf field keys).
  *
  * @package ContentGuard
  */
@@ -391,10 +391,18 @@ final class SaveWarningNotifier
         $catalogTypes = $this->catalog->fieldTypesForPostType($postType);
         $fieldTypes   = array_intersect_key($catalogTypes, $this->referencedFieldKeys($rules));
 
+        $maps = $this->catalog->nestedResolutionMaps($postType, $fieldTypes);
         $evaluation = $this->evaluator->evaluate(
             $postId,
             $postType,
-            new AcfStoredValueProvider($postId, new AcfValueNormalizer(), $fieldTypes, $this->reader)
+            new AcfStoredValueProvider(
+                $postId,
+                new AcfValueNormalizer(),
+                $fieldTypes,
+                $this->reader,
+                $maps['paths'],
+                $maps['names']
+            )
         );
 
         return self::warningItems($evaluation);

@@ -100,11 +100,19 @@ final class AcfSaveValidator
         $catalogTypes = $this->catalog->fieldTypesForPostType($postType);
         $rules        = $this->repository->findActiveForPostType($postType);
         $fieldTypes   = array_intersect_key($catalogTypes, $this->referencedFieldKeys($rules));
+        $nestedMaps   = $this->catalog->nestedResolutionMaps($postType, $fieldTypes);
+        $fieldPaths   = $nestedMaps['paths'];
 
         $evaluation = $this->evaluator->evaluate(
             $postId,
             $postType,
-            new AcfIncomingValueProvider($acfPayload, new AcfValueNormalizer(), $fieldTypes)
+            new AcfIncomingValueProvider(
+                $acfPayload,
+                new AcfValueNormalizer(),
+                $fieldTypes,
+                $fieldPaths,
+                $nestedMaps['names']
+            )
         );
 
         foreach ($evaluation->results as $result) {
@@ -112,7 +120,7 @@ final class AcfSaveValidator
                 continue;
             }
 
-            $this->reportError($result);
+            $this->reportError($result, $fieldPaths);
         }
     }
 
@@ -183,16 +191,21 @@ final class AcfSaveValidator
         return $keys;
     }
 
-    private function reportError(EvaluationResult $result): void
+    /**
+     * @param array<string, list<string>> $fieldPaths
+     */
+    private function reportError(EvaluationResult $result, array $fieldPaths): void
     {
         $addError = $this->addError;
         if (!is_callable($addError)) {
             return;
         }
 
-        $input = $result->fieldId !== null && $result->fieldId !== ''
-            ? 'acf[' . $result->fieldId . ']'
-            : '';
+        $input = '';
+        if ($result->fieldId !== null && $result->fieldId !== '') {
+            $path  = $fieldPaths[$result->fieldId] ?? array();
+            $input = AcfNestedField::inputName($result->fieldId, is_array($path) ? $path : array());
+        }
 
         $addError($input, $this->errorMessage($result));
     }

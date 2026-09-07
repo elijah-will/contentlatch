@@ -20,6 +20,22 @@ final class EditorFieldNavigationTest extends TestCase
         );
 
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_64f8a42a61f56'));
+        $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_ingredients'));
+        $this->assertFalse(EditorFieldNavigation::isSafeFieldKey('field_product_details.field_ingredients'));
+        $this->assertSame(
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_ingredients',
+            EditorFieldNavigation::appendToEditUrl(
+                'http://example.test/wp-admin/post.php?post=42&action=edit',
+                'field_ingredients'
+            )
+        );
+        $this->assertSame(
+            'http://example.test/wp-admin/post.php?post=42&action=edit',
+            EditorFieldNavigation::appendToEditUrl(
+                'http://example.test/wp-admin/post.php?post=42&action=edit',
+                'field_product_details.field_ingredients'
+            )
+        );
         $this->assertSame(
             'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_64f8a42a61f56',
             $url

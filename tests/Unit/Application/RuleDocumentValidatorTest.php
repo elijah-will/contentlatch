@@ -77,6 +77,22 @@ final class RuleDocumentValidatorTest extends TestCase
         );
     }
 
+    public function testInvalidNestedPathIsRejected(): void
+    {
+        $document = RuleFactory::document();
+        $document['validations'][0]['field'] = array(
+            'key'       => 'field_ingredients',
+            'name'      => 'ingredients',
+            'label'     => 'Ingredients',
+            'path'      => array('field_group.field_child', 'field_ingredients'),
+            'container' => 'group',
+        );
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Invalid field path.');
+        $this->validator->validateArray($document);
+    }
+
     public function testMalformedJsonIsRejected(): void
     {
         $this->expectException(InvalidRuleException::class);

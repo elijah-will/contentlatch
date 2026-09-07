@@ -83,16 +83,182 @@ final class AcfStoredValueProviderTest extends TestCase
         $this->assertNull($provider->get('field_type'));
     }
 
+    public function testGroupChildUsesLeafKeyWhenAvailable(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $calls = array();
+        $provider = $this->provider(
+            static function (string $key) use (&$calls): mixed {
+                $calls[] = $key;
+                return $key === 'field_ingredients' ? 'Salt' : null;
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertSame('Salt', $provider->get('field_ingredients'));
+        $this->assertSame(array('field_product_details', 'field_ingredients'), $calls);
+    }
+
+    public function testGroupChildPrefersParentValueOverLeafDefaultEmpty(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $calls = array();
+        $provider = $this->provider(
+            static function (string $key) use (&$calls): mixed {
+                $calls[] = $key;
+                return match ($key) {
+                    'field_ingredients' => '',
+                    'field_product_details' => array(
+                        'field_ingredients' => 'Tomatoes, salt',
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertSame('Tomatoes, salt', $provider->get('field_ingredients'));
+        $this->assertSame(array('field_product_details'), $calls);
+    }
+
+    public function testGroupChildPrefersNameKeyedParentOverLeafDefaultEmpty(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $provider = $this->provider(
+            static function (string $key): mixed {
+                return match ($key) {
+                    'field_ingredients' => '',
+                    'field_product_details' => array(
+                        'item_ingredients' => 'Garlic, oil',
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            ),
+            array(
+                'field_ingredients' => array('product_information', 'item_ingredients'),
+            )
+        );
+
+        $this->assertSame('Garlic, oil', $provider->get('field_ingredients'));
+    }
+
+    public function testGroupChildFallsBackToWalkingTheParentValue(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $calls = array();
+        $provider = $this->provider(
+            static function (string $key) use (&$calls): mixed {
+                $calls[] = $key;
+                return match ($key) {
+                    'field_ingredients' => null,
+                    'field_product_details' => array(
+                        'field_ingredients' => 'Tomatoes',
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertSame('Tomatoes', $provider->get('field_ingredients'));
+        $this->assertSame(array('field_product_details'), $calls);
+    }
+
+    public function testNestedGroupFallsBackThroughTheStoredPath(): void
+    {
+        $this->fieldTypes['field_calories'] = 'number';
+        $provider = $this->provider(
+            static function (string $key): mixed {
+                return match ($key) {
+                    'field_calories' => false,
+                    'field_product_details' => array(
+                        'field_nutrition' => array(
+                            'field_calories' => '90',
+                        ),
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_calories' => array('field_product_details', 'field_nutrition', 'field_calories'),
+            )
+        );
+
+        $this->assertSame('90', $provider->get('field_calories'));
+    }
+
+    public function testFallbackCanWalkNameKeyedGroupValues(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $provider = $this->provider(
+            static function (string $key): mixed {
+                return match ($key) {
+                    'field_ingredients' => null,
+                    'field_product_details' => array(
+                        'ingredients' => 'Garlic',
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            ),
+            array(
+                'field_ingredients' => array('product_details', 'ingredients'),
+            )
+        );
+
+        $this->assertSame('Garlic', $provider->get('field_ingredients'));
+    }
+
+    public function testEmptyGroupChildNormalizesAsNull(): void
+    {
+        $this->fieldTypes['field_ingredients'] = 'textarea';
+        $provider = $this->provider(
+            static function (string $key): mixed {
+                return match ($key) {
+                    'field_ingredients' => null,
+                    'field_product_details' => array(
+                        'field_ingredients' => '',
+                    ),
+                    default => null,
+                };
+            },
+            array(
+                'field_ingredients' => array('field_product_details', 'field_ingredients'),
+            )
+        );
+
+        $this->assertTrue($provider->has('field_ingredients'));
+        $this->assertNull($provider->get('field_ingredients'));
+    }
+
     /**
      * @param callable(string $fieldKey, int $postId): mixed $reader
+     * @param array<string, list<string>> $fieldPaths
+     * @param array<string, list<string>> $fieldPathNames
      */
-    private function provider(callable $reader): AcfStoredValueProvider
-    {
+    private function provider(
+        callable $reader,
+        array $fieldPaths = array(),
+        array $fieldPathNames = array(),
+    ): AcfStoredValueProvider {
         return new AcfStoredValueProvider(
             15,
             new AcfValueNormalizer(),
             $this->fieldTypes,
-            $reader
+            $reader,
+            $fieldPaths,
+            $fieldPathNames
         );
     }
 }

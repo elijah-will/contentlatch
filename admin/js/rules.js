@@ -52,6 +52,10 @@
     return (select.options[select.selectedIndex].textContent || "").trim();
   }
 
+  function fieldDisplayLabel(field) {
+    return field.breadcrumb || field.label || field.name || field.key;
+  }
+
   function fieldLabelFor(key, select) {
     if (select && select.value === key) {
       var label = selectedOptionLabel(select);
@@ -62,7 +66,7 @@
     var match = fields.find(function (field) {
       return field.key === key;
     });
-    return match ? (match.label || match.name || match.key) : key;
+    return match ? fieldDisplayLabel(match) : key;
   }
 
   function srLabel(text, forId) {
@@ -81,10 +85,34 @@
       select.id = id;
     }
     select.appendChild(option("", "Choose a field", selected === ""));
+
+    var ungrouped = [];
+    var groups = {};
     fields.forEach(function (field) {
-      var label = field.label || field.name || field.key;
-      select.appendChild(option(field.key, label, field.key === selected, field.type || ""));
+      var group = field.group_label || "";
+      if (!group) {
+        ungrouped.push(field);
+        return;
+      }
+      if (!groups[group]) {
+        groups[group] = [];
+      }
+      groups[group].push(field);
     });
+
+    ungrouped.forEach(function (field) {
+      select.appendChild(option(field.key, fieldDisplayLabel(field), field.key === selected, field.type || ""));
+    });
+
+    Object.keys(groups).forEach(function (groupLabel) {
+      var optgroup = document.createElement("optgroup");
+      optgroup.label = groupLabel;
+      groups[groupLabel].forEach(function (field) {
+        optgroup.appendChild(option(field.key, fieldDisplayLabel(field), field.key === selected, field.type || ""));
+      });
+      select.appendChild(optgroup);
+    });
+
     return select;
   }
 

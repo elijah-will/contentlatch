@@ -12,7 +12,9 @@ use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\Exception\AuditException;
+use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Domain\ArrayValueProvider;
+use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Domain\RuleStatus;
@@ -351,6 +353,177 @@ final class ContentAuditServiceTest extends TestCase
         $ids = array_map(static fn ($finding): string => $finding->validationId, $findings);
         $this->assertContains('v-required', $ids);
         $this->assertContains('v-min', $ids);
+    }
+
+    public function testGroupChildFindingsKeepLeafFieldKeyAndDistinctValidations(): void
+    {
+        $nested = new FieldRef(
+            'field_ingredients',
+            'ingredients',
+            'Product Details → Ingredients',
+            array('field_product_details', 'field_ingredients'),
+            'group'
+        );
+        $rule = RuleFactory::rule(
+            array(
+                'id'         => 31,
+                'postType'   => 'recipe',
+                'conditions' => array(),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'id'    => 'v-required',
+                            'field' => $nested,
+                            'type'  => 'required',
+                        )
+                    ),
+                    RuleFactory::validation(
+                        array(
+                            'id'     => 'v-min',
+                            'field'  => $nested,
+                            'type'   => 'min_length',
+                            'params' => array('min' => 8),
+                        )
+                    ),
+                ),
+            )
+        );
+        $this->values = array(
+            10 => array('field_ingredients' => ''),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(2, $findings);
+        foreach ($findings as $finding) {
+            $this->assertSame($run->id, $finding->runId);
+            $this->assertSame(10, $finding->postId);
+            $this->assertSame(31, $finding->ruleId);
+            $this->assertSame('field_ingredients', $finding->fieldKey);
+        }
+        $ids = array_map(static fn ($finding): string => $finding->validationId, $findings);
+        $this->assertContains('v-required', $ids);
+        $this->assertContains('v-min', $ids);
+        $this->assertSame(
+            'Product Details → Ingredients',
+            AuditPresentation::fieldLabel($rule, 'field_ingredients')
+        );
+    }
+
+    public function testStoredGroupChildAuditTracksPopulatedAndEmptyValues(): void
+    {
+        $nested = new FieldRef(
+            'field_ingredients',
+            'item_ingredients',
+            'Product Information → Ingredients Accordion',
+            array('field_product_details', 'field_ingredients'),
+            'group'
+        );
+        $rule = RuleFactory::rule(
+            array(
+                'id'         => 32,
+                'postType'   => 'recipe',
+                'conditions' => array(),
+                'validations' => array(
+                    RuleFactory::validation(
+                        array(
+                            'id'    => 'v-required',
+                            'field' => $nested,
+                            'type'  => 'required',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $store = array(
+            10 => array(
+                'field_ingredients' => '',
+                'field_product_details' => array(
+                    'field_ingredients' => '',
+                ),
+            ),
+            20 => array(
+                'field_ingredients' => '',
+                'field_product_details' => array(
+                    'field_ingredients' => 'Tomatoes, salt',
+                ),
+            ),
+        );
+        $catalog = new AcfFieldCatalog(
+            static function (string $postType): array {
+                if ($postType !== 'recipe') {
+                    return array();
+                }
+
+                return array(
+                    array(
+                        'key'        => 'field_product_details',
+                        'name'       => 'product_information',
+                        'label'      => 'Product Information',
+                        'type'       => 'group',
+                        'sub_fields' => array(
+                            array(
+                                'key'   => 'field_ingredients',
+                                'name'  => 'item_ingredients',
+                                'label' => 'Ingredients Accordion',
+                                'type'  => 'textarea',
+                            ),
+                        ),
+                    ),
+                );
+            }
+        );
+        $repository = new InMemoryRuleRepository(array($rule));
+        $service = new ContentAuditService(
+            $this->store,
+            new InMemoryAuditPostScanner(array(
+                array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+                array('id' => 20, 'postType' => 'recipe', 'status' => 'publish'),
+            )),
+            $this->lock,
+            $repository,
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $catalog,
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$store): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+                $maps = $catalog->nestedResolutionMaps($postType, $fieldTypes);
+
+                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                    $postId,
+                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    $fieldTypes,
+                    static fn (string $key): mixed => $store[$postId][$key] ?? null,
+                    $maps['paths'],
+                    $maps['names']
+                );
+            },
+            static function (array $ids): void {
+                unset($ids);
+            },
+            function (): int {
+                return $this->now;
+            },
+            1
+        );
+
+        $run = $service->processBatch($service->start(1)->id);
+        $run = $service->processBatch($run->id);
+        $run = $service->processBatch($run->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame(10, $findings[0]->postId);
+        $this->assertSame('field_ingredients', $findings[0]->fieldKey);
+        $this->assertSame(32, $findings[0]->ruleId);
+        $this->assertSame('v-required', $findings[0]->validationId);
+        $this->assertSame(
+            'Product Information → Ingredients Accordion',
+            AuditPresentation::fieldLabel($rule, 'field_ingredients')
+        );
     }
 
     public function testInvalidRunIdAndInactiveStateAreRejected(): void

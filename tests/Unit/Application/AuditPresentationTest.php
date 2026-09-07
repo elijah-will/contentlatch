@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ContentGuard\Tests\Unit\Application;
 
 use ContentGuard\Application\AuditPresentation;
+use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +46,28 @@ final class AuditPresentationTest extends TestCase
             'validations' => array(),
         ));
         $this->assertSame('Is Signature', AuditPresentation::fieldLabel($conditionOnly, 'field_signature'));
+    }
+
+    public function testNestedFieldLabelUsesStoredBreadcrumb(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => new FieldRef(
+                        'field_ingredients',
+                        'ingredients',
+                        'Product Details → Ingredients',
+                        array('field_product_details', 'field_ingredients'),
+                        'group'
+                    ),
+                )),
+            ),
+        ));
+
+        $this->assertSame(
+            'Product Details → Ingredients',
+            AuditPresentation::fieldLabel($rule, 'field_ingredients')
+        );
     }
 
     public function testPostTitleAndSeverityStayReadable(): void

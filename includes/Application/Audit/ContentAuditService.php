@@ -59,17 +59,26 @@ final class ContentAuditService
 
     public static function wordpress(RuleRepositoryInterface $rules): self
     {
+        $catalog = new AcfFieldCatalog();
+
         return new self(
             new WpAuditStore(),
             new WpAuditPostScanner(),
             new WpAuditLock(),
             $rules,
             new ContentEvaluator($rules, RuleEngine::v1()),
-            new AcfFieldCatalog(),
-            static function (int $postId, string $postType, array $fieldTypes): AcfStoredValueProvider {
-                unset($postType);
+            $catalog,
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog): AcfStoredValueProvider {
+                $maps = $catalog->nestedResolutionMaps($postType, $fieldTypes);
 
-                return new AcfStoredValueProvider($postId, new AcfValueNormalizer(), $fieldTypes);
+                return new AcfStoredValueProvider(
+                    $postId,
+                    new AcfValueNormalizer(),
+                    $fieldTypes,
+                    null,
+                    $maps['paths'],
+                    $maps['names']
+                );
             },
             static function (array $ids): void {
                 if ($ids !== array() && function_exists('update_postmeta_cache')) {

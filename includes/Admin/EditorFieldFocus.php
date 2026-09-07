@@ -1,6 +1,6 @@
 <?php
 /**
- * Scrolls the WordPress editor to a top-level ACF field.
+ * Scrolls the WordPress editor to an ACF field (top-level or Group child).
  *
  * Used by Audit "Edit content" (URL query) and by clickable editor warnings.
  *

@@ -175,7 +175,11 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('contentguard-finding__meta', $html);
         $this->assertStringContainsString('Recipe', $html);
         $this->assertStringContainsString('Recipe Description', $html);
-        $this->assertStringContainsString('overflow-wrap: anywhere', (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css'));
+        $css = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css');
+        $this->assertStringContainsString('overflow-wrap: anywhere', $css);
+        $this->assertStringContainsString('#contentguard-audit .contentguard-audit-action > p', $css);
+        $this->assertStringContainsString('#contentguard-audit .contentguard-page-header__description', $css);
+        $this->assertStringContainsString('max-width: none;', $css);
         $this->assertStringNotContainsString('>field_123abc<', $html);
         $this->assertStringContainsString('Blocking', $html);
         $this->assertStringContainsString('contentguard-finding--blocking', $html);

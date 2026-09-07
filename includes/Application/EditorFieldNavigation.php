@@ -2,8 +2,8 @@
 /**
  * Safe finding → ACF field navigation helpers.
  *
- * Targets top-level ACF fields only. Nested Group/Repeater/Flexible/Clone
- * navigation is out of scope.
+ * Targets ACF fields by leaf field key, including Group children.
+ * Repeater/Flexible/Clone row navigation is out of scope.
  *
  * @package ContentGuard
  */
