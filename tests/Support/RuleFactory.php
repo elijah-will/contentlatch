@@ -59,6 +59,7 @@ final class RuleFactory
             (string) ($overrides['type'] ?? 'required'),
             $overrides['params'] ?? array(),
             (string) ($overrides['message'] ?? ''),
+            (string) ($overrides['quantifier'] ?? ''),
         );
     }
 

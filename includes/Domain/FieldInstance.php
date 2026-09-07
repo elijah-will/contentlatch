@@ -1,0 +1,24 @@
+<?php
+/**
+ * One evaluation-time field value. Repeater rows use this; scalars use one instance.
+ *
+ * Row identity lives here only. It is never stored as FieldRef.key or finding identity.
+ *
+ * @package ContentGuard
+ */
+
+declare(strict_types=1);
+
+namespace ContentGuard\Domain;
+
+final class FieldInstance
+{
+    /**
+     * @param array<string, mixed> $context Evaluation-time metadata (row_key, row_index, display_row, input_name).
+     */
+    public function __construct(
+        public readonly mixed $value,
+        public readonly array $context = array(),
+    ) {
+    }
+}

@@ -53,7 +53,21 @@
   }
 
   function fieldDisplayLabel(field) {
-    return field.breadcrumb || field.label || field.name || field.key;
+    var label = field.breadcrumb || field.label || field.name || field.key;
+    if (field.container === "repeater" && String(label).indexOf("(every row)") === -1) {
+      label += " (every row)";
+    }
+    return label;
+  }
+
+  function fieldsForSelect(forCondition) {
+    if (!forCondition) {
+      return fields;
+    }
+
+    return fields.filter(function (field) {
+      return field.container !== "repeater";
+    });
   }
 
   function fieldLabelFor(key, select) {
@@ -77,7 +91,7 @@
     return label;
   }
 
-  function fieldSelect(name, selected, id) {
+  function fieldSelect(name, selected, id, forCondition) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-field";
@@ -88,7 +102,7 @@
 
     var ungrouped = [];
     var groups = {};
-    fields.forEach(function (field) {
+    fieldsForSelect(!!forCondition).forEach(function (field) {
       var group = field.group_label || "";
       if (!group) {
         ungrouped.push(field);
@@ -302,7 +316,7 @@
     var operatorId = "contentguard-condition-operator-" + index;
     var operandId = "contentguard-condition-operand-" + index;
     controls.appendChild(srLabel("WHEN field", fieldId));
-    controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
+    controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId, true));
     controls.appendChild(srLabel("Operator", operatorId));
     controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId, fieldTypeFor(selected || "")));
     controls.appendChild(srLabel("Value", operandId));
@@ -337,7 +351,7 @@
     var fieldId = "contentguard-validation-field-" + index;
     var typeId = "contentguard-validation-type-" + index;
     controls.appendChild(srLabel("THEN field", fieldId));
-    controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId));
+    controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId, false));
     controls.appendChild(srLabel("Requirement", typeId));
     controls.appendChild(validatorSelect("validations[" + index + "][type]", "required", typeId));
     controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, "Minimum length", "characters"));
@@ -371,7 +385,9 @@
     form.querySelectorAll(".contentguard-field").forEach(function (select) {
       var current = select.value;
       var name = select.name;
-      var replacement = fieldSelect(name, current, select.id);
+      var row = select.closest("[data-row]");
+      var forCondition = !!(row && row.getAttribute("data-row") === "condition");
+      var replacement = fieldSelect(name, current, select.id, forCondition);
       select.replaceWith(replacement);
     });
     form.querySelectorAll("[data-row='condition']").forEach(toggleCondition);

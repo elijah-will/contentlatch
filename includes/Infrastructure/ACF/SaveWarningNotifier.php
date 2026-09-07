@@ -401,7 +401,8 @@ final class SaveWarningNotifier
                 $fieldTypes,
                 $this->reader,
                 $maps['paths'],
-                $maps['names']
+                $maps['names'],
+                $maps['repeater_keys']
             )
         );
 

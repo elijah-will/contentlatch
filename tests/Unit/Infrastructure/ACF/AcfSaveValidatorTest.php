@@ -594,6 +594,199 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertSame(array(), $this->errors);
     }
 
+    public function testRepeaterChildTargetsExactPostedRowInput(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->publishRequest(),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                    '67a1b2c3d4e5f' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'acfcloneindex' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Clone'),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                    'message' => 'Ingredient List → Ingredient is required.',
+                ),
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                    'message' => 'Ingredient List → Ingredient is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testGroupRepeaterChildTargetsNestedPostedRowInput(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->productSizeRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog(),
+            $this->publishRequest(array('post_type' => 'product')),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
+                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
+                        'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => ''),
+                        'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '2.5oz'),
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
+                    'message' => 'Product Information → Item Size → Product Size is required.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testRepeaterZeroRowsTargetsRepeaterContainer(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->productSizeRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog(),
+            $this->publishRequest(array('post_type' => 'product')),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
+                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
+                        'acfcloneindex' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '8oz'),
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . ']',
+                    'message' => 'Add at least one Item Size row.',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
+    public function testRepeaterDraftAllowedPublishAndPrivateBlocked(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->request(array(
+                'post_status' => 'draft',
+                'save'        => 'Save Draft',
+            )),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                ),
+            )
+        );
+        $this->assertSame(array(), $this->errors);
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->publishRequest(),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                ),
+            )
+        );
+        $this->assertNotSame(array(), $this->errors);
+
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->request(array(
+                'post_status' => 'draft',
+                'private'     => 'Private',
+            )),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                ),
+            )
+        );
+        $this->assertNotSame(array(), $this->errors);
+    }
+
+    public function testRepeaterWarningRemainsNonBlocking(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule(array(
+                'severity' => RuleSeverity::Warning,
+            )))),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->publishRequest(),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                ),
+            )
+        );
+
+        $this->assertSame(array(), $this->errors);
+    }
+
+    public function testRepeaterValidationDoesNotClearExistingAcfErrors(): void
+    {
+        $this->errors = array(
+            array(
+                'input'   => 'acf[field_title]',
+                'message' => 'ACF own error',
+            ),
+        );
+        $validator = new AcfSaveValidator(
+            new ContentEvaluator(
+                new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+                RuleEngine::v1()
+            ),
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            new IntendedPostStatusResolver(),
+            function (string $input, string $message): void {
+                $this->errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            }
+        );
+        $validator->validate(
+            $this->publishRequest(),
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                ),
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_title]',
+                    'message' => 'ACF own error',
+                ),
+            ),
+            $this->errors
+        );
+    }
+
     public function testNestedGroupRequiredFieldBlocksPrivate(): void
     {
         $this->validateWith(
@@ -780,6 +973,72 @@ final class AcfSaveValidatorTest extends TestCase
                                     'group'
                                 ),
                                 'type'  => 'required',
+                            )
+                        ),
+                    ),
+                ),
+                $overrides
+            )
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function ingredientRepeaterRule(array $overrides = array()): Rule
+    {
+        return RuleFactory::rule(
+            array_merge(
+                array(
+                    'id'          => 50,
+                    'name'        => 'Ingredients required',
+                    'postType'    => 'recipe',
+                    'conditions'  => array(),
+                    'validations' => array(
+                        RuleFactory::validation(
+                            array(
+                                'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                                'type'       => 'required',
+                                'quantifier' => 'every',
+                            )
+                        ),
+                    ),
+                ),
+                $overrides
+            )
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function productSizeRepeaterRule(array $overrides = array()): Rule
+    {
+        return RuleFactory::rule(
+            array_merge(
+                array(
+                    'id'         => 51,
+                    'name'       => 'Sauce sizes required',
+                    'postType'   => 'product',
+                    'conditions' => array(
+                        RuleFactory::condition(
+                            array(
+                                'field'    => RuleFactory::field(
+                                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                                    'product_type',
+                                    'Product Type'
+                                ),
+                                'operator' => 'equals',
+                                'operand'  => 'sauce',
+                            )
+                        ),
+                    ),
+                    'validations' => array(
+                        RuleFactory::validation(
+                            array(
+                                'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
+                                'type'       => 'required',
+                                'quantifier' => 'every',
                             )
                         ),
                     ),

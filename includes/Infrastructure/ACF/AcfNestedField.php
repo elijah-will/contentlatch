@@ -32,6 +32,95 @@ final class AcfNestedField
     }
 
     /**
+     * Insert the live row key after the Repeater segment.
+     *
+     * @param list<string> $path
+     */
+    public static function instanceInputName(array $path, string $repeaterKey, string $rowKey): string
+    {
+        $name = 'acf';
+
+        foreach ($path as $segment) {
+            $name .= '[' . $segment . ']';
+            if ($repeaterKey !== '' && $segment === $repeaterKey && $rowKey !== '') {
+                $name .= '[' . $rowKey . ']';
+            }
+        }
+
+        return $name;
+    }
+
+    /**
+     * Target the Repeater container (zero-row failures).
+     *
+     * @param list<string> $path
+     */
+    public static function repeaterInputName(array $path, string $repeaterKey): string
+    {
+        $name = 'acf';
+
+        foreach ($path as $segment) {
+            $name .= '[' . $segment . ']';
+            if ($repeaterKey !== '' && $segment === $repeaterKey) {
+                break;
+            }
+        }
+
+        return $name;
+    }
+
+    public static function isSafeRowKey(string $key): bool
+    {
+        if ($key === '' || $key === 'acfcloneindex') {
+            return false;
+        }
+
+        return (bool) preg_match('/^(row-\d+|[A-Za-z0-9_-]+)$/', $key);
+    }
+
+    /**
+     * @return list<array{key: string, row: mixed}>
+     */
+    public static function rows(mixed $repeaterValue): array
+    {
+        if (!is_array($repeaterValue)) {
+            return array();
+        }
+
+        $rows = array();
+        foreach ($repeaterValue as $key => $row) {
+            $rowKey = is_int($key) ? 'row-' . $key : (string) $key;
+            if (!self::isSafeRowKey($rowKey)) {
+                continue;
+            }
+
+            $rows[] = array(
+                'key' => $rowKey,
+                'row' => $row,
+            );
+        }
+
+        return $rows;
+    }
+
+    public static function rowChild(mixed $row, string $childKey, string $childName = ''): mixed
+    {
+        if (!is_array($row)) {
+            return null;
+        }
+
+        if (array_key_exists($childKey, $row)) {
+            return $row[$childKey];
+        }
+
+        if ($childName !== '' && array_key_exists($childName, $row)) {
+            return $row[$childName];
+        }
+
+        return null;
+    }
+
+    /**
      * @param array<string, mixed> $payload The ACF submission map (field_key => value).
      * @param list<string>         $path
      * @param list<string>         $names Parallel field names when a level is name-keyed.

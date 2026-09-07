@@ -2,8 +2,9 @@
 /**
  * Safe finding → ACF field navigation helpers.
  *
- * Targets ACF fields by leaf field key, including Group children.
- * Repeater/Flexible/Clone row navigation is out of scope.
+ * Targets ACF fields by leaf field key, including Group children and
+ * Repeater children. Row indexes are not placed in URLs. Flexible Content
+ * and Clone row navigation remain out of scope.
  *
  * @package ContentGuard
  */

@@ -23,6 +23,10 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('postbox.closed', $js);
         $this->assertStringContainsString('openCollapsedAncestors', $js);
         $this->assertStringContainsString('-collapsed', $js);
+        $this->assertStringContainsString('.acf-clone', $js);
+        $this->assertStringContainsString('acf-field-repeater', $js);
+        $this->assertStringContainsString('collapse-row', $js);
+        $this->assertStringNotContainsString('contentguard_row', $js);
         $this->assertStringContainsString('contentguardNavigateToField', $js);
         $this->assertStringContainsString('data-contentguard-field', $js);
         $this->assertStringContainsString('autoNavigate', $js);

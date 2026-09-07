@@ -60,13 +60,32 @@ final class FieldRefTest extends TestCase
         $this->assertTrue($loaded->isNested());
     }
 
+    public function testRepeaterChildSerializesPathAndContainer(): void
+    {
+        $ref = new FieldRef(
+            'field_product_size',
+            'product_size',
+            'Product Information → Item Size → Product Size',
+            array('field_product_information', 'field_item_size', 'field_product_size'),
+            'repeater'
+        );
+
+        $this->assertTrue($ref->isRepeaterChild());
+        $this->assertSame('repeater', $ref->toArray()['container']);
+
+        $loaded = FieldRef::fromArray($ref->toArray());
+        $this->assertSame($ref->path, $loaded->path);
+        $this->assertSame('repeater', $loaded->container);
+        $this->assertTrue($loaded->isRepeaterChild());
+    }
+
     public function testInvalidPathsAreRejected(): void
     {
         $cases = array(
             array('path' => array('field_only'), 'container' => 'group'),
             array('path' => array('field_group', 'field_other'), 'container' => 'group'),
             array('path' => array('field_group.field_child', 'field_ingredients'), 'container' => 'group'),
-            array('path' => array('field_group', 'field_ingredients'), 'container' => 'repeater'),
+            array('path' => array('field_group', 'field_ingredients'), 'container' => 'clone'),
             array('path' => array(), 'container' => 'group'),
             array('path' => array('field_group' => 'field_ingredients'), 'container' => 'group'),
         );

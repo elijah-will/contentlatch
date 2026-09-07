@@ -220,18 +220,21 @@ final class AcfIncomingValueProviderTest extends TestCase
     /**
      * @param array<string, list<string>> $fieldPaths
      * @param array<string, list<string>> $fieldPathNames
+     * @param array<string, string> $repeaterKeys
      */
     private function provider(
         mixed $payload,
         array $fieldPaths = array(),
         array $fieldPathNames = array(),
+        array $repeaterKeys = array(),
     ): AcfIncomingValueProvider {
         return new AcfIncomingValueProvider(
             $payload,
             new AcfValueNormalizer(),
             $this->fieldTypes,
             $fieldPaths,
-            $fieldPathNames
+            $fieldPathNames,
+            $repeaterKeys
         );
     }
 }

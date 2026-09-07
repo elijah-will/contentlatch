@@ -29,6 +29,7 @@ final class FieldDefinition
         public readonly string $container = '',
         public readonly array $pathNames = array(),
         public readonly array $pathLabels = array(),
+        public readonly string $repeaterKey = '',
     ) {
     }
 
@@ -85,6 +86,10 @@ final class FieldDefinition
             $data['breadcrumb']  = $this->breadcrumb();
             $data['group_label'] = $this->groupLabel();
             $data['path_names']  = $this->pathNames;
+        }
+
+        if ($this->container === FieldRef::CONTAINER_REPEATER) {
+            $data['repeater_key'] = $this->repeaterKey;
         }
 
         return $data;

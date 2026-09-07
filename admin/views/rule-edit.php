@@ -32,16 +32,16 @@ $fieldTypes  = array();
 $fieldMeta   = array();
 $fieldOptionLabel = static function (array $field): string {
     $breadcrumb = trim((string) ($field['breadcrumb'] ?? ''));
-    if ($breadcrumb !== '') {
-        return $breadcrumb;
+    $label      = $breadcrumb !== '' ? $breadcrumb : (string) ($field['label'] ?? '');
+    if ($label === '') {
+        $label = (string) ($field['name'] ?? $field['key'] ?? '');
     }
 
-    $label = (string) ($field['label'] ?? '');
-    if ($label !== '') {
-        return $label;
+    if (($field['container'] ?? '') === 'repeater' && !str_contains($label, '(every row)')) {
+        $label .= ' (every row)';
     }
 
-    return (string) ($field['name'] ?? $field['key'] ?? '');
+    return $label;
 };
 
 foreach ($fields as $field) {
@@ -83,6 +83,13 @@ if (!$isNew) {
  * @param array<int, array<string, mixed>> $fields
  * @param array<string, true> $fieldKeys
  */
+$conditionFields = array();
+foreach ($fields as $field) {
+    if (($field['container'] ?? '') !== 'repeater') {
+        $conditionFields[] = $field;
+    }
+}
+
 $renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected) use ($fieldOptionLabel): void {
     echo '<option value="">' . esc_html__('Choose a field', 'contentguard') . '</option>';
 
@@ -209,7 +216,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
             <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Repeater children can be used in THEN and apply to every row. Flexible Content and Clone fields are not supported yet.', 'contentguard'); ?></p>
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php
@@ -229,7 +236,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                         <div class="contentguard-builder-row__controls">
                             <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('WHEN field', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($fieldId); ?>" name="conditions[<?php echo (int) $index; ?>][field_key]" class="contentguard-field">
-                                <?php $renderFieldOptions($fields, $fieldKeys, $condition['field_key']); ?>
+                                <?php $renderFieldOptions($conditionFields, $fieldKeys, $condition['field_key']); ?>
                             </select>
                             <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentguard-operator">

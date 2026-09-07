@@ -86,7 +86,9 @@ final class RuleEngine
         $results = array();
 
         foreach ($rule->validations as $validation) {
-            $results[] = $this->evaluateValidation($rule, $validation, $provider, $postId);
+            foreach ($this->evaluateValidation($rule, $validation, $provider, $postId) as $result) {
+                $results[] = $result;
+            }
         }
 
         return $results;
@@ -106,17 +108,109 @@ final class RuleEngine
         return true;
     }
 
+    /**
+     * @return EvaluationResult[]
+     */
     private function evaluateValidation(
         Rule $rule,
         Validation $validation,
         FieldValueProviderInterface $provider,
         ?int $postId,
+    ): array {
+        if ($validation->isEveryRow()) {
+            return $this->evaluateEveryRow($rule, $validation, $provider, $postId);
+        }
+
+        return array(
+            $this->resultForValue(
+                $rule,
+                $validation,
+                $this->read($provider, $validation->field->key),
+                $postId
+            ),
+        );
+    }
+
+    /**
+     * @return EvaluationResult[]
+     */
+    private function evaluateEveryRow(
+        Rule $rule,
+        Validation $validation,
+        FieldValueProviderInterface $provider,
+        ?int $postId,
+    ): array {
+        $instances = $provider->instances($validation->field->key);
+        if ($instances === array()) {
+            $context = array(
+                'field_name'    => $validation->field->name,
+                'field_label'   => $validation->field->label,
+                'validation_id' => $validation->id,
+                'repeater_label'=> $this->repeaterLabel($validation->field),
+            );
+
+            $status = $rule->severity === RuleSeverity::Warning
+                ? EvaluationStatus::Warning
+                : EvaluationStatus::Failed;
+
+            return array(
+                new EvaluationResult(
+                    $status,
+                    $rule->id,
+                    $postId,
+                    $validation->field->key,
+                    sprintf('Add at least one %s row.', $this->repeaterLabel($validation->field)),
+                    $rule->severity,
+                    'no_rows',
+                    $context,
+                ),
+            );
+        }
+
+        $failed = array();
+        $passed = array();
+
+        foreach ($instances as $instance) {
+            if (!$instance instanceof FieldInstance) {
+                continue;
+            }
+
+            $result = $this->resultForValue(
+                $rule,
+                $validation,
+                $instance->value,
+                $postId,
+                $instance->context
+            );
+
+            if ($result->isFailed() || $result->isWarning()) {
+                $failed[] = $result;
+            } else {
+                $passed[] = $result;
+            }
+        }
+
+        if ($failed !== array()) {
+            return $failed;
+        }
+
+        return $passed !== array() ? array($passed[0]) : array();
+    }
+
+    /**
+     * @param array<string, mixed> $extraContext
+     */
+    private function resultForValue(
+        Rule $rule,
+        Validation $validation,
+        mixed $value,
+        ?int $postId,
+        array $extraContext = array(),
     ): EvaluationResult {
         $validator = $this->validators->get($validation->type);
-        $value     = $this->read($provider, $validation->field->key);
         $outcome   = $validator->validate($value, $validation->params);
 
-        $context = $outcome->context;
+        $context = array_merge($outcome->context, $extraContext);
         $context['field_name']     = $validation->field->name;
         $context['field_label']    = $validation->field->label;
         $context['validation_id']  = $validation->id;
@@ -150,6 +244,22 @@ final class RuleEngine
             $outcome->code,
             $context,
         );
+    }
+
+    private function repeaterLabel(FieldRef $field): string
+    {
+        $parts = preg_split('/\s*→\s*/u', $field->label) ?: array();
+        $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
+
+        if (count($parts) >= 2) {
+            return $parts[count($parts) - 2];
+        }
+
+        if ($field->name !== '') {
+            return $field->name;
+        }
+
+        return 'Repeater';
     }
 
     private function read(FieldValueProviderInterface $provider, string $fieldId): mixed

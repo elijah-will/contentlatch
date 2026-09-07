@@ -717,6 +717,68 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->assertArrayNotHasKey('path', $loaded->validations[0]->field->toArray());
     }
 
+    public function testRepeaterChildValidationPersistsEveryQuantifierAndSchemaVersionOne(): void
+    {
+        $factory = $this->repeaterFactory();
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Sauce sizes required',
+            'post_type'  => 'product',
+            'status'     => 'active',
+            'severity'   => 'fail',
+            'conditions' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                    'operator'  => 'equals',
+                    'operand'   => 'sauce',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $field = $rule->validations[0]->field;
+        $this->assertSame(1, $rule->schemaVersion);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $field->key);
+        $this->assertSame('repeater', $field->container);
+        $this->assertSame('Product Information → Item Size → Product Size', $field->label);
+        $this->assertSame('every', $rule->validations[0]->quantifier);
+        $this->assertTrue($rule->validations[0]->isEveryRow());
+        $this->assertArrayNotHasKey('any', $rule->validations[0]->toArray());
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame(1, $loaded->schemaVersion);
+        $this->assertSame('every', $loaded->validations[0]->quantifier);
+        $this->assertSame('repeater', $loaded->validations[0]->field->container);
+    }
+
+    public function testRepeaterChildCannotBeUsedAsWhenCondition(): void
+    {
+        $factory = $this->repeaterFactory();
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Repeater fields cannot be used in WHEN conditions.');
+        $factory->fromAdminInput(array(
+            'name'       => 'Bad when',
+            'post_type'  => 'product',
+            'validations' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                    'type'      => 'required',
+                ),
+            ),
+            'conditions' => array(
+                array(
+                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+                    'operator'  => 'equals',
+                    'operand'   => '8oz',
+                ),
+            ),
+        ));
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -746,6 +808,23 @@ final class RuleDocumentFactoryTest extends TestCase
                     'min'       => '3',
                 ),
             ),
+        );
+    }
+
+    private function repeaterFactory(): RuleDocumentFactory
+    {
+        $catalog = \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog();
+
+        return RuleDocumentFactory::v1(
+            static fn (): array => array('product' => 'Product'),
+            static function (string $postType) use ($catalog): array {
+                $fields = array();
+                foreach ($catalog->fieldsForPostType($postType) as $field) {
+                    $fields[] = $field->toCatalogArray();
+                }
+
+                return $fields;
+            }
         );
     }
 

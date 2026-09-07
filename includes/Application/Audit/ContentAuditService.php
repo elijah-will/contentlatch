@@ -77,7 +77,8 @@ final class ContentAuditService
                     $fieldTypes,
                     null,
                     $maps['paths'],
-                    $maps['names']
+                    $maps['names'],
+                    $maps['repeater_keys']
                 );
             },
             static function (array $ids): void {
@@ -456,7 +457,8 @@ final class ContentAuditService
      */
     private function findingsFrom(int $runId, AuditPost $post, ContentEvaluation $evaluation): array
     {
-        $findings = array();
+        $buckets = array();
+        $order   = array();
 
         foreach ($evaluation->results as $result) {
             if (!$result instanceof EvaluationResult) {
@@ -467,22 +469,103 @@ final class ContentAuditService
                 continue;
             }
 
+            $key = implode(
+                "\n",
+                array(
+                    (string) $result->ruleId,
+                    (string) $result->fieldId,
+                    (string) ($result->context['validation_id'] ?? ''),
+                    $result->severity->value,
+                )
+            );
+            if (!isset($buckets[$key])) {
+                $buckets[$key] = array();
+                $order[]       = $key;
+            }
+
+            $buckets[$key][] = $result;
+        }
+
+        $findings = array();
+        foreach ($order as $key) {
+            $results  = $buckets[$key];
+            $first    = $results[0];
             $findings[] = new AuditFinding(
                 0,
                 $runId,
                 $post->id,
                 $post->postType,
-                $result->ruleId,
-                (string) $result->fieldId,
-                (string) ($result->context['validation_id'] ?? ''),
-                $result->code,
-                $result->severity,
-                $result->message,
+                $first->ruleId,
+                (string) $first->fieldId,
+                (string) ($first->context['validation_id'] ?? ''),
+                $first->code,
+                $first->severity,
+                $this->snapshotMessage($results),
                 $this->datetime(),
             );
         }
 
         return $findings;
+    }
+
+    /**
+     * @param EvaluationResult[] $results
+     */
+    private function snapshotMessage(array $results): string
+    {
+        $first = $results[0];
+        $base  = $this->instanceMessage($first);
+        if (count($results) === 1) {
+            return $base;
+        }
+
+        $rows = array();
+        foreach ($results as $result) {
+            $row = $result->context['display_row'] ?? null;
+            if (is_int($row) || (is_numeric($row) && (int) $row > 0)) {
+                $rows[] = (int) $row;
+            }
+        }
+        $rows = array_values(array_unique($rows));
+
+        if ($rows === array()) {
+            return $base;
+        }
+
+        return sprintf(
+            '%s in %d rows (rows %s).',
+            rtrim($base, '.'),
+            count($rows),
+            implode(', ', $rows)
+        );
+    }
+
+    private function instanceMessage(EvaluationResult $result): string
+    {
+        if ($result->code === 'no_rows' && $result->message !== '') {
+            return $result->message;
+        }
+
+        if ($result->message !== '' && $result->message !== 'This field is required.') {
+            return $result->message;
+        }
+
+        if (isset($result->context['display_row']) && $result->code === 'required') {
+            $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
+            if ($label !== '') {
+                return sprintf('%s is required.', $label);
+            }
+        }
+
+        return $result->message !== '' ? $result->message : 'This field is required.';
+    }
+
+    private function leafLabel(string $breadcrumb): string
+    {
+        $parts = preg_split('/\s*→\s*/u', $breadcrumb) ?: array();
+        $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
+
+        return $parts !== array() ? (string) $parts[count($parts) - 1] : '';
     }
 
     private function complete(AuditRun $run): AuditRun

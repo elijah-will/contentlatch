@@ -198,6 +198,9 @@ final class RuleDocumentFactory
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
+            if ($field->isRepeaterChild()) {
+                throw new InvalidRuleException('Repeater fields cannot be used in WHEN conditions.');
+            }
             $fieldType = (string) ($fields[$fieldKey]['type'] ?? '');
 
             if (ConditionOperators::requiresOperand($operator)) {
@@ -272,14 +275,19 @@ final class RuleDocumentFactory
                 $message = $defaultMessage;
             }
 
-            $id = trim((string) ($row['id'] ?? ''));
-            $validations[] = array(
+            $id    = trim((string) ($row['id'] ?? ''));
+            $field = $this->fieldRef($fieldKey, $fields);
+            $item  = array(
                 'id'      => $id !== '' ? $id : 'v' . $index,
-                'field'   => $this->fieldRef($fieldKey, $fields)->toArray(),
+                'field'   => $field->toArray(),
                 'type'    => $type,
                 'params'  => $this->validationParams($type, $row),
                 'message' => $message,
             );
+            if ($field->isRepeaterChild()) {
+                $item['quantifier'] = \ContentGuard\Domain\Validation::QUANTIFIER_EVERY;
+            }
+            $validations[] = $item;
             ++$index;
         }
 

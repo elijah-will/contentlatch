@@ -2,9 +2,11 @@
 /**
  * Discovers V1-supported ACF fields for a post type.
  *
- * Phase 10A also catalogues supported scalar leaves inside Group fields.
- * Group containers themselves are not selectable. Repeater, Flexible Content,
- * and Clone fields (and their children) remain excluded.
+ * Phase 10A catalogues supported scalar leaves inside Group fields.
+ * Phase 10B also catalogues supported scalar leaves inside Repeater fields
+ * (top-level Repeater → scalar, and Group → Repeater → scalar). Repeater
+ * containers themselves are not selectable. Nested Repeaters, Flexible
+ * Content, and Clone remain excluded.
  *
  * @package ContentGuard
  */
@@ -36,7 +38,6 @@ final class AcfFieldCatalog
     );
 
     private const EXCLUDED_CONTAINERS = array(
-        'repeater',
         'flexible_content',
         'clone',
     );
@@ -83,12 +84,17 @@ final class AcfFieldCatalog
      * referenced by the current evaluation.
      *
      * @param array<string, string> $fieldTypes
-     * @return array{paths: array<string, list<string>>, names: array<string, list<string>>}
+     * @return array{
+     *     paths: array<string, list<string>>,
+     *     names: array<string, list<string>>,
+     *     repeater_keys: array<string, string>
+     * }
      */
     public function nestedResolutionMaps(string $postType, array $fieldTypes): array
     {
-        $paths = array();
-        $names = array();
+        $paths     = array();
+        $names     = array();
+        $repeaters = array();
 
         foreach ($this->fieldsForPostType($postType) as $field) {
             if (!isset($fieldTypes[$field->key]) || $field->path === array()) {
@@ -97,11 +103,15 @@ final class AcfFieldCatalog
 
             $paths[$field->key] = $field->path;
             $names[$field->key] = $field->pathNames;
+            if ($field->repeaterKey !== '') {
+                $repeaters[$field->key] = $field->repeaterKey;
+            }
         }
 
         return array(
-            'paths' => $paths,
-            'names' => $names,
+            'paths'         => $paths,
+            'names'         => $names,
+            'repeater_keys' => $repeaters,
         );
     }
 
@@ -117,6 +127,7 @@ final class AcfFieldCatalog
         array $ancestorKeys,
         array $ancestorNames,
         array $ancestorLabels,
+        string $repeaterKey = '',
     ): array {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
@@ -126,33 +137,75 @@ final class AcfFieldCatalog
         }
 
         if ($type === 'group') {
-            $name  = (string) ($field['name'] ?? '');
-            $label = (string) ($field['label'] ?? '');
-            if ($label === '') {
-                $label = $name !== '' ? $name : $key;
+            if ($repeaterKey !== '') {
+                return array();
             }
 
-            $nextKeys   = array_merge($ancestorKeys, array($key));
-            $nextNames  = array_merge($ancestorNames, array($name));
-            $nextLabels = array_merge($ancestorLabels, array($label));
-            $collected  = array();
+            return $this->collectChildren(
+                $field,
+                $ancestorKeys,
+                $ancestorNames,
+                $ancestorLabels,
+                $repeaterKey
+            );
+        }
 
-            foreach ($this->subFields($field) as $child) {
-                foreach ($this->collect($child, $nextKeys, $nextNames, $nextLabels) as $definition) {
-                    $collected[] = $definition;
-                }
+        if ($type === FieldRef::CONTAINER_REPEATER) {
+            if ($repeaterKey !== '') {
+                return array();
             }
 
-            return $collected;
+            return $this->collectChildren(
+                $field,
+                $ancestorKeys,
+                $ancestorNames,
+                $ancestorLabels,
+                $key
+            );
         }
 
         if (in_array($type, self::EXCLUDED_CONTAINERS, true)) {
             return array();
         }
 
-        $definition = $this->mapField($field, $ancestorKeys, $ancestorNames, $ancestorLabels);
+        $definition = $this->mapField($field, $ancestorKeys, $ancestorNames, $ancestorLabels, $repeaterKey);
 
         return $definition !== null ? array($definition) : array();
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @param list<string>         $ancestorKeys
+     * @param list<string>         $ancestorNames
+     * @param list<string>         $ancestorLabels
+     * @return list<FieldDefinition>
+     */
+    private function collectChildren(
+        array $field,
+        array $ancestorKeys,
+        array $ancestorNames,
+        array $ancestorLabels,
+        string $repeaterKey,
+    ): array {
+        $name  = (string) ($field['name'] ?? '');
+        $label = (string) ($field['label'] ?? '');
+        $key   = (string) ($field['key'] ?? '');
+        if ($label === '') {
+            $label = $name !== '' ? $name : $key;
+        }
+
+        $nextKeys   = array_merge($ancestorKeys, array($key));
+        $nextNames  = array_merge($ancestorNames, array($name));
+        $nextLabels = array_merge($ancestorLabels, array($label));
+        $collected  = array();
+
+        foreach ($this->subFields($field) as $child) {
+            foreach ($this->collect($child, $nextKeys, $nextNames, $nextLabels, $repeaterKey) as $definition) {
+                $collected[] = $definition;
+            }
+        }
+
+        return $collected;
     }
 
     /**
@@ -166,6 +219,7 @@ final class AcfFieldCatalog
         array $ancestorKeys,
         array $ancestorNames,
         array $ancestorLabels,
+        string $repeaterKey = '',
     ): ?FieldDefinition {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
@@ -195,7 +249,9 @@ final class AcfFieldCatalog
             $path       = array_merge($ancestorKeys, array($key));
             $pathNames  = array_merge($ancestorNames, array($name));
             $pathLabels = array_merge($ancestorLabels, array($leafLabel));
-            $container  = FieldRef::CONTAINER_GROUP;
+            $container  = $repeaterKey !== ''
+                ? FieldRef::CONTAINER_REPEATER
+                : FieldRef::CONTAINER_GROUP;
         }
 
         return new FieldDefinition(
@@ -208,6 +264,7 @@ final class AcfFieldCatalog
             $container,
             $pathNames,
             $pathLabels,
+            $repeaterKey,
         );
     }
 

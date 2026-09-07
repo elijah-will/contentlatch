@@ -13,7 +13,8 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 
 final class FieldRef
 {
-    public const CONTAINER_GROUP = 'group';
+    public const CONTAINER_GROUP    = 'group';
+    public const CONTAINER_REPEATER = 'repeater';
 
     /**
      * @param list<string> $path Root-to-leaf ACF field keys. Empty means top-level.
@@ -120,9 +121,14 @@ final class FieldRef
             throw new InvalidRuleException('Invalid field path.');
         }
 
-        if ($this->container !== self::CONTAINER_GROUP) {
+        if ($this->container !== self::CONTAINER_GROUP && $this->container !== self::CONTAINER_REPEATER) {
             throw new InvalidRuleException('Unsupported field container.');
         }
+    }
+
+    public function isRepeaterChild(): bool
+    {
+        return $this->container === self::CONTAINER_REPEATER;
     }
 
     private static function isSafeFieldKey(string $key): bool

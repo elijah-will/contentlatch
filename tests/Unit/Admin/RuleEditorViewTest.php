@@ -53,8 +53,9 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('class="contentguard-notice-label"', $html);
         $this->assertStringContainsString('class="contentguard-notice-message"', $html);
         $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
-        $this->assertStringContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
-        $this->assertStringNotContainsString('Fields inside Groups, Repeaters', $html);
+        $this->assertStringContainsString('Repeater children can be used in THEN and apply to every row.', $html);
+        $this->assertStringContainsString('Flexible Content and Clone fields are not supported yet.', $html);
+        $this->assertStringNotContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
     }
 
     public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
@@ -115,7 +116,61 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringNotContainsString('field_product_details.field_ingredients', $html);
         $this->assertStringNotContainsString('>field_ingredients<', $html);
         $this->assertStringNotContainsString('>field_calories<', $html);
-        $this->assertStringContainsString('Fields inside Repeaters, Flexible Content, and Clone fields are not supported yet.', $html);
+        $this->assertStringContainsString('Repeater children can be used in THEN and apply to every row.', $html);
+    }
+
+    public function testRepeaterChildAppearsInThenWithEveryRowAndNotInWhen(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Sauce sizes',
+                'target_post_type' => 'product',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'field_type',
+                        'operator'  => 'equals',
+                        'operand'   => 'sauce',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => 'field_product_size',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'   => 'field_type',
+                    'name'  => 'product_type',
+                    'label' => 'Product Type',
+                    'type'  => 'select',
+                ),
+                array(
+                    'key'        => 'field_product_size',
+                    'name'       => 'product_size',
+                    'label'      => 'Product Size',
+                    'type'       => 'text',
+                    'path'       => array('field_product_information', 'field_item_size', 'field_product_size'),
+                    'container'  => 'repeater',
+                    'breadcrumb' => 'Product Information → Item Size → Product Size',
+                    'group_label'=> 'Product Information → Item Size',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('Product Information → Item Size → Product Size (every row)', $html);
+        $this->assertStringContainsString('<optgroup label="Product Information → Item Size">', $html);
+        $this->assertMatchesRegularExpression(
+            '/name="validations\[0\]\[field_key\]"[\s\S]*Product Information → Item Size → Product Size \(every row\)/',
+            $html
+        );
+        if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('WHEN field select missing');
+        }
+        $this->assertStringNotContainsString('field_product_size', $match[1]);
+        $this->assertStringNotContainsString('(every row)', $match[1]);
+        $this->assertStringContainsString('field_type', $match[1]);
     }
 
     public function testEditRuleLoadsQuotedWhenThenAndAddAnotherRule(): void

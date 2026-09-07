@@ -14,6 +14,7 @@ use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\Exception\AuditException;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Domain\ArrayValueProvider;
+use ContentGuard\Domain\FieldInstance;
 use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
@@ -675,6 +676,103 @@ final class ContentAuditServiceTest extends TestCase
 
         $pending = $this->store->insertRun(1, array('recipe'), 1, '2026-01-01 00:00:00');
         $this->assertSame(array(), $service->blockingFindingsForPost($pending->id, 42));
+    }
+
+    public function testRepeaterFailuresCollapseToOneFindingWithRowSnapshot(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'         => 60,
+            'postType'   => 'recipe',
+            'conditions' => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => array(
+                    new FieldInstance('', array('display_row' => 1)),
+                    new FieldInstance('Salt', array('display_row' => 2)),
+                    new FieldInstance('', array('display_row' => 3)),
+                    new FieldInstance('', array('display_row' => 5)),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame($run->id, $findings[0]->runId);
+        $this->assertSame(10, $findings[0]->postId);
+        $this->assertSame(60, $findings[0]->ruleId);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $findings[0]->fieldKey);
+        $this->assertSame('v-required', $findings[0]->validationId);
+        $this->assertSame('required', $findings[0]->code);
+        $this->assertSame('Ingredient is required in 3 rows (rows 1, 3, 5).', $findings[0]->message);
+        $this->assertObjectNotHasProperty('instanceKey', $findings[0]);
+        $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
+    }
+
+    public function testRepeaterOneRowAndZeroRowAuditMessages(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'         => 61,
+            'postType'   => 'product',
+            'conditions' => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(
+                    new FieldInstance('', array('display_row' => 2)),
+                ),
+            ),
+            20 => array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(
+                array('id' => 10, 'postType' => 'product', 'status' => 'publish'),
+                array('id' => 20, 'postType' => 'product', 'status' => 'publish'),
+            )
+        );
+        $run = $service->processBatch($service->start(1)->id);
+        $run = $service->processBatch($run->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(2, $findings);
+        $byPost = array();
+        foreach ($findings as $finding) {
+            $byPost[$finding->postId] = $finding;
+            $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $finding->fieldKey);
+            $this->assertSame('v-required', $finding->validationId);
+        }
+        $this->assertSame('Product Size is required.', $byPost[10]->message);
+        $this->assertSame('Add at least one Item Size row.', $byPost[20]->message);
+        $this->assertSame('no_rows', $byPost[20]->code);
+        $this->assertSame(
+            'Product Information → Item Size → Product Size',
+            AuditPresentation::fieldLabel($rule, \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE)
+        );
     }
 
     public function testEvaluateStoredPostUsesCurrentValuesNotPersistedFindings(): void

@@ -190,13 +190,13 @@ final class AcfFieldCatalogTest extends TestCase
         $keys   = array_map(static fn ($field): string => $field->key, $fields);
 
         $this->assertSame(
-            array('field_type', 'field_ingredients', 'field_video', 'field_swatch', 'field_group_title'),
+            array('field_type', 'field_ingredients', 'field_video', 'field_swatch', 'field_repeater_title', 'field_group_title'),
             $keys
         );
         $this->assertNotContains('field_group', $keys);
         $this->assertContains('field_group_title', $keys);
         $this->assertNotContains('field_repeater', $keys);
-        $this->assertNotContains('field_repeater_title', $keys);
+        $this->assertContains('field_repeater_title', $keys);
         $this->assertNotContains('field_flex', $keys);
         $this->assertNotContains('field_flex_title', $keys);
         $this->assertNotContains('field_clone', $keys);
@@ -224,13 +224,20 @@ final class AcfFieldCatalogTest extends TestCase
                 'field_type'        => 'select',
                 'field_ingredients' => 'textarea',
                 'field_video'       => 'url',
-                'field_swatch'      => 'color_picker',
-                'field_group_title' => 'text',
+                'field_swatch'         => 'color_picker',
+                'field_repeater_title' => 'text',
+                'field_group_title'    => 'text',
             ),
             $types
         );
 
-        $groupChild = $fields[4];
+        $repeaterChild = $fields[4];
+        $this->assertSame('field_repeater_title', $repeaterChild->key);
+        $this->assertSame('repeater', $repeaterChild->container);
+        $this->assertSame('field_repeater', $repeaterChild->repeaterKey);
+        $this->assertSame('Items → Title', $repeaterChild->breadcrumb());
+
+        $groupChild = $fields[5];
         $this->assertSame('field_group_title', $groupChild->key);
         $this->assertSame('title', $groupChild->name);
         $this->assertSame('Title', $groupChild->label);
@@ -331,7 +338,14 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertArrayNotHasKey('field_nutrition', $byKey);
         $this->assertArrayNotHasKey('field_gallery', $byKey);
         $this->assertArrayNotHasKey('field_nested_repeater', $byKey);
-        $this->assertArrayNotHasKey('field_row_title', $byKey);
+        $this->assertArrayHasKey('field_row_title', $byKey);
+        $this->assertSame('repeater', $byKey['field_row_title']->container);
+        $this->assertSame('field_nested_repeater', $byKey['field_row_title']->repeaterKey);
+        $this->assertSame(
+            array('field_product_details', 'field_nested_repeater', 'field_row_title'),
+            $byKey['field_row_title']->path
+        );
+        $this->assertSame('Product Details → Rows → Row Title', $byKey['field_row_title']->breadcrumb());
     }
 
     public function testAllSupportedTypesAreIncluded(): void
@@ -385,5 +399,151 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertSame('CTA URL', $ref->label);
         $this->assertSame(array(), $ref->path);
         $this->assertSame('', $ref->container);
+    }
+
+    public function testNestedRepeaterAndUnsupportedRepeaterChildrenAreExcluded(): void
+    {
+        $catalog = new AcfFieldCatalog(
+            static function (): array {
+                return array(
+                    array(
+                        'key'        => 'field_outer',
+                        'name'       => 'outer',
+                        'label'      => 'Outer',
+                        'type'       => 'repeater',
+                        'sub_fields' => array(
+                            array(
+                                'key'   => 'field_outer_title',
+                                'name'  => 'title',
+                                'label' => 'Title',
+                                'type'  => 'text',
+                            ),
+                            array(
+                                'key'        => 'field_inner',
+                                'name'       => 'inner',
+                                'label'      => 'Inner',
+                                'type'       => 'repeater',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'   => 'field_inner_title',
+                                        'name'  => 'title',
+                                        'label' => 'Inner Title',
+                                        'type'  => 'text',
+                                    ),
+                                ),
+                            ),
+                            array(
+                                'key'        => 'field_row_group',
+                                'name'       => 'meta',
+                                'label'      => 'Meta',
+                                'type'       => 'group',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'   => 'field_row_group_title',
+                                        'name'  => 'title',
+                                        'label' => 'Group Title',
+                                        'type'  => 'text',
+                                    ),
+                                ),
+                            ),
+                            array(
+                                'key'     => 'field_row_flex',
+                                'name'    => 'layout',
+                                'label'   => 'Layout',
+                                'type'    => 'flexible_content',
+                                'layouts' => array(
+                                    array(
+                                        'sub_fields' => array(
+                                            array(
+                                                'key'   => 'field_row_flex_title',
+                                                'name'  => 'title',
+                                                'label' => 'Flex Title',
+                                                'type'  => 'text',
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            array(
+                                'key'   => 'field_row_clone',
+                                'name'  => 'cloned',
+                                'label' => 'Cloned',
+                                'type'  => 'clone',
+                            ),
+                        ),
+                    ),
+                );
+            }
+        );
+
+        $keys = array_map(
+            static fn ($field): string => $field->key,
+            $catalog->fieldsForPostType('product')
+        );
+
+        $this->assertSame(array('field_outer_title'), $keys);
+        $this->assertNotContains('field_outer', $keys);
+        $this->assertNotContains('field_inner', $keys);
+        $this->assertNotContains('field_inner_title', $keys);
+        $this->assertNotContains('field_row_group', $keys);
+        $this->assertNotContains('field_row_group_title', $keys);
+        $this->assertNotContains('field_row_flex', $keys);
+        $this->assertNotContains('field_row_flex_title', $keys);
+        $this->assertNotContains('field_row_clone', $keys);
+    }
+
+    public function testProduct636AndRecipe12325RepeaterChildrenAreCatalogued(): void
+    {
+        $product = \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog();
+        $recipe  = \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
+
+        $productFields = $product->fieldsForPostType('product');
+        $byKey         = array();
+        foreach ($productFields as $field) {
+            $byKey[$field->key] = $field;
+        }
+
+        $this->assertArrayHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE, $byKey);
+        $this->assertSame('', $byKey[\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE]->container);
+        $this->assertArrayNotHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION, $byKey);
+        $this->assertArrayNotHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $byKey);
+        $this->assertArrayHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $byKey);
+        $size = $byKey[\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE];
+        $this->assertSame('repeater', $size->container);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $size->repeaterKey);
+        $this->assertSame('Product Information → Item Size → Product Size', $size->breadcrumb());
+        $this->assertSame(
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION,
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+            ),
+            $size->path
+        );
+
+        $maps = $product->nestedResolutionMaps(
+            'product',
+            $product->fieldTypesForPostType('product')
+        );
+        $this->assertSame(
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
+            $maps['repeater_keys'][\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE]
+        );
+
+        $ingredient = $recipe->fieldsForPostType('recipe')[0];
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $ingredient->key);
+        $this->assertSame('repeater', $ingredient->container);
+        $this->assertSame('Ingredient List → Ingredient', $ingredient->breadcrumb());
+        $this->assertSame(
+            array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+            ),
+            $ingredient->path
+        );
+        $this->assertArrayNotHasKey(
+            'quantifier',
+            $ingredient->toCatalogArray()
+        );
     }
 }

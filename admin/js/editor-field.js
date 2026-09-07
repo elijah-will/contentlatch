@@ -14,7 +14,19 @@
       return null;
     }
 
-    return document.querySelector('.acf-field[data-key="' + fieldKey + '"]');
+    var nodes = document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]');
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i].closest(".acf-clone")) {
+        return nodes[i];
+      }
+    }
+
+    var cloneChild = document.querySelector('.acf-clone .acf-field[data-key="' + fieldKey + '"]');
+    if (cloneChild) {
+      return cloneChild.closest(".acf-field-repeater");
+    }
+
+    return null;
   }
 
   function openClosedPostbox(field) {
@@ -35,6 +47,13 @@
   function openCollapsedAncestors(field) {
     var node = field.parentElement;
     while (node && node !== document.documentElement) {
+      if (node.classList && node.classList.contains("acf-row") && node.classList.contains("-collapsed")) {
+        node.classList.remove("-collapsed");
+        var rowToggle = node.querySelector('[data-event="collapse-row"]');
+        if (rowToggle && typeof rowToggle.click === "function") {
+          rowToggle.click();
+        }
+      }
       if (node.classList && node.classList.contains("acf-field") && node.classList.contains("-collapsed")) {
         node.classList.remove("-collapsed");
         var toggle = node.querySelector(".-collapse, [data-name=\"collapse\"], .acf-field-header");

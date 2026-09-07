@@ -27,6 +27,10 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('field.breadcrumb', $js);
         $this->assertStringContainsString('group_label', $js);
         $this->assertStringContainsString('optgroup', $js);
+        $this->assertStringContainsString('(every row)', $js);
+        $this->assertStringContainsString('fieldsForSelect', $js);
+        $this->assertStringContainsString('field.container !== "repeater"', $js);
+        $this->assertStringContainsString('data-row', $js);
         $this->assertStringNotContainsString('field_123.field_456', $js);
     }
 }

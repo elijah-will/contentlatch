@@ -246,11 +246,13 @@ final class AcfStoredValueProviderTest extends TestCase
      * @param callable(string $fieldKey, int $postId): mixed $reader
      * @param array<string, list<string>> $fieldPaths
      * @param array<string, list<string>> $fieldPathNames
+     * @param array<string, string> $repeaterKeys
      */
     private function provider(
         callable $reader,
         array $fieldPaths = array(),
         array $fieldPathNames = array(),
+        array $repeaterKeys = array(),
     ): AcfStoredValueProvider {
         return new AcfStoredValueProvider(
             15,
@@ -258,7 +260,8 @@ final class AcfStoredValueProviderTest extends TestCase
             $this->fieldTypes,
             $reader,
             $fieldPaths,
-            $fieldPathNames
+            $fieldPathNames,
+            $repeaterKeys
         );
     }
 }

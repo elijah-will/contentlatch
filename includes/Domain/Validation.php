@@ -13,6 +13,8 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 
 final class Validation
 {
+    public const QUANTIFIER_EVERY = 'every';
+
     /**
      * @param array<string, mixed> $params
      */
@@ -22,6 +24,7 @@ final class Validation
         public readonly string $type,
         public readonly array $params = array(),
         public readonly string $message = '',
+        public readonly string $quantifier = '',
     ) {
         if ($this->id === '') {
             throw new InvalidRuleException('Validation id is required.');
@@ -30,6 +33,16 @@ final class Validation
         if ($this->type === '') {
             throw new InvalidRuleException('Validation type is required.');
         }
+
+        if ($this->quantifier !== '' && $this->quantifier !== self::QUANTIFIER_EVERY) {
+            throw new InvalidRuleException('Unsupported field quantifier.');
+        }
+    }
+
+    public function isEveryRow(): bool
+    {
+        return $this->field->isRepeaterChild()
+            && ($this->quantifier === '' || $this->quantifier === self::QUANTIFIER_EVERY);
     }
 
     /**
@@ -37,13 +50,19 @@ final class Validation
      */
     public function toArray(): array
     {
-        return array(
+        $data = array(
             'id'      => $this->id,
             'field'   => $this->field->toArray(),
             'type'    => $this->type,
             'params'  => $this->params,
             'message' => $this->message,
         );
+
+        if ($this->quantifier !== '') {
+            $data['quantifier'] = $this->quantifier;
+        }
+
+        return $data;
     }
 
     /**
@@ -69,6 +88,7 @@ final class Validation
             (string) ($data['type'] ?? ''),
             $params,
             (string) ($data['message'] ?? ''),
+            (string) ($data['quantifier'] ?? ''),
         );
     }
 }

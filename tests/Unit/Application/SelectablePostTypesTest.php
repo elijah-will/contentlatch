@@ -23,11 +23,12 @@ final class SelectablePostTypesTest extends TestCase
                 'product'  => 'Product',
                 'recipe'   => 'Recipe',
                 'colorful' => 'Colorful',
+                'gallery'  => 'Gallery',
             ),
             $selectable
         );
         $this->assertArrayHasKey('product', $selectable);
-        $this->assertArrayNotHasKey('gallery', $selectable);
+        $this->assertArrayHasKey('gallery', $selectable);
         $this->assertArrayNotHasKey('empty', $selectable);
         $this->assertArrayNotHasKey('media', $selectable);
     }

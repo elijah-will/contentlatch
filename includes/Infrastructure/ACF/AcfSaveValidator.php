@@ -111,7 +111,8 @@ final class AcfSaveValidator
                 new AcfValueNormalizer(),
                 $fieldTypes,
                 $fieldPaths,
-                $nestedMaps['names']
+                $nestedMaps['names'],
+                $nestedMaps['repeater_keys']
             )
         );
 
@@ -120,7 +121,7 @@ final class AcfSaveValidator
                 continue;
             }
 
-            $this->reportError($result, $fieldPaths);
+            $this->reportError($result, $fieldPaths, $nestedMaps['repeater_keys']);
         }
     }
 
@@ -193,8 +194,9 @@ final class AcfSaveValidator
 
     /**
      * @param array<string, list<string>> $fieldPaths
+     * @param array<string, string> $repeaterKeys
      */
-    private function reportError(EvaluationResult $result, array $fieldPaths): void
+    private function reportError(EvaluationResult $result, array $fieldPaths, array $repeaterKeys = array()): void
     {
         $addError = $this->addError;
         if (!is_callable($addError)) {
@@ -202,9 +204,16 @@ final class AcfSaveValidator
         }
 
         $input = '';
-        if ($result->fieldId !== null && $result->fieldId !== '') {
-            $path  = $fieldPaths[$result->fieldId] ?? array();
-            $input = AcfNestedField::inputName($result->fieldId, is_array($path) ? $path : array());
+        $fromContext = trim((string) ($result->context['input_name'] ?? ''));
+        if ($fromContext !== '') {
+            $input = $fromContext;
+        } elseif ($result->fieldId !== null && $result->fieldId !== '') {
+            $path        = $fieldPaths[$result->fieldId] ?? array();
+            $path        = is_array($path) ? $path : array();
+            $repeaterKey = $repeaterKeys[$result->fieldId] ?? '';
+            $input       = $result->code === 'no_rows' && $repeaterKey !== ''
+                ? AcfNestedField::repeaterInputName($path, $repeaterKey)
+                : AcfNestedField::inputName($result->fieldId, $path);
         }
 
         $addError($input, $this->errorMessage($result));
@@ -214,6 +223,10 @@ final class AcfSaveValidator
     {
         $message = $result->message;
         $label   = (string) ($result->context['field_label'] ?? '');
+
+        if ($result->code === 'no_rows' && $message !== '') {
+            return $message;
+        }
 
         if ($result->code === 'required' && $message === 'This field is required.' && $label !== '') {
             return sprintf('%s is required.', $label);
