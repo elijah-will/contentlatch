@@ -11,6 +11,7 @@ namespace ContentGuard\Application\Audit;
 
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\Exception\AuditException;
+use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
 use ContentGuard\Domain\ContentStatus;
@@ -18,9 +19,6 @@ use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
 use ContentGuard\Infrastructure\WordPress\WpAuditLock;
 use ContentGuard\Infrastructure\WordPress\WpAuditPostScanner;
 use ContentGuard\Infrastructure\WordPress\WpAuditStore;
@@ -49,7 +47,7 @@ final class ContentAuditService
         private AuditLockInterface $lock,
         private RuleRepositoryInterface $rules,
         private ContentEvaluator $evaluator,
-        private AcfFieldCatalog $catalog,
+        private FieldCatalog $catalog,
         private mixed $providerFactory,
         private mixed $warmMeta,
         private mixed $now,
@@ -57,10 +55,11 @@ final class ContentAuditService
     ) {
     }
 
-    public static function wordpress(RuleRepositoryInterface $rules): self
+    /**
+     * @param callable(int $postId, string $postType, array<string, string> $fieldTypes): FieldValueProviderInterface $providerFactory
+     */
+    public static function wordpress(RuleRepositoryInterface $rules, FieldCatalog $catalog, mixed $providerFactory): self
     {
-        $catalog = new AcfFieldCatalog();
-
         return new self(
             new WpAuditStore(),
             new WpAuditPostScanner(),
@@ -68,22 +67,7 @@ final class ContentAuditService
             $rules,
             new ContentEvaluator($rules, RuleEngine::v1()),
             $catalog,
-            static function (int $postId, string $postType, array $fieldTypes) use ($catalog): AcfStoredValueProvider {
-                $maps = $catalog->nestedResolutionMaps($postType, $fieldTypes);
-
-                return new AcfStoredValueProvider(
-                    $postId,
-                    new AcfValueNormalizer(),
-                    $fieldTypes,
-                    null,
-                    $maps['paths'],
-                    $maps['names'],
-                    $maps['repeater_keys'],
-                    $maps['flex_keys'] ?? array(),
-                    $maps['layouts'] ?? array(),
-                    $maps['clone_keys'] ?? array()
-                );
-            },
+            $providerFactory,
             static function (array $ids): void {
                 if ($ids !== array() && function_exists('update_postmeta_cache')) {
                     update_postmeta_cache($ids);

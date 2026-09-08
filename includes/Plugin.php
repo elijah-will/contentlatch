@@ -17,10 +17,14 @@ use ContentGuard\Admin\RuleEditorDraftStore;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\Audit\ContentAuditService;
+use ContentGuard\Application\Integration\CompositeFieldCatalog;
+use ContentGuard\Application\Integration\CompositeValueProvider;
+use ContentGuard\Application\Integration\FieldCatalog;
+use ContentGuard\Application\Integration\IntegrationRegistry;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
 use ContentGuard\Infrastructure\WordPress\AuditSchema;
@@ -41,6 +45,12 @@ final class Plugin
     private static ?self $instance = null;
 
     private Dependencies $dependencies;
+
+    private ?AcfIntegration $acfIntegration = null;
+
+    private ?IntegrationRegistry $integrations = null;
+
+    private ?FieldCatalog $fieldCatalog = null;
 
     private ?RuleRepositoryInterface $ruleRepository = null;
 
@@ -102,16 +112,11 @@ final class Plugin
     public function ruleFactory(): RuleDocumentFactory
     {
         if ($this->ruleFactory === null) {
-            $catalog = new AcfFieldCatalog();
+            $catalog = $this->fieldCatalog();
             $this->ruleFactory = RuleDocumentFactory::v1(
                 array(EditablePostTypes::class, 'choices'),
                 static function (string $postType) use ($catalog): array {
-                    $fields = array();
-                    foreach ($catalog->fieldsForPostType($postType) as $field) {
-                        $fields[] = $field->toCatalogArray();
-                    }
-
-                    return $fields;
+                    return $catalog->fieldsForPostType($postType);
                 }
             );
         }
@@ -122,10 +127,41 @@ final class Plugin
     public function auditService(): ContentAuditService
     {
         if ($this->auditService === null) {
-            $this->auditService = ContentAuditService::wordpress($this->ruleRepository());
+            $acf     = $this->acfIntegration();
+            $catalog = $this->fieldCatalog();
+            $this->auditService = ContentAuditService::wordpress(
+                $this->ruleRepository(),
+                $catalog,
+                static function (int $postId, string $postType, array $fieldTypes) use ($acf): CompositeValueProvider {
+                    return new CompositeValueProvider(array(
+                        $acf->storedProvider($postId, $postType, $fieldTypes),
+                    ));
+                }
+            );
         }
 
         return $this->auditService;
+    }
+
+    public function integrations(): IntegrationRegistry
+    {
+        $this->ensureIntegrations();
+
+        return $this->integrations;
+    }
+
+    public function fieldCatalog(): FieldCatalog
+    {
+        $this->ensureIntegrations();
+
+        return $this->fieldCatalog;
+    }
+
+    public function acfIntegration(): AcfIntegration
+    {
+        $this->ensureIntegrations();
+
+        return $this->acfIntegration;
     }
 
     public function dependencies(): Dependencies
@@ -140,6 +176,17 @@ final class Plugin
         }
 
         return $this->ruleRepository;
+    }
+
+    private function ensureIntegrations(): void
+    {
+        if ($this->integrations !== null) {
+            return;
+        }
+
+        $this->acfIntegration = AcfIntegration::wordpress($this->dependencies);
+        $this->integrations   = new IntegrationRegistry(array($this->acfIntegration->descriptor()));
+        $this->fieldCatalog   = new CompositeFieldCatalog(array($this->acfIntegration));
     }
 
     private function loadTextDomain(): void

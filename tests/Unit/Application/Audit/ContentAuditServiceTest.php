@@ -20,6 +20,7 @@ use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\InMemoryAuditLock;
 use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
@@ -489,7 +490,7 @@ final class ContentAuditServiceTest extends TestCase
             $this->lock,
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
-            $catalog,
+            new AcfIntegration($catalog),
             static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$store): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
                 $maps = $catalog->nestedResolutionMaps($postType, $fieldTypes);
 
@@ -983,7 +984,7 @@ final class ContentAuditServiceTest extends TestCase
             $this->lock,
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
-            $catalog,
+            new AcfIntegration($catalog),
             static function (int $postId, string $postType, array $fieldTypes) use (&$values): ArrayValueProvider {
                 unset($postType, $fieldTypes);
 

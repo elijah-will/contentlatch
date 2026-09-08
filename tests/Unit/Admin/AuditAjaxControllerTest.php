@@ -13,6 +13,7 @@ use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Domain\ArrayValueProvider;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\InMemoryAuditLock;
 use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
@@ -80,7 +81,7 @@ final class AuditAjaxControllerTest extends TestCase
             new InMemoryAuditLock(),
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
-            new AcfFieldCatalog(
+            new AcfIntegration(new AcfFieldCatalog(
                 static fn (): array => array(
                     array(
                         'key'   => 'field_type',
@@ -95,7 +96,7 @@ final class AuditAjaxControllerTest extends TestCase
                         'type'  => 'textarea',
                     ),
                 )
-            ),
+            )),
             static fn (): ArrayValueProvider => new ArrayValueProvider(array()),
             static function (): void {
             },

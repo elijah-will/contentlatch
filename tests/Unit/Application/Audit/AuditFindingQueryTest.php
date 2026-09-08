@@ -17,6 +17,7 @@ use ContentGuard\Domain\ArrayValueProvider;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\InMemoryAuditLock;
 use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
@@ -244,7 +245,7 @@ final class AuditFindingQueryTest extends TestCase
             new InMemoryAuditLock(),
             new InMemoryRuleRepository(array(RuleFactory::rule())),
             new ContentEvaluator(new InMemoryRuleRepository(array(RuleFactory::rule())), RuleEngine::v1()),
-            new AcfFieldCatalog(static fn (): array => array()),
+            new AcfIntegration(new AcfFieldCatalog(static fn (): array => array())),
             static fn (): ArrayValueProvider => new ArrayValueProvider(array()),
             static function (array $ids): void {
                 unset($ids);
