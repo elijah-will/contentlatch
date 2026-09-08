@@ -3,7 +3,8 @@
  * Post-type field discovery for the Rule Builder and evaluation composition.
  *
  * ACF FieldDefinition stays inside the ACF adapter. This catalog exposes the
- * array shape RuleDocumentFactory already consumes.
+ * array shape RuleDocumentFactory already consumes. The factory allowlists by
+ * catalog membership for the selected post type, not by a field_* prefix.
  *
  * @package ContentGuard
  */

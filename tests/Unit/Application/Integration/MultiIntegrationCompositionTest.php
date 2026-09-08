@@ -276,7 +276,7 @@ final class MultiIntegrationCompositionTest extends TestCase
         $this->assertArrayNotHasKey('integration', AcfCloneFixtures::cloneATitleRef()->toArray());
     }
 
-    public function testRuleDocumentFactoryStillIgnoresNonAcfCatalogKeys(): void
+    public function testRuleDocumentFactoryPersistsFakeCatalogFieldsBesideAcf(): void
     {
         $composite = new CompositeFieldCatalog(array(
             new AcfIntegration(AcfCloneFixtures::pageCatalog()),
@@ -284,14 +284,14 @@ final class MultiIntegrationCompositionTest extends TestCase
         ));
         $factory = RuleDocumentFactory::v1(
             static fn (): array => array('page' => 'Page'),
-            static fn (string $postType): array => $composite->fieldsForPostType($postType)
+            $composite
         );
 
         $keys = array_column($factory->fieldsForPostType('page'), 'key');
         $this->assertContains(AcfCloneFixtures::TITLE, $keys);
-        $this->assertNotContains(FakeIntegration::TITLE, $keys);
+        $this->assertContains(FakeIntegration::TITLE, $keys);
 
-        $rule = $factory->fromAdminInput(array(
+        $acf = $factory->fromAdminInput(array(
             'name'        => 'Shared title required',
             'post_type'   => 'page',
             'validations' => array(
@@ -301,8 +301,24 @@ final class MultiIntegrationCompositionTest extends TestCase
                 ),
             ),
         ));
-        $this->assertSame(1, $rule->schemaVersion);
-        $this->assertArrayNotHasKey('integration', $rule->validations[0]->field->toArray());
+        $this->assertSame(1, $acf->schemaVersion);
+        $this->assertArrayNotHasKey('integration', $acf->validations[0]->field->toArray());
+        $this->assertSame(AcfCloneFixtures::cloneATitlePosted(), $acf->validations[0]->field->resolutionId());
+
+        $fake = $factory->fromAdminInput(array(
+            'name'        => 'Test title required',
+            'post_type'   => 'page',
+            'validations' => array(
+                array(
+                    'field_key' => FakeIntegration::TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+        $this->assertSame(FakeIntegration::TITLE, $fake->validations[0]->field->key);
+        $this->assertSame(FakeIntegration::TITLE, $fake->validations[0]->field->resolutionId());
+        $this->assertArrayNotHasKey('integration', $fake->validations[0]->field->toArray());
+        $this->assertStringNotContainsString('acf:', $fake->validations[0]->field->resolutionId());
     }
 
     public function testAuditThroughTheCompositeStillRecordsAcfCloneFindings(): void

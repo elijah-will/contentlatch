@@ -115,9 +115,7 @@ final class Plugin
             $catalog = $this->fieldCatalog();
             $this->ruleFactory = RuleDocumentFactory::v1(
                 array(EditablePostTypes::class, 'choices'),
-                static function (string $postType) use ($catalog): array {
-                    return $catalog->fieldsForPostType($postType);
-                }
+                $catalog
             );
         }
 

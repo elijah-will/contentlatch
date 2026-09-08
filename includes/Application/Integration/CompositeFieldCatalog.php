@@ -4,6 +4,8 @@
  *
  * fieldsForPostType() keeps every entry. fieldTypesForPostType() is keyed by
  * resolution id, so duplicate ids collapse. Adapters must use unique ids.
+ * RuleDocumentFactory omits colliding ids from the selectable/persistable map
+ * rather than last-win, so the builder cannot store ambiguous FieldRefs.
  *
  * @package ContentGuard
  */

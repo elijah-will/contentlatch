@@ -2,8 +2,13 @@
 /**
  * Builds versioned Rule documents from admin form input.
  *
- * Field keys and post types are allowlisted by injected callbacks so
- * this class stays free of WordPress/ACF I/O.
+ * Post types are allowlisted by an injected callback. Selectable fields come
+ * from the injected FieldCatalog (or a fieldsForPostType callable). Membership
+ * is resolution-id + post type, not a field_* prefix. FieldRef metadata is
+ * taken from the catalog, never from submitted path/clone/layout/container.
+ *
+ * Duplicate resolution ids are omitted from the selectable map rather than
+ * last-win. Adapters must choose unique ids; colliding ids cannot be persisted.
  *
  * @package ContentGuard
  */
@@ -12,6 +17,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\Operators\OperatorRegistry;
@@ -23,7 +29,7 @@ final class RuleDocumentFactory
 {
     /**
      * @param callable(): array<string, string> $postTypes slug => label
-     * @param callable(string $postType): array<int, array<string, mixed>> $fieldsForPostType
+     * @param FieldCatalog|callable(string $postType): array<int, array<string, mixed>> $fieldsForPostType
      */
     public function __construct(
         private RuleDocumentValidator $validator,
@@ -32,8 +38,13 @@ final class RuleDocumentFactory
         private mixed $postTypes,
         private mixed $fieldsForPostType,
     ) {
+        $this->fieldsForPostType = self::catalogLoader($fieldsForPostType);
     }
 
+    /**
+     * @param callable(): array<string, string> $postTypes
+     * @param FieldCatalog|callable(string $postType): array<int, array<string, mixed>> $fieldsForPostType
+     */
     public static function v1(mixed $postTypes, mixed $fieldsForPostType): self
     {
         return new self(
@@ -43,6 +54,21 @@ final class RuleDocumentFactory
             $postTypes,
             $fieldsForPostType
         );
+    }
+
+    /**
+     * @param FieldCatalog|callable(string $postType): array<int, array<string, mixed>>|mixed $fieldsForPostType
+     * @return callable(string $postType): array<int, array<string, mixed>>|mixed
+     */
+    private static function catalogLoader(mixed $fieldsForPostType): mixed
+    {
+        if ($fieldsForPostType instanceof FieldCatalog) {
+            $catalog = $fieldsForPostType;
+
+            return static fn (string $postType): array => $catalog->fieldsForPostType($postType);
+        }
+
+        return $fieldsForPostType;
     }
 
     /**
@@ -137,6 +163,9 @@ final class RuleDocumentFactory
     }
 
     /**
+     * Catalog entries for this post type, keyed by resolution id.
+     * Colliding ids are omitted so the builder cannot persist ambiguous identity.
+     *
      * @return array<string, array<string, mixed>>
      */
     private function fieldsByKey(string $postType): array
@@ -151,14 +180,25 @@ final class RuleDocumentFactory
             return array();
         }
 
-        $fields = array();
+        $fields     = array();
+        $collisions = array();
         foreach ($loaded as $field) {
             if (!is_array($field)) {
                 continue;
             }
 
             $key = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
-            if ($key === '' || !str_starts_with($key, 'field_')) {
+            if ($key === '') {
+                continue;
+            }
+
+            if (isset($collisions[$key])) {
+                continue;
+            }
+
+            if (isset($fields[$key])) {
+                unset($fields[$key]);
+                $collisions[$key] = true;
                 continue;
             }
 
@@ -368,6 +408,9 @@ final class RuleDocumentFactory
     }
 
     /**
+     * Builds FieldRef from the catalog entry. Submitted path/clone/layout/
+     * container/type/integration values are ignored.
+     *
      * @param array<string, array<string, mixed>> $fields
      */
     private function fieldRef(string $key, array $fields): FieldRef
@@ -391,7 +434,7 @@ final class RuleDocumentFactory
         $clone     = (string) ($field['clone'] ?? '');
         $leafKey   = (string) ($field['key'] ?? $key);
 
-        return new FieldRef(
+        $ref = new FieldRef(
             $leafKey,
             (string) ($field['name'] ?? ''),
             $label,
@@ -400,6 +443,12 @@ final class RuleDocumentFactory
             $layout,
             $clone
         );
+
+        if ($ref->resolutionId() !== $key) {
+            throw new InvalidRuleException('Unsupported field.');
+        }
+
+        return $ref;
     }
 
     /**

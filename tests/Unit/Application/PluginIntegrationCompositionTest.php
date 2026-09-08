@@ -31,6 +31,18 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertSame($plugin->fieldCatalog(), $plugin->fieldCatalog());
     }
 
+    public function testRuleDocumentFactoryDependsOnTheCatalogNotAcfPrefixes(): void
+    {
+        $factory = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Application/RuleDocumentFactory.php');
+        $plugin  = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Plugin.php');
+
+        $this->assertStringNotContainsString("str_starts_with(\$key, 'field_')", $factory);
+        $this->assertStringNotContainsString('AcfFieldCatalog', $factory);
+        $this->assertStringContainsString('FieldCatalog', $factory);
+        $this->assertStringContainsString('$this->fieldCatalog()', $plugin);
+        $this->assertStringNotContainsString('FakeIntegration', $plugin);
+    }
+
     public function testRuleEngineStaysFreeOfIntegrationBranches(): void
     {
         $engine = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Domain/RuleEngine.php');
