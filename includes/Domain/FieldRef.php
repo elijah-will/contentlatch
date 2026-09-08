@@ -2,6 +2,10 @@
 /**
  * Canonical field identity plus UI snapshots.
  *
+ * Lookup identity is resolutionId(). Integrations must choose resolution ids
+ * that do not collide with another integration. Catalog entries may include
+ * `integration` as composition metadata; it is not persisted on FieldRef.
+ *
  * @package ContentGuard
  */
 

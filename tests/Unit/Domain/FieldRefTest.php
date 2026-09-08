@@ -199,6 +199,29 @@ final class FieldRefTest extends TestCase
         $this->assertSame('field_title', $ordinary->resolutionId());
     }
 
+    public function testUnknownDocumentKeysIncludingIntegrationAreIgnored(): void
+    {
+        $loaded = FieldRef::fromArray(array(
+            'key'          => 'field_title',
+            'name'         => 'title',
+            'label'        => 'Title',
+            'integration'  => 'acf',
+            'resolution_id'=> 'should-not-become-the-key',
+        ));
+
+        $this->assertSame('field_title', $loaded->key);
+        $this->assertSame('field_title', $loaded->resolutionId());
+        $this->assertArrayNotHasKey('integration', $loaded->toArray());
+        $this->assertSame(
+            array(
+                'key'   => 'field_title',
+                'name'  => 'title',
+                'label' => 'Title',
+            ),
+            $loaded->toArray()
+        );
+    }
+
     public function testSeamlessCompositePathIsAllowedWhenCloneIsSet(): void
     {
         $ref = FieldRef::fromArray(array(

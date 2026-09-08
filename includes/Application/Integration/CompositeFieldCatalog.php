@@ -2,6 +2,9 @@
 /**
  * Merges integration catalogs. Ownership stays on catalog entries, not FieldRef.
  *
+ * fieldsForPostType() keeps every entry. fieldTypesForPostType() is keyed by
+ * resolution id, so duplicate ids collapse. Adapters must use unique ids.
+ *
  * @package ContentGuard
  */
 
