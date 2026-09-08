@@ -56,7 +56,7 @@ $fieldOptionLabel = static function (array $field): string {
 };
 
 foreach ($fields as $field) {
-    $key = (string) ($field['key'] ?? '');
+    $key = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
     $label = $fieldOptionLabel($field);
     $type = (string) ($field['type'] ?? '');
     $fieldKeys[$key] = true;
@@ -116,7 +116,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     }
 
     $renderOption = static function (array $field, string $selected) use ($fieldOptionLabel): void {
-        $key   = (string) ($field['key'] ?? '');
+        $key   = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
         $type  = (string) ($field['type'] ?? '');
         $label = $fieldOptionLabel($field);
         echo '<option value="' . esc_attr($key) . '" data-type="' . esc_attr($type) . '" ' . selected($selected, $key, false) . '>'
@@ -227,7 +227,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
             <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Repeater and Flexible Content children can be used in THEN and apply to every matching row. They cannot be used in WHEN. Clone fields are not supported yet.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Repeater and Flexible Content children can be used in THEN and apply to every matching row. They cannot be used in WHEN. Top-level Clone fields can be used in WHEN.', 'contentguard'); ?></p>
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php

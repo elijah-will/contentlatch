@@ -7,8 +7,11 @@
  * (top-level Repeater → scalar, and Group → Repeater → scalar).
  * Phase 10C catalogues supported scalar leaves inside Flexible Content
  * layouts (top-level Flex → scalar, and Flex → Group → scalar).
+ * Phase 10D catalogues supported scalar leaves inside Clone fields
+ * (Seamless and Group display, Clone → Group, and Clone inside
+ * Repeater/Flexible). Clone → Clone/Repeater/Flexible remain excluded.
  * Containers themselves are not selectable. Nested Repeaters, Repeater
- * inside Flex, nested Flex, Flex inside Repeater/Group, and Clone remain
+ * inside Flex, nested Flex, and Flex inside Repeater/Group remain
  * excluded.
  *
  * @package ContentGuard
@@ -40,9 +43,7 @@ final class AcfFieldCatalog
         'color_picker',
     );
 
-    private const EXCLUDED_CONTAINERS = array(
-        'clone',
-    );
+    private const EXCLUDED_CONTAINERS = array();
 
     /**
      * @param callable(string $postType): array<int, array<string, mixed>>|null $source
@@ -75,7 +76,7 @@ final class AcfFieldCatalog
         $types = array();
 
         foreach ($this->fieldsForPostType($postType) as $field) {
-            $types[$field->key] = $field->type;
+            $types[$field->resolutionId()] = $field->type;
         }
 
         return $types;
@@ -91,7 +92,8 @@ final class AcfFieldCatalog
      *     names: array<string, list<string>>,
      *     repeater_keys: array<string, string>,
      *     flex_keys: array<string, string>,
-     *     layouts: array<string, string>
+     *     layouts: array<string, string>,
+     *     clone_keys: array<string, string>
      * }
      */
     public function nestedResolutionMaps(string $postType, array $fieldTypes): array
@@ -101,20 +103,25 @@ final class AcfFieldCatalog
         $repeaters = array();
         $flexKeys  = array();
         $layouts   = array();
+        $cloneKeys = array();
 
         foreach ($this->fieldsForPostType($postType) as $field) {
-            if (!isset($fieldTypes[$field->key]) || $field->path === array()) {
+            $id = $field->resolutionId();
+            if (!isset($fieldTypes[$id]) || $field->path === array()) {
                 continue;
             }
 
-            $paths[$field->key] = $field->path;
-            $names[$field->key] = $field->pathNames;
+            $paths[$id] = $field->path;
+            $names[$id] = $field->pathNames;
             if ($field->repeaterKey !== '') {
-                $repeaters[$field->key] = $field->repeaterKey;
+                $repeaters[$id] = $field->repeaterKey;
             }
             if ($field->container === FieldRef::CONTAINER_FLEXIBLE && $field->layout !== '') {
-                $flexKeys[$field->key] = $field->path[0];
-                $layouts[$field->key]  = $field->layout;
+                $flexKeys[$id] = $field->path[0];
+                $layouts[$id]  = $field->layout;
+            }
+            if ($field->clone !== '') {
+                $cloneKeys[$id] = $field->clone;
             }
         }
 
@@ -124,6 +131,7 @@ final class AcfFieldCatalog
             'repeater_keys' => $repeaters,
             'flex_keys'     => $flexKeys,
             'layouts'       => $layouts,
+            'clone_keys'    => $cloneKeys,
         );
     }
 
@@ -144,6 +152,9 @@ final class AcfFieldCatalog
         string $layout = '',
         string $layoutKey = '',
         string $layoutLabel = '',
+        string $cloneKey = '',
+        string $cloneLabel = '',
+        string $cloneDisplay = '',
     ): array {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
@@ -152,8 +163,30 @@ final class AcfFieldCatalog
             return array();
         }
 
+        if ($type === FieldRef::CONTAINER_CLONE) {
+            if ($cloneKey !== '') {
+                return array();
+            }
+
+            return $this->collectClone(
+                $field,
+                $ancestorKeys,
+                $ancestorNames,
+                $ancestorLabels,
+                $repeaterKey,
+                $flexKey,
+                $layout,
+                $layoutKey,
+                $layoutLabel
+            );
+        }
+
+        if ($cloneKey === '' && $this->clonedFrom($field) !== '') {
+            return array();
+        }
+
         if ($type === FieldRef::CONTAINER_FLEXIBLE) {
-            if ($repeaterKey !== '' || $flexKey !== '' || $ancestorKeys !== array()) {
+            if ($repeaterKey !== '' || $flexKey !== '' || $cloneKey !== '' || $ancestorKeys !== array()) {
                 return array();
             }
 
@@ -174,12 +207,15 @@ final class AcfFieldCatalog
                 $flexKey,
                 $layout,
                 $layoutKey,
-                $layoutLabel
+                $layoutLabel,
+                $cloneKey,
+                $cloneLabel,
+                $cloneDisplay
             );
         }
 
         if ($type === FieldRef::CONTAINER_REPEATER) {
-            if ($repeaterKey !== '' || $flexKey !== '') {
+            if ($repeaterKey !== '' || $flexKey !== '' || $cloneKey !== '') {
                 return array();
             }
 
@@ -205,7 +241,10 @@ final class AcfFieldCatalog
             $flexKey,
             $layout,
             $layoutKey,
-            $layoutLabel
+            $layoutLabel,
+            $cloneKey,
+            $cloneLabel,
+            $cloneDisplay
         );
 
         return $definition !== null ? array($definition) : array();
@@ -228,6 +267,9 @@ final class AcfFieldCatalog
         string $layout = '',
         string $layoutKey = '',
         string $layoutLabel = '',
+        string $cloneKey = '',
+        string $cloneLabel = '',
+        string $cloneDisplay = '',
     ): array {
         $name  = (string) ($field['name'] ?? '');
         $label = (string) ($field['label'] ?? '');
@@ -251,7 +293,79 @@ final class AcfFieldCatalog
                 $flexKey,
                 $layout,
                 $layoutKey,
-                $layoutLabel
+                $layoutLabel,
+                $cloneKey,
+                $cloneLabel,
+                $cloneDisplay
+            ) as $definition) {
+                $collected[] = $definition;
+            }
+        }
+
+        return $collected;
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @param list<string>         $ancestorKeys
+     * @param list<string>         $ancestorNames
+     * @param list<string>         $ancestorLabels
+     * @return list<FieldDefinition>
+     */
+    private function collectClone(
+        array $field,
+        array $ancestorKeys,
+        array $ancestorNames,
+        array $ancestorLabels,
+        string $repeaterKey,
+        string $flexKey,
+        string $layout,
+        string $layoutKey,
+        string $layoutLabel
+    ): array {
+        $key = (string) ($field['key'] ?? '');
+        if ($key === '' || !str_starts_with($key, 'field_')) {
+            return array();
+        }
+
+        $name    = (string) ($field['name'] ?? '');
+        $label   = (string) ($field['label'] ?? '');
+        $display = (string) ($field['display'] ?? 'seamless');
+        if ($display !== 'group') {
+            $display = 'seamless';
+        }
+        if ($label === '') {
+            $label = $name !== '' ? $name : $key;
+        }
+
+        $nextKeys   = array_merge($ancestorKeys, array($key));
+        $nextNames  = array_merge($ancestorNames, array($name));
+        $nextLabels = array_merge($ancestorLabels, array($label));
+        $collected  = array();
+
+        foreach ($this->subFields($field) as $child) {
+            $childType = (string) ($child['type'] ?? '');
+            if (
+                $childType === FieldRef::CONTAINER_CLONE
+                || $childType === FieldRef::CONTAINER_REPEATER
+                || $childType === FieldRef::CONTAINER_FLEXIBLE
+            ) {
+                continue;
+            }
+
+            foreach ($this->collect(
+                $child,
+                $nextKeys,
+                $nextNames,
+                $nextLabels,
+                $repeaterKey,
+                $flexKey,
+                $layout,
+                $layoutKey,
+                $layoutLabel,
+                $key,
+                $label,
+                $display
             ) as $definition) {
                 $collected[] = $definition;
             }
@@ -331,11 +445,14 @@ final class AcfFieldCatalog
         string $layout = '',
         string $layoutKey = '',
         string $layoutLabel = '',
+        string $cloneKey = '',
+        string $cloneLabel = '',
+        string $cloneDisplay = '',
     ): ?FieldDefinition {
-        $key  = (string) ($field['key'] ?? '');
-        $type = (string) ($field['type'] ?? '');
+        $postedKey = (string) ($field['key'] ?? '');
+        $type      = (string) ($field['type'] ?? '');
 
-        if ($key === '' || !str_starts_with($key, 'field_')) {
+        if ($postedKey === '' || !str_starts_with($postedKey, 'field_')) {
             return null;
         }
 
@@ -344,6 +461,11 @@ final class AcfFieldCatalog
         }
 
         if ($type === 'select' && !empty($field['multiple'])) {
+            return null;
+        }
+
+        $originalKey = $this->originalFieldKey($field);
+        if ($originalKey === '' || !str_starts_with($originalKey, 'field_')) {
             return null;
         }
 
@@ -356,21 +478,23 @@ final class AcfFieldCatalog
         $container  = '';
 
         if ($ancestorKeys !== array()) {
-            $leafLabel  = $label !== '' ? $label : ($name !== '' ? $name : $key);
-            $path       = array_merge($ancestorKeys, array($key));
+            $leafLabel  = $this->leafLabel($field, $cloneKey, $label, $name, $originalKey);
+            $path       = array_merge($ancestorKeys, array($postedKey));
             $pathNames  = array_merge($ancestorNames, array($name));
             $pathLabels = array_merge($ancestorLabels, array($leafLabel));
             if ($flexKey !== '') {
                 $container = FieldRef::CONTAINER_FLEXIBLE;
             } elseif ($repeaterKey !== '') {
                 $container = FieldRef::CONTAINER_REPEATER;
+            } elseif ($cloneKey !== '') {
+                $container = FieldRef::CONTAINER_CLONE;
             } else {
                 $container = FieldRef::CONTAINER_GROUP;
             }
         }
 
         return new FieldDefinition(
-            $key,
+            $originalKey,
             $name,
             $label,
             $type,
@@ -383,7 +507,48 @@ final class AcfFieldCatalog
             $layout,
             $layoutKey,
             $layoutLabel,
+            $cloneKey,
+            $cloneLabel,
+            $cloneDisplay
         );
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function originalFieldKey(array $field): string
+    {
+        $backup = (string) ($field['__key'] ?? '');
+        if ($backup !== '' && str_starts_with($backup, 'field_')) {
+            return $backup;
+        }
+
+        return (string) ($field['key'] ?? '');
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function clonedFrom(array $field): string
+    {
+        $clone = (string) ($field['_clone'] ?? '');
+
+        return $clone !== '' && str_starts_with($clone, 'field_') ? $clone : '';
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function leafLabel(array $field, string $cloneKey, string $label, string $name, string $key): string
+    {
+        if ($cloneKey !== '') {
+            $original = trim((string) ($field['__label'] ?? ''));
+            if ($original !== '') {
+                return $original;
+            }
+        }
+
+        return $label !== '' ? $label : ($name !== '' ? $name : $key);
     }
 
     /**
@@ -427,7 +592,7 @@ final class AcfFieldCatalog
     {
         if (is_callable($this->source)) {
             $loaded = ($this->source)($postType);
-            return is_array($loaded) ? $this->onlyMaps($loaded) : array();
+            return is_array($loaded) ? $this->rehydrateSeamlessClones($this->onlyMaps($loaded)) : array();
         }
 
         if (!function_exists('acf_get_field_groups') || !function_exists('acf_get_fields')) {
@@ -452,7 +617,108 @@ final class AcfFieldCatalog
             }
         }
 
-        return $fields;
+        return $this->rehydrateSeamlessClones($fields);
+    }
+
+    /**
+     * Fold ACF Seamless Clone children back under their Clone container.
+     *
+     * ACF's acf/get_fields splice replaces the Clone with its children.
+     * Those children carry _clone and must not be treated as ordinary fields.
+     *
+     * @param list<array<string, mixed>> $fields
+     * @return list<array<string, mixed>>
+     */
+    private function rehydrateSeamlessClones(array $fields, bool $insideClone = false): array
+    {
+        $out     = array();
+        $pending = array();
+
+        foreach ($fields as $field) {
+            if (!is_array($field)) {
+                continue;
+            }
+
+            $type     = (string) ($field['type'] ?? '');
+            $cloneKey = $this->clonedFrom($field);
+            if ($cloneKey !== '' && $type !== FieldRef::CONTAINER_CLONE && !$insideClone) {
+                if (!isset($pending[$cloneKey])) {
+                    $pending[$cloneKey] = array();
+                }
+                $pending[$cloneKey][] = $field;
+                continue;
+            }
+
+            $childInsideClone = $insideClone || $type === FieldRef::CONTAINER_CLONE;
+
+            if (isset($field['sub_fields']) && is_array($field['sub_fields'])) {
+                $field['sub_fields'] = $this->rehydrateSeamlessClones(
+                    $this->onlyMaps($field['sub_fields']),
+                    $childInsideClone
+                );
+            }
+
+            if (isset($field['layouts']) && is_array($field['layouts'])) {
+                foreach ($field['layouts'] as $layoutName => $layout) {
+                    if (!is_array($layout) || !isset($layout['sub_fields']) || !is_array($layout['sub_fields'])) {
+                        continue;
+                    }
+
+                    $field['layouts'][$layoutName]['sub_fields'] = $this->rehydrateSeamlessClones(
+                        $this->onlyMaps($layout['sub_fields']),
+                        $childInsideClone
+                    );
+                }
+            }
+
+            $out[] = $field;
+        }
+
+        foreach ($pending as $cloneKey => $children) {
+            $out[] = $this->syntheticCloneContainer($cloneKey, $children);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $children
+     * @return array<string, mixed>
+     */
+    private function syntheticCloneContainer(string $cloneKey, array $children): array
+    {
+        $first = $children[0] ?? array();
+        $name  = '';
+        $label = '';
+
+        if (function_exists('acf_get_field')) {
+            $clone = acf_get_field($cloneKey);
+            if (is_array($clone)) {
+                $name  = (string) ($clone['name'] ?? '');
+                $label = (string) ($clone['label'] ?? '');
+            }
+        }
+
+        if ($name === '') {
+            $backup = (string) ($first['__name'] ?? '');
+            $child  = (string) ($first['name'] ?? '');
+            if ($backup !== '' && $child !== '' && str_starts_with($child, $backup . '_')) {
+                $name = $backup;
+            }
+        }
+
+        if ($label === '') {
+            $label = $name !== '' ? $name : $cloneKey;
+        }
+
+        return array(
+            'key'        => $cloneKey,
+            'name'       => $name,
+            'label'      => $label,
+            'type'       => FieldRef::CONTAINER_CLONE,
+            'display'    => 'seamless',
+            'sub_fields' => $children,
+        );
     }
 
     /**

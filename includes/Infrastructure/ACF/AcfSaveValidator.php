@@ -114,7 +114,8 @@ final class AcfSaveValidator
                 $nestedMaps['names'],
                 $nestedMaps['repeater_keys'],
                 $nestedMaps['flex_keys'] ?? array(),
-                $nestedMaps['layouts'] ?? array()
+                $nestedMaps['layouts'] ?? array(),
+                $nestedMaps['clone_keys'] ?? array()
             )
         );
 
@@ -184,10 +185,10 @@ final class AcfSaveValidator
 
         foreach ($rules as $rule) {
             foreach ($rule->conditions as $condition) {
-                $keys[$condition->field->key] = true;
+                $keys[$condition->field->resolutionId()] = true;
             }
             foreach ($rule->validations as $validation) {
-                $keys[$validation->field->key] = true;
+                $keys[$validation->field->resolutionId()] = true;
             }
         }
 

@@ -32,12 +32,17 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertTrue(EditorAuditIssues::isClickable($issues[0]));
 
         $html = EditorAuditIssues::classicNoticeHtml($issues);
-        $this->assertStringContainsString('ContentGuard', $html);
+        $this->assertStringContainsString('notice notice-error', $html);
+        $this->assertStringContainsString('ContentGuard · Blocking', $html);
         $this->assertStringContainsString('Recipe Description', $html);
         $this->assertStringContainsString('Description is required', $html);
         $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
-        $this->assertStringNotContainsString('blocking issues', $html);
+        $this->assertStringNotContainsString('contentguard-audit-blockers__count', $html);
         $this->assertStringNotContainsString('[object Object]', $html);
+        $this->assertSame(
+            "ContentGuard · Blocking\nRecipe Description — Description is required",
+            EditorAuditIssues::noticeText($issues)
+        );
     }
 
     public function testMultipleBlockingFindingsKeepIndependentMessagesAndFields(): void
@@ -82,6 +87,7 @@ final class EditorAuditIssuesTest extends TestCase
         );
 
         $html = EditorAuditIssues::noticeHtml($issues);
+        $this->assertStringContainsString('ContentGuard · Blocking', $html);
         $this->assertStringContainsString('3 blocking issues', $html);
         $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
         $this->assertStringContainsString('data-contentguard-field="field_yield"', $html);

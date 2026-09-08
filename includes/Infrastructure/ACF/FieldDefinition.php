@@ -33,7 +33,15 @@ final class FieldDefinition
         public readonly string $layout = '',
         public readonly string $layoutKey = '',
         public readonly string $layoutLabel = '',
+        public readonly string $clone = '',
+        public readonly string $cloneLabel = '',
+        public readonly string $cloneDisplay = '',
     ) {
+    }
+
+    public function resolutionId(): string
+    {
+        return FieldRef::resolutionIdFor($this->clone, $this->key);
     }
 
     public function breadcrumb(): string
@@ -74,7 +82,8 @@ final class FieldDefinition
             $this->breadcrumb(),
             $this->path,
             $this->container,
-            $this->layout
+            $this->layout,
+            $this->clone
         );
     }
 
@@ -115,6 +124,17 @@ final class FieldDefinition
             }
             if ($this->layoutLabel !== '') {
                 $data['layout_label'] = $this->layoutLabel;
+            }
+        }
+
+        if ($this->clone !== '') {
+            $data['clone']          = $this->clone;
+            $data['resolution_id']  = $this->resolutionId();
+            if ($this->cloneLabel !== '') {
+                $data['clone_label'] = $this->cloneLabel;
+            }
+            if ($this->cloneDisplay !== '') {
+                $data['clone_display'] = $this->cloneDisplay;
             }
         }
 

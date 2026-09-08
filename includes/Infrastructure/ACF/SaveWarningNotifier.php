@@ -30,6 +30,7 @@ namespace ContentGuard\Infrastructure\ACF;
 use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\EditorFieldNavigation;
+use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
 use ContentGuard\Domain\EvaluationResult;
@@ -142,13 +143,20 @@ final class SaveWarningNotifier
     }
 
     /**
-     * @return array{messages: list<string>, warnings: list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>}
+     * @return array{messages: list<string>, warnings: list<array{text: string, message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>, html: string, text: string}
      */
     public function payloadForPost(int $postId): array
     {
+        $warnings = $this->warningsForPost($postId);
+
         return array(
-            'messages' => $this->messagesForPost($postId),
-            'warnings' => $this->warningsForPost($postId),
+            'messages' => array_values(array_map(
+                static fn (array $warning): string => $warning['text'],
+                $warnings
+            )),
+            'warnings' => $warnings,
+            'html'     => self::noticeHtml($warnings),
+            'text'     => self::noticeText($warnings),
         );
     }
 
@@ -193,6 +201,8 @@ final class SaveWarningNotifier
                 'messages' => $messages,
                 'warnings' => $warnings,
                 'restPath' => self::REST_NAMESPACE . '/warnings/' . $postId,
+                'html'     => self::noticeHtml($warnings),
+                'text'     => self::noticeText($warnings),
                 'i18n'     => array(
                     'warning'   => __('Warning', 'contentguard'),
                     'goToField' => __('Go to field: %s', 'contentguard'),
@@ -218,11 +228,12 @@ final class SaveWarningNotifier
             return;
         }
 
-        foreach ($this->warningsForPost($postId) as $warning) {
-            echo '<div class="notice notice-warning is-dismissible"><p>'
-                . self::classicNoticeHtml($warning)
-                . '</p></div>';
+        $html = self::classicNoticeHtml($this->warningsForPost($postId));
+        if ($html === '') {
+            return;
         }
+
+        echo function_exists('wp_kses_post') ? wp_kses_post($html) : $html;
     }
 
     /**
@@ -321,7 +332,7 @@ final class SaveWarningNotifier
     }
 
     /**
-     * Human-readable notice text. Never the structured warning object.
+     * Human-readable issue line. Never the structured warning object.
      *
      * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
      */
@@ -330,48 +341,107 @@ final class SaveWarningNotifier
         $label   = trim((string) ($warning['label'] ?? ''));
         $message = trim((string) ($warning['message'] ?? ''));
         $text    = trim((string) ($warning['text'] ?? ''));
-        $prefix  = function_exists('__') ? __('Warning', 'contentguard') : 'Warning';
+        $line    = EditorNoticePresentation::issueText($label, $message);
 
-        if ($label !== '' && $message !== '') {
-            return $prefix . ': ' . $label . ' — ' . $message;
+        return $line !== '' ? $line : $text;
+    }
+
+    /**
+     * @param array{text?: string, message?: string, label?: string, fieldKey?: string}|list<array{text?: string, message?: string, label?: string, fieldKey?: string}> $warningOrWarnings
+     */
+    public static function classicNoticeHtml(array $warningOrWarnings): string
+    {
+        $inner = self::noticeHtml(self::normalizeWarningList($warningOrWarnings));
+        if ($inner === '') {
+            return '';
         }
 
-        if ($text !== '') {
-            return $text;
+        return '<div class="notice notice-warning is-dismissible contentguard-editor-warnings-notice">' . $inner . '</div>';
+    }
+
+    /**
+     * @param list<array{text?: string, message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>}> $warnings
+     */
+    public static function noticeHtml(array $warnings): string
+    {
+        $items = array();
+        foreach ($warnings as $warning) {
+            if (!is_array($warning)) {
+                continue;
+            }
+
+            $items[] = self::itemHtml($warning);
         }
 
-        return $message !== '' ? $message : $label;
+        return EditorNoticePresentation::noticeHtml(EditorNoticePresentation::SEVERITY_WARNING, $items);
+    }
+
+    /**
+     * @param list<array{text?: string, message?: string, label?: string, fieldKey?: string}> $warnings
+     */
+    public static function noticeText(array $warnings): string
+    {
+        $lines = array();
+        foreach ($warnings as $warning) {
+            if (!is_array($warning)) {
+                continue;
+            }
+
+            $line = self::displayText($warning);
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_WARNING, $lines);
     }
 
     /**
      * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
      */
-    public static function classicNoticeHtml(array $warning): string
+    public static function itemHtml(array $warning): string
     {
         $label    = trim((string) ($warning['label'] ?? ''));
         $message  = (string) ($warning['message'] ?? '');
         $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
+        $text     = self::displayText($warning);
 
         $layout = EditorFieldNavigation::layoutFromItem($warning);
         $rows   = EditorFieldNavigation::affectedRowsFromItem($warning);
 
         if ($fieldKey === '' || $label === '') {
-            return self::escapeHtml(self::displayText($warning));
+            return self::escapeHtml($text);
         }
 
-        $warningLabel = function_exists('__') ? __('Warning', 'contentguard') : 'Warning';
-        $primaryRow   = EditorFieldNavigation::primaryDisplayRow($rows);
-        $aria         = count($rows) === 1
+        $primaryRow = EditorFieldNavigation::primaryDisplayRow($rows);
+        $aria       = count($rows) === 1
             ? EditorFieldNavigation::goToLayoutRowAria($label, $primaryRow)
             : EditorFieldNavigation::goToFieldAria($label);
 
-        return self::escapeHtml($warningLabel) . ': <button type="button" class="contentguard-warning-field" '
+        return '<button type="button" class="contentguard-warning-field" '
             . EditorFieldNavigation::fieldTriggerAttributes($fieldKey, $layout, $primaryRow)
             . ' aria-label="' . self::escapeAttr($aria) . '">'
             . self::escapeHtml($label)
             . '</button> — '
             . self::escapeHtml($message !== '' ? $message : 'Content warning.')
             . EditorFieldNavigation::rowButtonsHtml($fieldKey, $label, $layout, $rows);
+    }
+
+    /**
+     * @param array<string, mixed> $warningOrWarnings
+     * @return list<array<string, mixed>>
+     */
+    private static function normalizeWarningList(array $warningOrWarnings): array
+    {
+        if ($warningOrWarnings === array()) {
+            return array();
+        }
+
+        if (array_is_list($warningOrWarnings) && isset($warningOrWarnings[0]) && is_array($warningOrWarnings[0])) {
+            return $warningOrWarnings;
+        }
+
+        return array($warningOrWarnings);
     }
 
     public static function isPublishedStatus(string $status): bool
@@ -427,7 +497,8 @@ final class SaveWarningNotifier
                 $maps['names'],
                 $maps['repeater_keys'],
                 $maps['flex_keys'] ?? array(),
-                $maps['layouts'] ?? array()
+                $maps['layouts'] ?? array(),
+                $maps['clone_keys'] ?? array()
             )
         );
 
@@ -544,10 +615,10 @@ final class SaveWarningNotifier
 
         foreach ($rules as $rule) {
             foreach ($rule->conditions as $condition) {
-                $keys[$condition->field->key] = true;
+                $keys[$condition->field->resolutionId()] = true;
             }
             foreach ($rule->validations as $validation) {
-                $keys[$validation->field->key] = true;
+                $keys[$validation->field->resolutionId()] = true;
             }
         }
 

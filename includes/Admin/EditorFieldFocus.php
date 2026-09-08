@@ -118,7 +118,10 @@ final class EditorFieldFocus
         }
 
         foreach ((new AcfFieldCatalog())->fieldsForPostType($postType) as $field) {
-            if ($field->key === $fieldKey && EditorFieldNavigation::isSafeLayoutName($field->layout)) {
+            if (
+                $field->resolutionId() === $fieldKey
+                && EditorFieldNavigation::isSafeLayoutName($field->layout)
+            ) {
                 return $field->layout;
             }
         }

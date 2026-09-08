@@ -55,7 +55,8 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
         $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
         $this->assertStringContainsString('They cannot be used in WHEN', $html);
-        $this->assertStringContainsString('Clone fields are not supported yet.', $html);
+        $this->assertStringContainsString('Top-level Clone fields can be used in WHEN.', $html);
+        $this->assertStringNotContainsString('Clone fields are not supported yet.', $html);
         $this->assertStringNotContainsString('Flexible Content and Clone fields are not supported yet.', $html);
     }
 
@@ -472,6 +473,104 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringNotContainsString('greater_than', $match[1]);
         $this->assertStringContainsString('value="equals"', $match[1]);
         $this->assertStringContainsString('value="is_empty"', $match[1]);
+    }
+
+    public function testCloneFieldsAreSelectableAndDistinguishableAndRespectWhenRules(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 12,
+            'name'        => 'Shared title',
+            'postType'    => 'page',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
+                )),
+            ),
+        ));
+
+        $editor = RuleEditorState::fromRule($rule);
+        $html   = $this->renderEditor(
+            new RuleEditorState(
+                $editor->id,
+                $editor->name,
+                $editor->postType,
+                $editor->severity,
+                $editor->status,
+                $editor->message,
+                array(
+                    array(
+                        'id'        => '',
+                        'field_key' => '',
+                        'operator'  => '',
+                        'operand'   => '',
+                    ),
+                ),
+                $editor->validations
+            ),
+            array(
+                array(
+                    'key'           => 'field_title',
+                    'name'          => 'title',
+                    'label'         => 'Title',
+                    'type'          => 'text',
+                ),
+                array(
+                    'key'           => 'field_title',
+                    'name'          => 'shared_a_title',
+                    'label'         => 'Title',
+                    'type'          => 'text',
+                    'path'          => array('field_clone_a', 'field_clone_a_field_title'),
+                    'container'     => 'clone',
+                    'breadcrumb'    => 'Shared Content → Title',
+                    'group_label'   => 'Shared Content',
+                    'clone'         => 'field_clone_a',
+                    'resolution_id' => 'field_clone_a_field_title',
+                ),
+                array(
+                    'key'           => 'field_title',
+                    'name'          => 'title',
+                    'label'         => 'Title',
+                    'type'          => 'text',
+                    'path'          => array('field_clone_b', 'field_title'),
+                    'container'     => 'clone',
+                    'breadcrumb'    => 'Hero Clone → Title',
+                    'group_label'   => 'Hero Clone',
+                    'clone'         => 'field_clone_b',
+                    'resolution_id' => 'field_clone_b_field_title',
+                ),
+                array(
+                    'key'           => 'field_title',
+                    'name'          => 'row_shared_title',
+                    'label'         => 'Title',
+                    'type'          => 'text',
+                    'path'          => array('field_item_list', 'field_clone_rep', 'field_clone_rep_field_title'),
+                    'container'     => 'repeater',
+                    'breadcrumb'    => 'Item List → Row Shared → Title',
+                    'group_label'   => 'Item List → Row Shared',
+                    'clone'         => 'field_clone_rep',
+                    'resolution_id' => 'field_clone_rep_field_title',
+                ),
+            )
+        );
+
+        $this->assertSame(
+            'field_clone_a_field_title',
+            RuleEditorState::fromRule($rule)->validations[0]['field_key']
+        );
+        $this->assertStringContainsString('value="field_clone_a_field_title"', $html);
+        $this->assertStringContainsString('value="field_clone_b_field_title"', $html);
+        $this->assertStringContainsString('Shared Content → Title', $html);
+        $this->assertStringContainsString('Hero Clone → Title', $html);
+        $this->assertStringNotContainsString('field_clone_a"', $html);
+
+        if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('WHEN field select missing');
+        }
+        $this->assertStringContainsString('field_clone_a_field_title', $match[1]);
+        $this->assertStringContainsString('field_clone_b_field_title', $match[1]);
+        $this->assertStringNotContainsString('field_clone_rep_field_title', $match[1]);
+        $this->assertStringContainsString('Shared Content → Title', $match[1]);
     }
 
     /**

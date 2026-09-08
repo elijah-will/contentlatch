@@ -6,7 +6,23 @@
   }
 
   function isSafeFieldKey(fieldKey) {
-    return typeof fieldKey === "string" && /^field_[A-Za-z0-9]+$/.test(fieldKey);
+    return typeof fieldKey === "string" && /^field_[A-Za-z0-9_]+$/.test(fieldKey);
+  }
+
+  function parseResolutionId(id) {
+    if (typeof id !== "string") {
+      return { clone: "", key: "" };
+    }
+    var pos = id.lastIndexOf("_field_");
+    if (pos <= 0) {
+      return { clone: "", key: id };
+    }
+    var clone = id.slice(0, pos);
+    var key = id.slice(pos + 1);
+    if (!isSafeFieldKey(clone) || !isSafeFieldKey(key)) {
+      return { clone: "", key: id };
+    }
+    return { clone: clone, key: key };
   }
 
   function isSafeLayout(layout) {
@@ -51,14 +67,62 @@
     return rows;
   }
 
-  function findFieldInLayout(fieldKey, layout) {
+  function findClonedField(scope, originalKey, clone) {
+    if (!isSafeFieldKey(originalKey) || !isSafeFieldKey(clone)) {
+      return null;
+    }
+
+    var wrappers = scope.querySelectorAll('.acf-field[data-key="' + clone + '"]');
+    for (var i = 0; i < wrappers.length; i++) {
+      if (wrappers[i].closest(".acf-clone")) {
+        continue;
+      }
+      var nested = firstRealField(wrappers[i].querySelectorAll('.acf-field[data-key="' + originalKey + '"]'));
+      if (nested) {
+        return nested;
+      }
+    }
+
+    var composite = clone + "_" + originalKey;
+    var inputs = scope.querySelectorAll("input[name], textarea[name], select[name]");
+    for (var j = 0; j < inputs.length; j++) {
+      if (inputs[j].closest(".acf-clone")) {
+        continue;
+      }
+      var name = inputs[j].getAttribute("name") || "";
+      if (
+        name.indexOf("[" + clone + "][" + composite + "]") !== -1 ||
+        name.indexOf("[" + clone + "][" + originalKey + "]") !== -1
+      ) {
+        var field = inputs[j].closest(".acf-field");
+        if (field && !field.closest(".acf-clone")) {
+          return field;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function findFieldInScope(scope, fieldKey, clone) {
+    if (clone) {
+      var cloned = findClonedField(scope, fieldKey, clone);
+      if (cloned) {
+        return cloned;
+      }
+    }
+
+    return firstRealField(scope.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+  }
+
+  function findFieldInLayout(fieldKey, layout, clone) {
     var layouts = document.querySelectorAll('.layout[data-layout="' + layout + '"]');
     for (var i = 0; i < layouts.length; i++) {
       if (!isRealLayout(layouts[i])) {
         continue;
       }
 
-      var match = firstRealField(layouts[i].querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+      var match = findFieldInScope(layouts[i], fieldKey, clone);
       if (match) {
         return match;
       }
@@ -81,7 +145,7 @@
     return field ? field.closest(".layout") : null;
   }
 
-  function findFieldAtDisplayRow(fieldKey, layout, displayRow) {
+  function findFieldAtDisplayRow(fieldKey, layout, displayRow, clone) {
     var seed = seedLayout(fieldKey, layout);
     if (!seed) {
       return null;
@@ -102,26 +166,39 @@
       return null;
     }
 
-    return firstRealField(row.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+    return findFieldInScope(row, fieldKey, clone);
   }
 
   function findField(fieldKey, layout, displayRow) {
+    var parsed = parseResolutionId(fieldKey);
+    var clone = parsed.clone;
+    if (clone) {
+      fieldKey = parsed.key;
+    }
+
     if (!isSafeFieldKey(fieldKey)) {
       return null;
     }
 
     displayRow = sanitizeDisplayRow(displayRow);
     if (displayRow > 0) {
-      var targeted = findFieldAtDisplayRow(fieldKey, layout, displayRow);
+      var targeted = findFieldAtDisplayRow(fieldKey, layout, displayRow, clone);
       if (targeted) {
         return targeted;
       }
     }
 
     if (isSafeLayout(layout)) {
-      var scoped = findFieldInLayout(fieldKey, layout);
+      var scoped = findFieldInLayout(fieldKey, layout, clone);
       if (scoped) {
         return scoped;
+      }
+    }
+
+    if (clone) {
+      var cloned = findClonedField(document, fieldKey, clone);
+      if (cloned) {
+        return cloned;
       }
     }
 

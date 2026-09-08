@@ -31,6 +31,8 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('(every " + layoutLabel + " row)', $js);
         $this->assertStringContainsString('fieldsForSelect', $js);
         $this->assertStringContainsString('field.container !== "repeater" && field.container !== "flexible_content"', $js);
+        $this->assertStringContainsString('fieldOptionId', $js);
+        $this->assertStringContainsString('resolution_id', $js);
         $this->assertStringContainsString('data-row', $js);
         $this->assertStringNotContainsString('field_123.field_456', $js);
     }

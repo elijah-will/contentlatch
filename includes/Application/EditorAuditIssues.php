@@ -206,12 +206,7 @@ final class EditorAuditIssues
             return '';
         }
 
-        $lines = array('ContentGuard');
-        $count = count($issues);
-        if ($count > 1) {
-            $lines[] = sprintf('%d blocking issues', $count);
-        }
-
+        $lines = array();
         foreach ($issues as $issue) {
             $line = self::issueText($issue);
             if ($line !== '') {
@@ -219,7 +214,7 @@ final class EditorAuditIssues
             }
         }
 
-        return implode("\n", $lines);
+        return EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_BLOCKING, $lines);
     }
 
     /**
@@ -230,11 +225,7 @@ final class EditorAuditIssues
         $label   = trim((string) ($issue['label'] ?? ''));
         $message = trim((string) ($issue['message'] ?? ''));
 
-        if ($label !== '' && $message !== '') {
-            return $label . ' — ' . $message;
-        }
-
-        return $message !== '' ? $message : $label;
+        return EditorNoticePresentation::issueText($label, $message);
     }
 
     /**
@@ -246,21 +237,12 @@ final class EditorAuditIssues
             return '';
         }
 
-        $html  = '<div class="contentguard-audit-blockers">';
-        $html .= '<p class="contentguard-audit-blockers__title">' . self::escapeHtml('ContentGuard') . '</p>';
-        if (count($issues) > 1) {
-            $html .= '<p class="contentguard-audit-blockers__count">'
-                . self::escapeHtml(sprintf('%d blocking issues', count($issues)))
-                . '</p>';
-        }
-
-        $html .= '<ul class="contentguard-audit-blockers__list">';
+        $items = array();
         foreach ($issues as $issue) {
-            $html .= '<li>' . self::issueHtml($issue) . '</li>';
+            $items[] = self::issueHtml($issue);
         }
-        $html .= '</ul></div>';
 
-        return $html;
+        return EditorNoticePresentation::noticeHtml(EditorNoticePresentation::SEVERITY_BLOCKING, $items);
     }
 
     /**

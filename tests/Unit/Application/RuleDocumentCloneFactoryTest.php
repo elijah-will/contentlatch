@@ -1,0 +1,166 @@
+<?php
+/**
+ * @package ContentGuard
+ */
+
+declare(strict_types=1);
+
+namespace ContentGuard\Tests\Unit\Application;
+
+use ContentGuard\Application\RuleDocumentFactory;
+use ContentGuard\Application\RuleDocumentValidator;
+use ContentGuard\Domain\Exception\InvalidRuleException;
+use ContentGuard\Tests\Support\AcfCloneFixtures;
+use PHPUnit\Framework\TestCase;
+
+final class RuleDocumentCloneFactoryTest extends TestCase
+{
+    public function testCloneFieldPersistsOriginalKeyAndCloneMetadata(): void
+    {
+        $rule = $this->factory()->fromAdminInput(array(
+            'name'      => 'Shared title required',
+            'post_type' => 'page',
+            'status'    => 'active',
+            'severity'  => 'fail',
+            'validations' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::cloneATitlePosted(),
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $field = $rule->validations[0]->field;
+        $this->assertSame(1, $rule->schemaVersion);
+        $this->assertSame(AcfCloneFixtures::TITLE, $field->key);
+        $this->assertSame(AcfCloneFixtures::CLONE_A, $field->clone);
+        $this->assertSame(AcfCloneFixtures::cloneATitlePosted(), $field->resolutionId());
+        $this->assertSame('Shared Content → Title', $field->label);
+        $this->assertSame(
+            array(AcfCloneFixtures::CLONE_A, AcfCloneFixtures::cloneATitlePosted()),
+            $field->path
+        );
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame(1, $loaded->schemaVersion);
+        $this->assertSame(AcfCloneFixtures::CLONE_A, $loaded->validations[0]->field->clone);
+        $this->assertArrayNotHasKey('clone', $this->factory()->fromAdminInput(array(
+            'name'      => 'Direct title',
+            'post_type' => 'page',
+            'validations' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ))->validations[0]->field->toArray());
+    }
+
+    public function testTopLevelCloneMayBeUsedAsWhenField(): void
+    {
+        $rule = $this->factory()->fromAdminInput(array(
+            'name'      => 'When shared title',
+            'post_type' => 'page',
+            'conditions' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::cloneATitlePosted(),
+                    'operator'  => 'is_not_empty',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $this->assertSame(AcfCloneFixtures::CLONE_A, $rule->conditions[0]->field->clone);
+        $this->assertSame(AcfCloneFixtures::TITLE, $rule->validations[0]->field->key);
+        $this->assertSame('', $rule->validations[0]->field->clone);
+    }
+
+    public function testRepeaterAndFlexibleCloneChildrenCannotBeWhenFields(): void
+    {
+        $factory = $this->factory();
+
+        try {
+            $factory->fromAdminInput(array(
+                'name'      => 'Bad repeater when',
+                'post_type' => 'page',
+                'conditions' => array(
+                    array(
+                        'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
+                            AcfCloneFixtures::CLONE_REP,
+                            AcfCloneFixtures::TITLE
+                        ),
+                        'operator'  => 'is_empty',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => AcfCloneFixtures::TITLE,
+                        'type'      => 'required',
+                    ),
+                ),
+            ));
+            $this->fail('Expected repeater WHEN rejection');
+        } catch (InvalidRuleException $exception) {
+            $this->assertStringContainsString('Repeater fields cannot be used in WHEN', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Flexible Content fields cannot be used in WHEN conditions.');
+        $factory->fromAdminInput(array(
+            'name'      => 'Bad flex when',
+            'post_type' => 'page',
+            'conditions' => array(
+                array(
+                    'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
+                        AcfCloneFixtures::CLONE_FLEX,
+                        AcfCloneFixtures::TITLE
+                    ),
+                    'operator'  => 'is_empty',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+    }
+
+    public function testArbitraryClonePathCannotBeSupplied(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->factory()->fromAdminInput(array(
+            'name'      => 'Forged path',
+            'post_type' => 'page',
+            'validations' => array(
+                array(
+                    'field_key' => 'field_not_in_catalog',
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+    }
+
+    private function factory(): RuleDocumentFactory
+    {
+        $catalog = AcfCloneFixtures::pageCatalog();
+
+        return RuleDocumentFactory::v1(
+            static fn (): array => array('page' => 'Page'),
+            static function (string $postType) use ($catalog): array {
+                $fields = array();
+                foreach ($catalog->fieldsForPostType($postType) as $field) {
+                    $fields[] = $field->toCatalogArray();
+                }
+
+                return $fields;
+            }
+        );
+    }
+}

@@ -16,7 +16,13 @@ final class EditorFieldScriptTest extends TestCase
         $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-field.js');
 
         $this->assertStringContainsString('.acf-field[data-key="', $js);
-        $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
+        $this->assertStringContainsString('field_[A-Za-z0-9_]+', $js);
+        $this->assertStringContainsString('parseResolutionId', $js);
+        $this->assertStringContainsString('findClonedField', $js);
+        $this->assertStringContainsString('lastIndexOf("_field_")', $js);
+        $this->assertStringContainsString('[" + clone + "][" + composite + "]', $js);
+        $this->assertStringContainsString('[" + clone + "][" + originalKey + "]', $js);
+        $this->assertStringNotContainsString('acfe-modal', $js);
         $this->assertStringContainsString('acf.addAction', $js);
         $this->assertStringContainsString('prefers-reduced-motion', $js);
         $this->assertStringContainsString('aria-live', $js);

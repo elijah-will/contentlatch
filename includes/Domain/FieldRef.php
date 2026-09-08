@@ -16,6 +16,7 @@ final class FieldRef
     public const CONTAINER_GROUP     = 'group';
     public const CONTAINER_REPEATER  = 'repeater';
     public const CONTAINER_FLEXIBLE  = 'flexible_content';
+    public const CONTAINER_CLONE     = 'clone';
 
     /**
      * @param list<string> $path Root-to-leaf ACF field keys. Empty means top-level.
@@ -27,12 +28,55 @@ final class FieldRef
         public readonly array $path = array(),
         public readonly string $container = '',
         public readonly string $layout = '',
+        public readonly string $clone = '',
     ) {
         if ($this->key === '') {
             throw new InvalidRuleException('Field key is required.');
         }
 
         $this->assertPath();
+    }
+
+    /**
+     * Internal lookup id. Uncloned fields stay as the leaf key.
+     */
+    public function resolutionId(): string
+    {
+        return self::resolutionIdFor($this->clone, $this->key);
+    }
+
+    public static function resolutionIdFor(string $clone, string $key): string
+    {
+        return $clone !== '' ? $clone . '_' . $key : $key;
+    }
+
+    /**
+     * @return array{clone: string, key: string}
+     */
+    public static function parseResolutionId(string $id): array
+    {
+        $id = trim($id);
+        $pos = strrpos($id, '_field_');
+        if ($pos === false || $pos < 1) {
+            return array(
+                'clone' => '',
+                'key'   => $id,
+            );
+        }
+
+        $clone = substr($id, 0, $pos);
+        $key   = substr($id, $pos + 1);
+        if (!self::isSafeFieldKey($clone) || !self::isSafeFieldKey($key)) {
+            return array(
+                'clone' => '',
+                'key'   => $id,
+            );
+        }
+
+        return array(
+            'clone' => $clone,
+            'key'   => $key,
+        );
     }
 
     /**
@@ -55,6 +99,10 @@ final class FieldRef
             $data['layout'] = $this->layout;
         }
 
+        if ($this->clone !== '') {
+            $data['clone'] = $this->clone;
+        }
+
         return $data;
     }
 
@@ -70,6 +118,7 @@ final class FieldRef
             self::pathFromArray($data['path'] ?? array()),
             (string) ($data['container'] ?? ''),
             (string) ($data['layout'] ?? ''),
+            (string) ($data['clone'] ?? ''),
         );
     }
 
@@ -106,6 +155,10 @@ final class FieldRef
 
     private function assertPath(): void
     {
+        if ($this->clone !== '') {
+            $this->assertClone();
+        }
+
         if ($this->path === array()) {
             if ($this->container !== '') {
                 throw new InvalidRuleException('Field container requires a path.');
@@ -113,6 +166,10 @@ final class FieldRef
 
             if ($this->layout !== '') {
                 throw new InvalidRuleException('Layout is only valid for Flexible Content fields.');
+            }
+
+            if ($this->clone !== '') {
+                throw new InvalidRuleException('Clone fields require a path.');
             }
 
             return;
@@ -128,7 +185,8 @@ final class FieldRef
             }
         }
 
-        if ($this->path[count($this->path) - 1] !== $this->key) {
+        $last = $this->path[count($this->path) - 1];
+        if ($last !== $this->key && !($this->clone !== '' && $last === $this->resolutionId())) {
             throw new InvalidRuleException('Invalid field path.');
         }
 
@@ -136,8 +194,13 @@ final class FieldRef
             $this->container !== self::CONTAINER_GROUP
             && $this->container !== self::CONTAINER_REPEATER
             && $this->container !== self::CONTAINER_FLEXIBLE
+            && $this->container !== self::CONTAINER_CLONE
         ) {
             throw new InvalidRuleException('Unsupported field container.');
+        }
+
+        if ($this->container === self::CONTAINER_CLONE && $this->clone === '') {
+            throw new InvalidRuleException('Clone fields require clone metadata.');
         }
 
         if ($this->container === self::CONTAINER_FLEXIBLE) {
@@ -153,6 +216,17 @@ final class FieldRef
         }
     }
 
+    private function assertClone(): void
+    {
+        if (!self::isSafeFieldKey($this->clone)) {
+            throw new InvalidRuleException('Invalid clone field.');
+        }
+
+        if ($this->path !== array() && !in_array($this->clone, $this->path, true)) {
+            throw new InvalidRuleException('Clone field must appear in the field path.');
+        }
+    }
+
     public function isRepeaterChild(): bool
     {
         return $this->container === self::CONTAINER_REPEATER;
@@ -163,12 +237,17 @@ final class FieldRef
         return $this->container === self::CONTAINER_FLEXIBLE;
     }
 
+    public function isCloneChild(): bool
+    {
+        return $this->clone !== '';
+    }
+
     public static function isSafeLayoutName(string $layout): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $layout);
     }
 
-    private static function isSafeFieldKey(string $key): bool
+    public static function isSafeFieldKey(string $key): bool
     {
         return (bool) preg_match('/^field_[A-Za-z0-9_]+$/', $key);
     }

@@ -27,7 +27,7 @@ final class RulePresentation
         $parts = array();
         foreach ($rule->conditions as $condition) {
             if ($condition instanceof Condition) {
-                $type    = $fieldTypes[$condition->field->key] ?? null;
+                $type    = $fieldTypes[$condition->field->resolutionId()] ?? $fieldTypes[$condition->field->key] ?? null;
                 $parts[] = self::conditionSummary($condition, is_string($type) ? $type : null);
             }
         }

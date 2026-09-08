@@ -80,7 +80,8 @@ final class ContentAuditService
                     $maps['names'],
                     $maps['repeater_keys'],
                     $maps['flex_keys'] ?? array(),
-                    $maps['layouts'] ?? array()
+                    $maps['layouts'] ?? array(),
+                    $maps['clone_keys'] ?? array()
                 );
             },
             static function (array $ids): void {
@@ -444,10 +445,10 @@ final class ContentAuditService
 
         foreach ($rules as $rule) {
             foreach ($rule->conditions as $condition) {
-                $keys[$condition->field->key] = true;
+                $keys[$condition->field->resolutionId()] = true;
             }
             foreach ($rule->validations as $validation) {
-                $keys[$validation->field->key] = true;
+                $keys[$validation->field->resolutionId()] = true;
             }
         }
 

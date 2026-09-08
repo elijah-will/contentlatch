@@ -2,9 +2,8 @@
 /**
  * Safe finding → ACF field navigation helpers.
  *
- * Targets ACF fields by leaf field key, including Group, Repeater, and
- * Flexible Content children. Row indexes are not placed in URLs. Clone
- * row navigation remains out of scope.
+ * Targets ACF fields by leaf field key, including Group, Repeater,
+ * Flexible Content, and Clone children. Row indexes are not placed in URLs.
  *
  * @package ContentGuard
  */
@@ -13,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+use ContentGuard\Domain\FieldRef;
+
 final class EditorFieldNavigation
 {
     public const QUERY_ARG     = 'contentguard_field';
@@ -20,7 +21,7 @@ final class EditorFieldNavigation
 
     public static function isSafeFieldKey(string $fieldKey): bool
     {
-        return (bool) preg_match('/^field_[A-Za-z0-9]+$/', $fieldKey);
+        return FieldRef::isSafeFieldKey($fieldKey);
     }
 
     public static function isSafeLayoutName(string $layout): bool

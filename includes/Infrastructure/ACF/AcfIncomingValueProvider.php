@@ -39,6 +39,7 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
         private array $repeaterKeys = array(),
         private array $flexKeys = array(),
         private array $layouts = array(),
+        private array $cloneKeys = array(),
     ) {
         $this->payload = is_array($payload) ? $payload : array();
     }
@@ -107,10 +108,11 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
             return array();
         }
 
-        $childName = $this->namesFor($fieldId)[count($path) - 1] ?? '';
-        $instances = array();
+        $childPath  = array_slice($path, $repeaterIndex + 1);
+        $childNames = array_slice($this->namesFor($fieldId), $repeaterIndex + 1);
+        $instances  = array();
         foreach (AcfNestedField::rows($found['value']) as $index => $entry) {
-            $raw = AcfNestedField::rowChild($entry['row'], $fieldId, $childName);
+            $raw = AcfNestedField::walkStored($entry['row'], $childPath, $childNames);
             $instances[] = new FieldInstance(
                 $this->normalizer->normalize($raw, $this->fieldTypes[$fieldId]),
                 array(

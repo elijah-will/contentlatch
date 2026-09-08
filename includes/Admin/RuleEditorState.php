@@ -46,7 +46,7 @@ final class RuleEditorState
         foreach ($rule->conditions as $condition) {
             $conditions[] = array(
                 'id'        => $condition->id,
-                'field_key' => $condition->field->key,
+                'field_key' => $condition->field->resolutionId(),
                 'operator'  => $condition->operator,
                 'operand'   => is_scalar($condition->operand) ? (string) $condition->operand : '',
             );
@@ -58,7 +58,7 @@ final class RuleEditorState
             $values = $validation->params['values'] ?? array();
             $validations[] = array(
                 'id'        => $validation->id,
-                'field_key' => $validation->field->key,
+                'field_key' => $validation->field->resolutionId(),
                 'type'      => $validation->type,
                 'min'       => self::paramString($validation->params['min'] ?? ''),
                 'max'       => self::paramString($validation->params['max'] ?? ''),

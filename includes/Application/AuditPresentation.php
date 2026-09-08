@@ -36,13 +36,19 @@ final class AuditPresentation
         }
 
         foreach ($rule->validations as $validation) {
-            if ($validation instanceof Validation && $validation->field->key === $fieldKey) {
+            if (
+                $validation instanceof Validation
+                && ($validation->field->key === $fieldKey || $validation->field->resolutionId() === $fieldKey)
+            ) {
                 return self::fieldRefLabel($validation->field->label, $validation->field->name, $fieldKey);
             }
         }
 
         foreach ($rule->conditions as $condition) {
-            if ($condition instanceof Condition && $condition->field->key === $fieldKey) {
+            if (
+                $condition instanceof Condition
+                && ($condition->field->key === $fieldKey || $condition->field->resolutionId() === $fieldKey)
+            ) {
                 return self::fieldRefLabel($condition->field->label, $condition->field->name, $fieldKey);
             }
         }

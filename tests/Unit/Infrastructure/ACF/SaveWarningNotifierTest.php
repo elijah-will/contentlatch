@@ -153,8 +153,11 @@ final class SaveWarningNotifierTest extends TestCase
         $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
         $this->assertStringNotContainsString('<button', $html);
         $this->assertStringNotContainsString('data-contentguard-field', $html);
-        $this->assertSame('Warning: Recipe Description — Description is missing', $html);
-        $this->assertSame('Warning: Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
+        $this->assertStringContainsString('notice notice-warning', $html);
+        $this->assertStringContainsString('ContentGuard · Warning', $html);
+        $this->assertStringContainsString('Recipe Description — Description is missing', $html);
+        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $html);
+        $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
         $this->assertStringNotContainsString('[object Object]', $html);
     }
 
@@ -200,14 +203,16 @@ final class SaveWarningNotifierTest extends TestCase
             'fieldKey' => 'field_description',
         ));
 
-        $this->assertStringContainsString('Warning:', $html);
+        $this->assertStringContainsString('ContentGuard · Warning', $html);
+        $this->assertStringContainsString('notice notice-warning', $html);
         $this->assertStringContainsString('<button type="button" class="contentguard-warning-field"', $html);
         $this->assertStringContainsString('aria-label="Go to field: Recipe Description"', $html);
         $this->assertStringContainsString('>Recipe Description</button>', $html);
         $this->assertStringContainsString('— Description is missing', $html);
+        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $html);
         $this->assertStringNotContainsString('class="button"', $html);
         $this->assertStringNotContainsString('[object Object]', $html);
-        $this->assertSame('Warning: Recipe Description — Description is missing', SaveWarningNotifier::displayText(array(
+        $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText(array(
             'text'     => 'Recipe Description: Description is missing',
             'message'  => 'Description is missing',
             'label'    => 'Recipe Description',
@@ -294,20 +299,24 @@ final class SaveWarningNotifierTest extends TestCase
         }
 
         $this->assertSame(
-            'Warning: Recipe Description — Description is missing',
+            'Recipe Description — Description is missing',
             SaveWarningNotifier::displayText($warnings[0])
         );
         $this->assertSame(
-            'Warning: Featured On — Featured On is missing',
+            'Featured On — Featured On is missing',
             SaveWarningNotifier::displayText($warnings[1])
         );
         $this->assertSame(
-            'Warning: Yield — Yield is missing',
+            'Yield — Yield is missing',
             SaveWarningNotifier::displayText($warnings[2])
         );
-        $this->assertStringContainsString('data-contentguard-field="field_description"', SaveWarningNotifier::classicNoticeHtml($warnings[0]));
-        $this->assertStringContainsString('data-contentguard-field="field_featuredon"', SaveWarningNotifier::classicNoticeHtml($warnings[1]));
-        $this->assertStringContainsString('data-contentguard-field="field_yield"', SaveWarningNotifier::classicNoticeHtml($warnings[2]));
+        $grouped = SaveWarningNotifier::classicNoticeHtml($warnings);
+        $this->assertStringContainsString('ContentGuard · Warning', $grouped);
+        $this->assertStringContainsString('3 warnings', $grouped);
+        $this->assertStringContainsString('notice notice-warning', $grouped);
+        $this->assertStringContainsString('data-contentguard-field="field_description"', $grouped);
+        $this->assertStringContainsString('data-contentguard-field="field_featuredon"', $grouped);
+        $this->assertStringContainsString('data-contentguard-field="field_yield"', $grouped);
     }
 
     public function testMultipleWarningsForTheSameFieldKeepTheirOwnMessages(): void
@@ -322,8 +331,11 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertSame('field_description', $items[1]['fieldKey']);
         $this->assertSame('Description is missing', $items[0]['message']);
         $this->assertSame('Description looks thin.', $items[1]['message']);
-        $this->assertSame('Warning: Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
-        $this->assertSame('Warning: Recipe Description — Description looks thin.', SaveWarningNotifier::displayText($items[1]));
+        $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
+        $this->assertSame('Recipe Description — Description looks thin.', SaveWarningNotifier::displayText($items[1]));
+        $grouped = SaveWarningNotifier::classicNoticeHtml($items);
+        $this->assertStringContainsString('ContentGuard · Warning', $grouped);
+        $this->assertStringContainsString('2 warnings', $grouped);
         $this->assertStringNotContainsString('[object Object]', SaveWarningNotifier::classicNoticeHtml($items[0]));
         $this->assertStringNotContainsString('[object Object]', SaveWarningNotifier::classicNoticeHtml($items[1]));
     }
@@ -376,19 +388,24 @@ final class SaveWarningNotifierTest extends TestCase
         $stored = array();
         $notifier = $this->notifier('publish', $stored, '');
 
-        $this->assertSame(
+        $payload = $notifier->payloadForPost(42);
+        $warnings = array(
             array(
-                'messages' => array('Ingredients: This looks thin.'),
-                'warnings' => array(
-                    array(
-                        'text'     => 'Ingredients: This looks thin.',
-                        'message'  => 'This looks thin.',
-                        'label'    => 'Ingredients',
-                        'fieldKey' => 'field_ingredients',
-                    ),
-                ),
+                'text'     => 'Ingredients: This looks thin.',
+                'message'  => 'This looks thin.',
+                'label'    => 'Ingredients',
+                'fieldKey' => 'field_ingredients',
             ),
-            $notifier->payloadForPost(42)
+        );
+        $this->assertSame(array('Ingredients: This looks thin.'), $payload['messages']);
+        $this->assertSame($warnings, $payload['warnings']);
+        $this->assertStringContainsString('ContentGuard · Warning', $payload['html']);
+        $this->assertStringContainsString('>Ingredients</button>', $payload['html']);
+        $this->assertStringContainsString('— This looks thin.', $payload['html']);
+        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $payload['html']);
+        $this->assertSame(
+            "ContentGuard · Warning\nIngredients — This looks thin.",
+            $payload['text']
         );
         $this->assertSame(array(), $stored);
     }
@@ -487,6 +504,7 @@ final class SaveWarningNotifierTest extends TestCase
         );
 
         $this->assertStringContainsString('notice notice-warning', $html);
+        $this->assertStringContainsString('ContentGuard · Warning', $html);
         $this->assertStringContainsString('Ingredients', $html);
         $this->assertStringContainsString('This looks thin.', $html);
         $this->assertStringContainsString('data-contentguard-field="field_ingredients"', $html);

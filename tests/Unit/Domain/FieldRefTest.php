@@ -163,6 +163,70 @@ final class FieldRefTest extends TestCase
         );
     }
 
+    public function testCloneFieldSerializesCloneAndOmitsItForOrdinaryFields(): void
+    {
+        $clone = new FieldRef(
+            'field_title',
+            'shared_a_title',
+            'Shared Content → Title',
+            array('field_clone_a', 'field_clone_a_field_title'),
+            FieldRef::CONTAINER_CLONE,
+            '',
+            'field_clone_a'
+        );
+
+        $this->assertSame('field_clone_a_field_title', $clone->resolutionId());
+        $this->assertTrue($clone->isCloneChild());
+        $this->assertSame(
+            array(
+                'key'       => 'field_title',
+                'name'      => 'shared_a_title',
+                'label'     => 'Shared Content → Title',
+                'path'      => array('field_clone_a', 'field_clone_a_field_title'),
+                'container' => 'clone',
+                'clone'     => 'field_clone_a',
+            ),
+            $clone->toArray()
+        );
+
+        $loaded = FieldRef::fromArray($clone->toArray());
+        $this->assertSame('field_title', $loaded->key);
+        $this->assertSame('field_clone_a', $loaded->clone);
+        $this->assertSame('field_clone_a_field_title', $loaded->resolutionId());
+
+        $ordinary = new FieldRef('field_title', 'title', 'Title');
+        $this->assertArrayNotHasKey('clone', $ordinary->toArray());
+        $this->assertSame('field_title', $ordinary->resolutionId());
+    }
+
+    public function testSeamlessCompositePathIsAllowedWhenCloneIsSet(): void
+    {
+        $ref = FieldRef::fromArray(array(
+            'key'       => 'field_title',
+            'name'      => 'title',
+            'label'     => 'Title',
+            'path'      => array('field_clone_a', 'field_clone_a_field_title'),
+            'container' => 'clone',
+            'clone'     => 'field_clone_a',
+        ));
+
+        $this->assertSame('field_title', $ref->key);
+        $this->assertSame('field_clone_a_field_title', $ref->path[1]);
+    }
+
+    public function testArbitraryClonePathIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        FieldRef::fromArray(array(
+            'key'       => 'field_title',
+            'name'      => 'title',
+            'label'     => 'Title',
+            'path'      => array('field_other_clone', 'field_title'),
+            'container' => 'clone',
+            'clone'     => 'field_clone_a',
+        ));
+    }
+
     public function testInvalidPathsAreRejected(): void
     {
         $cases = array(

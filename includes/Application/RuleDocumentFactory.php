@@ -157,7 +157,7 @@ final class RuleDocumentFactory
                 continue;
             }
 
-            $key = (string) ($field['key'] ?? '');
+            $key = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
             if ($key === '' || !str_starts_with($key, 'field_')) {
                 continue;
             }
@@ -204,7 +204,7 @@ final class RuleDocumentFactory
             if ($field->isRepeaterChild()) {
                 throw new InvalidRuleException('Repeater fields cannot be used in WHEN conditions.');
             }
-            $fieldType = (string) ($fields[$fieldKey]['type'] ?? '');
+            $fieldType = (string) ($fields[$field->resolutionId()]['type'] ?? $fields[$fieldKey]['type'] ?? '');
 
             if (ConditionOperators::requiresOperand($operator)) {
                 $operand = $row['operand'] ?? '';
@@ -388,14 +388,17 @@ final class RuleDocumentFactory
         $layout    = $container === FieldRef::CONTAINER_FLEXIBLE
             ? (string) ($field['layout'] ?? '')
             : '';
+        $clone     = (string) ($field['clone'] ?? '');
+        $leafKey   = (string) ($field['key'] ?? $key);
 
         return new FieldRef(
-            $key,
+            $leafKey,
             (string) ($field['name'] ?? ''),
             $label,
             $this->fieldPath($field),
             $container,
-            $layout
+            $layout,
+            $clone
         );
     }
 

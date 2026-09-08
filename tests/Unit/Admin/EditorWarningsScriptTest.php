@@ -28,12 +28,16 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
         $this->assertStringContainsString('payload.warnings', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
-        $this->assertStringContainsString('contentguard-warning-', $js);
+        $this->assertStringContainsString('contentguard-editor-warnings', $js);
+        $this->assertStringContainsString('ContentGuard · ', $js);
+        $this->assertStringContainsString('createNotice("warning", html', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('spokenMessage', $js);
-        $this->assertStringContainsString('typeof content !== "string"', $js);
+        $this->assertStringContainsString('typeof html !== "string"', $js);
         $this->assertStringContainsString('[object Object]', $js);
         $this->assertStringContainsString('Go to field:', $js);
+        $this->assertStringContainsString('payload.html', $js);
+        $this->assertStringContainsString('payload.text', $js);
         $this->assertStringNotContainsString('wp.element.createElement', $js);
         $this->assertStringNotContainsString('JSON.stringify', $js);
         $this->assertStringNotContainsString('contentguardEditorField.fieldKey', $js);

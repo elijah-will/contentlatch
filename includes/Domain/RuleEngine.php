@@ -98,7 +98,7 @@ final class RuleEngine
     {
         foreach ($rule->conditions as $condition) {
             $operator = $this->operators->get($condition->operator);
-            $value    = $this->read($provider, $condition->field->key);
+            $value    = $this->read($provider, $condition->field->resolutionId());
 
             if (!$operator->matches($value, $condition->operand)) {
                 return false;
@@ -125,7 +125,7 @@ final class RuleEngine
             $this->resultForValue(
                 $rule,
                 $validation,
-                $this->read($provider, $validation->field->key),
+                $this->read($provider, $validation->field->resolutionId()),
                 $postId
             ),
         );
@@ -140,7 +140,7 @@ final class RuleEngine
         FieldValueProviderInterface $provider,
         ?int $postId,
     ): array {
-        $instances = $provider->instances($validation->field->key);
+        $instances = $provider->instances($validation->field->resolutionId());
         if ($instances === array()) {
             if (!$validation->isEveryRow()) {
                 return array();
@@ -162,7 +162,7 @@ final class RuleEngine
                     $status,
                     $rule->id,
                     $postId,
-                    $validation->field->key,
+                    $validation->field->resolutionId(),
                     sprintf('Add at least one %s row.', $this->repeaterLabel($validation->field)),
                     $rule->severity,
                     'no_rows',
@@ -224,7 +224,7 @@ final class RuleEngine
                 EvaluationStatus::Passed,
                 $rule->id,
                 $postId,
-                $validation->field->key,
+                $validation->field->resolutionId(),
                 $outcome->message,
                 $rule->severity,
                 $outcome->code,
@@ -242,7 +242,7 @@ final class RuleEngine
             $status,
             $rule->id,
             $postId,
-            $validation->field->key,
+            $validation->field->resolutionId(),
             $message,
             $rule->severity,
             $outcome->code,

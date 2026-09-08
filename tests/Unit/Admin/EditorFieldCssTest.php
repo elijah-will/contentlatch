@@ -20,6 +20,8 @@ final class EditorFieldCssTest extends TestCase
         $this->assertStringContainsString(':focus-visible', $css);
         $this->assertStringContainsString('prefers-reduced-motion', $css);
         $this->assertStringContainsString('contentguard-audit-blockers', $css);
+        $this->assertStringContainsString('contentguard-editor-warnings', $css);
+        $this->assertStringContainsString('contentguard-editor-warnings-notice', $css);
         $this->assertStringNotContainsString('contentguard-field-target', $css);
         $this->assertStringNotContainsString('pointer-events: none', $css);
         $this->assertStringNotContainsString('opacity: 0.5', $css);

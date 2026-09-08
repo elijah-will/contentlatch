@@ -121,7 +121,7 @@ final class RuleDocumentValidator
     {
         $operatorsByField = array();
         foreach ($rule->conditions as $condition) {
-            $operatorsByField[$condition->field->key][] = $condition->operator;
+            $operatorsByField[$condition->field->resolutionId()][] = $condition->operator;
         }
 
         foreach ($operatorsByField as $operators) {
@@ -134,7 +134,7 @@ final class RuleDocumentValidator
         $maxByField = array();
 
         foreach ($rule->validations as $validation) {
-            $key = $validation->field->key;
+            $key = $validation->field->resolutionId();
             $fieldOps = $operatorsByField[$key] ?? array();
 
             if ($validation->type === 'required') {

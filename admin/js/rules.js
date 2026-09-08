@@ -29,9 +29,13 @@
     return node;
   }
 
+  function fieldOptionId(field) {
+    return field.resolution_id || field.key || "";
+  }
+
   function fieldTypeFor(key) {
     var match = fields.find(function (field) {
-      return field.key === key;
+      return fieldOptionId(field) === key || field.key === key;
     });
     return match && match.type ? match.type : "";
   }
@@ -85,7 +89,7 @@
       }
     }
     var match = fields.find(function (field) {
-      return field.key === key;
+      return fieldOptionId(field) === key || field.key === key;
     });
     return match ? fieldDisplayLabel(match) : key;
   }
@@ -122,14 +126,16 @@
     });
 
     ungrouped.forEach(function (field) {
-      select.appendChild(option(field.key, fieldDisplayLabel(field), field.key === selected, field.type || ""));
+      var id = fieldOptionId(field);
+      select.appendChild(option(id, fieldDisplayLabel(field), id === selected, field.type || ""));
     });
 
     Object.keys(groups).forEach(function (groupLabel) {
       var optgroup = document.createElement("optgroup");
       optgroup.label = groupLabel;
       groups[groupLabel].forEach(function (field) {
-        optgroup.appendChild(option(field.key, fieldDisplayLabel(field), field.key === selected, field.type || ""));
+        var id = fieldOptionId(field);
+        optgroup.appendChild(option(id, fieldDisplayLabel(field), id === selected, field.type || ""));
       });
       select.appendChild(optgroup);
     });
