@@ -11,7 +11,8 @@ namespace ContentGuard\Application\Integration;
 
 final class Integration
 {
-    public const ACF = 'acf';
+    public const ACF  = 'acf';
+    public const CORE = 'core';
 
     public function __construct(
         public readonly string $id,

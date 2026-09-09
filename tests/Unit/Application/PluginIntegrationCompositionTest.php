@@ -15,16 +15,20 @@ use PHPUnit\Framework\TestCase;
 
 final class PluginIntegrationCompositionTest extends TestCase
 {
-    public function testPluginComposesTheAcfIntegrationThroughTheRegistry(): void
+    public function testPluginComposesCoreAndAcfThroughTheRegistry(): void
     {
         $plugin = new Plugin(new Dependencies());
 
+        $this->assertTrue($plugin->integrations()->has(Integration::CORE));
         $this->assertTrue($plugin->integrations()->has(Integration::ACF));
+        $this->assertTrue($plugin->integrations()->isAvailable(Integration::CORE));
         $this->assertSame(
             $plugin->dependencies()->acfMeetsMinimum(),
             $plugin->integrations()->isAvailable(Integration::ACF)
         );
         $this->assertInstanceOf(CompositeFieldCatalog::class, $plugin->fieldCatalog());
+        $this->assertSame(Integration::CORE, $plugin->coreIntegration()->descriptor()->id);
+        $this->assertSame('WordPress', $plugin->coreIntegration()->descriptor()->label);
         $this->assertSame(Integration::ACF, $plugin->acfIntegration()->descriptor()->id);
         $this->assertFalse($plugin->integrations()->has('test'));
         $this->assertFalse($plugin->integrations()->has('yoast'));
@@ -40,6 +44,9 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertStringNotContainsString('AcfFieldCatalog', $factory);
         $this->assertStringContainsString('FieldCatalog', $factory);
         $this->assertStringContainsString('$this->fieldCatalog()', $plugin);
+        $this->assertStringContainsString('CoreIntegration::wordpress()', $plugin);
+        $this->assertStringContainsString('$core->storedProvider', $plugin);
+        $this->assertStringContainsString('$acf->storedProvider', $plugin);
         $this->assertStringNotContainsString('FakeIntegration', $plugin);
     }
 

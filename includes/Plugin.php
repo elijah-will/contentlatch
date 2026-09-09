@@ -29,6 +29,7 @@ use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
 use ContentGuard\Infrastructure\WordPress\AuditSchema;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentGuard\Infrastructure\WordPress\CoreIntegration;
 use ContentGuard\Infrastructure\WordPress\EditablePostTypes;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 use ContentGuard\Infrastructure\WordPress\RulePostType;
@@ -45,6 +46,8 @@ final class Plugin
     private static ?self $instance = null;
 
     private Dependencies $dependencies;
+
+    private ?CoreIntegration $coreIntegration = null;
 
     private ?AcfIntegration $acfIntegration = null;
 
@@ -87,6 +90,7 @@ final class Plugin
         AcfSaveValidator::register($this->ruleRepository());
         EditorFieldFocus::register();
         EditorAuditNotice::register($this->auditService(), $this->ruleRepository());
+        // SaveWarningNotifier stays ACF-specific in 12A (Core save/warnings are 12C/12D).
         SaveWarningNotifier::register($this->ruleRepository());
         RulesPage::register($this->ruleRepository(), $this->ruleFactory(), $ruleDrafts, $this->auditService());
         RulesController::register($this->ruleRepository(), $this->ruleCommands(), $this->ruleFactory(), $ruleDrafts);
@@ -125,13 +129,15 @@ final class Plugin
     public function auditService(): ContentAuditService
     {
         if ($this->auditService === null) {
+            $core    = $this->coreIntegration();
             $acf     = $this->acfIntegration();
             $catalog = $this->fieldCatalog();
             $this->auditService = ContentAuditService::wordpress(
                 $this->ruleRepository(),
                 $catalog,
-                static function (int $postId, string $postType, array $fieldTypes) use ($acf): CompositeValueProvider {
+                static function (int $postId, string $postType, array $fieldTypes) use ($core, $acf): CompositeValueProvider {
                     return new CompositeValueProvider(array(
+                        $core->storedProvider($postId, $postType, $fieldTypes),
                         $acf->storedProvider($postId, $postType, $fieldTypes),
                     ));
                 }
@@ -153,6 +159,13 @@ final class Plugin
         $this->ensureIntegrations();
 
         return $this->fieldCatalog;
+    }
+
+    public function coreIntegration(): CoreIntegration
+    {
+        $this->ensureIntegrations();
+
+        return $this->coreIntegration;
     }
 
     public function acfIntegration(): AcfIntegration
@@ -182,9 +195,16 @@ final class Plugin
             return;
         }
 
-        $this->acfIntegration = AcfIntegration::wordpress($this->dependencies);
-        $this->integrations   = new IntegrationRegistry(array($this->acfIntegration->descriptor()));
-        $this->fieldCatalog   = new CompositeFieldCatalog(array($this->acfIntegration));
+        $this->coreIntegration = CoreIntegration::wordpress();
+        $this->acfIntegration  = AcfIntegration::wordpress($this->dependencies);
+        $this->integrations    = new IntegrationRegistry(array(
+            $this->coreIntegration->descriptor(),
+            $this->acfIntegration->descriptor(),
+        ));
+        $this->fieldCatalog = new CompositeFieldCatalog(array(
+            $this->coreIntegration,
+            $this->acfIntegration,
+        ));
     }
 
     private function loadTextDomain(): void

@@ -117,6 +117,70 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('When Product Type is sauce, Product Details → Ingredients is required.', $html);
         $this->assertStringNotContainsString('field_product_details.field_ingredients', $html);
         $this->assertStringNotContainsString('>field_ingredients<', $html);
+    }
+
+    public function testWordPressCoreFieldsAppearInAnOptgroupWithoutExposingIds(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Title required',
+                'target_post_type' => 'post',
+                'validations'      => array(
+                    array(
+                        'field_key' => 'title',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'         => 'title',
+                    'name'        => 'post_title',
+                    'label'       => 'Title',
+                    'type'        => 'text',
+                    'group_label' => 'WordPress',
+                    'integration' => 'core',
+                ),
+                array(
+                    'key'         => 'content',
+                    'name'        => 'post_content',
+                    'label'       => 'Content',
+                    'type'        => 'wysiwyg',
+                    'group_label' => 'WordPress',
+                    'integration' => 'core',
+                ),
+                array(
+                    'key'   => 'field_ingredients',
+                    'name'  => 'ingredients',
+                    'label' => 'Ingredients',
+                    'type'  => 'textarea',
+                ),
+                array(
+                    'key'         => 'field_nested',
+                    'name'        => 'nested',
+                    'label'       => 'Nested',
+                    'type'        => 'text',
+                    'path'        => array('field_group', 'field_nested'),
+                    'container'   => 'group',
+                    'breadcrumb'  => 'Details → Nested',
+                    'group_label' => 'Details',
+                    'integration' => 'acf',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('<optgroup label="WordPress">', $html);
+        $this->assertStringContainsString('value="title"', $html);
+        $this->assertStringContainsString('>Title<', $html);
+        $this->assertStringContainsString('>Content<', $html);
+        $this->assertStringContainsString('value="field_ingredients"', $html);
+        $this->assertStringContainsString('>Ingredients<', $html);
+        $this->assertStringContainsString('<optgroup label="Details">', $html);
+        $this->assertStringContainsString('Details → Nested', $html);
+        $this->assertStringNotContainsString('>title<', $html);
+        $this->assertStringNotContainsString('core:title', $html);
+        $this->assertStringNotContainsString('wp:title', $html);
+        $this->assertStringContainsString('selected', $html);
         $this->assertStringNotContainsString('>field_calories<', $html);
         $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
     }

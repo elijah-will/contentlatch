@@ -1,6 +1,6 @@
 <?php
 /**
- * Holds registered integrations. ACF is the only member in Phase 11A.
+ * Holds registered integrations. Production registers Core and ACF.
  *
  * @package ContentGuard
  */
