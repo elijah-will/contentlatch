@@ -48,6 +48,10 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertStringContainsString('$core->storedProvider', $plugin);
         $this->assertStringContainsString('$acf->storedProvider', $plugin);
         $this->assertStringNotContainsString('FakeIntegration', $plugin);
+        $this->assertStringNotContainsString("add_action('save_post'", $plugin);
+        $this->assertStringNotContainsString('rest_pre_insert_', $plugin);
+        $this->assertStringNotContainsString('rest_after_insert_', $plugin);
+        $this->assertStringNotContainsString('wp_insert_post_data', $plugin);
     }
 
     public function testRuleEngineStaysFreeOfIntegrationBranches(): void
@@ -60,5 +64,7 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertStringNotContainsString('WooCommerce', $engine);
         $this->assertStringNotContainsString('FakeIntegration', $engine);
         $this->assertStringNotContainsString('IntegrationRegistry', $engine);
+        $this->assertStringNotContainsString('CoreIncomingValueProvider', $engine);
+        $this->assertStringNotContainsString('CoreIntegration', $engine);
     }
 }

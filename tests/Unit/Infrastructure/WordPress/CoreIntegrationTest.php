@@ -10,6 +10,7 @@ namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
 use ContentGuard\Application\Integration\Integration;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\CoreIntegration;
+use ContentGuard\Infrastructure\WordPress\CoreIncomingValueProvider;
 use ContentGuard\Infrastructure\WordPress\CoreStoredValueProvider;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use PHPUnit\Framework\TestCase;
@@ -72,5 +73,22 @@ final class CoreIntegrationTest extends TestCase
         $this->assertTrue($provider->has(CoreFieldCatalog::TITLE));
         $this->assertSame('Hello', $provider->get(CoreFieldCatalog::TITLE));
         $this->assertFalse($provider->has('field_123abc'));
+    }
+
+    public function testExposesIncomingProviderForOwnedCoreIds(): void
+    {
+        $integration = CoreCatalogFixtures::integration();
+        $types       = $integration->fieldTypesForPostType('post');
+        $provider    = $integration->incomingProvider(
+            array('title' => 'Incoming', 'field_123abc' => 'nope'),
+            'post',
+            $types
+        );
+
+        $this->assertInstanceOf(CoreIncomingValueProvider::class, $provider);
+        $this->assertTrue($provider->has(CoreFieldCatalog::TITLE));
+        $this->assertSame('Incoming', $provider->get(CoreFieldCatalog::TITLE));
+        $this->assertFalse($provider->has('field_123abc'));
+        $this->assertFalse($provider->has(CoreFieldCatalog::CONTENT));
     }
 }

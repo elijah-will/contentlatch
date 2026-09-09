@@ -94,4 +94,26 @@ final class CoreIntegration implements FieldCatalog
             $reader
         );
     }
+
+    /**
+     * @param array<string, string> $fieldTypes
+     */
+    public function incomingProvider(
+        mixed $payload,
+        string $postType,
+        array $fieldTypes,
+    ): FieldValueProviderInterface {
+        $owned = array();
+        foreach ($this->catalog->fieldTypesForPostType($postType) as $id => $type) {
+            if (isset($fieldTypes[$id])) {
+                $owned[$id] = $type;
+            }
+        }
+
+        return new CoreIncomingValueProvider(
+            $payload,
+            $owned,
+            new CoreValueNormalizer()
+        );
+    }
 }

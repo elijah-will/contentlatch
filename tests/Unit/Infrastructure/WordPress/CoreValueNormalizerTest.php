@@ -49,6 +49,9 @@ final class CoreValueNormalizerTest extends TestCase
         $this->assertFalse(Value::isEmpty(0));
         $this->assertFalse(Value::isEmpty('0'));
         $this->assertTrue(Value::isEmpty(false));
+        $this->assertFalse($this->normalizer->normalize(CoreFieldCatalog::FEATURED_IMAGE, array('id' => 15)));
+        $this->assertFalse($this->normalizer->normalize(CoreFieldCatalog::FEATURED_IMAGE, 'yes'));
+        $this->assertFalse($this->normalizer->normalize(CoreFieldCatalog::FEATURED_IMAGE, -1));
     }
 
     public function testAuthorIsTextNotNumber(): void

@@ -45,12 +45,16 @@ final class CoreValueNormalizer
 
     private function normalizeFeaturedImage(mixed $value): mixed
     {
-        if ($value === true || $value === 1 || $value === '1') {
-            return true;
+        if ($this->isComplex($value)) {
+            return false;
         }
 
-        if ($this->isAbsent($value) || $value === 0 || $value === '0') {
+        if ($this->isAbsent($value) || $value === 0 || $value === '0' || $value === -1 || $value === '-1') {
             return false;
+        }
+
+        if ($value === true || $value === 1 || $value === '1') {
+            return true;
         }
 
         if (is_numeric($value) && (int) $value > 0) {
