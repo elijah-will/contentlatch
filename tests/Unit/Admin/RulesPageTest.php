@@ -116,6 +116,62 @@ final class RulesPageTest extends TestCase
         $this->assertSame($secondInactive, $sorted[3]);
     }
 
+    public function testGroupsForListOmitsEmptyGroupsAndKeepsRequiredOrder(): void
+    {
+        $inactiveWarning = RuleFactory::rule(array(
+            'id'       => 1,
+            'name'     => 'Inactive warning',
+            'status'   => RuleStatus::Inactive,
+            'severity' => RuleSeverity::Warning,
+        ));
+        $activeWarning = RuleFactory::rule(array(
+            'id'       => 2,
+            'name'     => 'Active warning',
+            'status'   => RuleStatus::Active,
+            'severity' => RuleSeverity::Warning,
+        ));
+        $inactiveBlocking = RuleFactory::rule(array(
+            'id'       => 3,
+            'name'     => 'Inactive blocking',
+            'status'   => RuleStatus::Inactive,
+            'severity' => RuleSeverity::Fail,
+        ));
+        $activeBlocking = RuleFactory::rule(array(
+            'id'       => 4,
+            'name'     => 'Active blocking',
+            'status'   => RuleStatus::Active,
+            'severity' => RuleSeverity::Fail,
+        ));
+
+        $groups = RulesPage::groupsForList(array(
+            $inactiveWarning,
+            $activeWarning,
+            $inactiveBlocking,
+            $activeBlocking,
+        ));
+
+        $this->assertSame(
+            array('active-blocking', 'active-warning', 'inactive-blocking', 'inactive-warning'),
+            array_column($groups, 'id')
+        );
+        $this->assertSame(array('Active Blocking', 'Active Warning', 'Inactive Blocking', 'Inactive Warning'), array_column($groups, 'title'));
+        $this->assertTrue($groups[0]['open']);
+        $this->assertTrue($groups[1]['open']);
+        $this->assertFalse($groups[2]['open']);
+        $this->assertFalse($groups[3]['open']);
+        $this->assertSame(array(4), array_map(static fn ($rule) => $rule->id, $groups[0]['rules']));
+        $this->assertSame(array(2), array_map(static fn ($rule) => $rule->id, $groups[1]['rules']));
+        $this->assertSame(array(3), array_map(static fn ($rule) => $rule->id, $groups[2]['rules']));
+        $this->assertSame(array(1), array_map(static fn ($rule) => $rule->id, $groups[3]['rules']));
+
+        $warningOnly = RulesPage::groupsForList(array($inactiveWarning, $activeWarning));
+        $this->assertSame(array('active-warning', 'inactive-warning'), array_column($warningOnly, 'id'));
+        $this->assertSame(RulesPage::sortForList(array($inactiveWarning, $activeWarning)), array_merge(
+            $warningOnly[0]['rules'],
+            $warningOnly[1]['rules']
+        ));
+    }
+
     public function testSortForListUsesActiveBlockingThenWarningThenInactive(): void
     {
         $inactiveWarning = RuleFactory::rule(array(

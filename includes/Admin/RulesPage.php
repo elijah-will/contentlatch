@@ -187,19 +187,39 @@ final class RulesPage
     }
 
     /**
-     * Active before inactive; Blocking before Warning within each status.
-     * Relative order inside a status+severity group is kept.
+     * Visual groups for the Rule List, in display order.
+     * Empty groups are omitted. Relative order inside a group is kept.
      *
      * @param Rule[] $rules
-     * @return Rule[]
+     * @return list<array{id: string, title: string, open: bool, rules: list<Rule>}>
      */
-    public static function sortForList(array $rules): array
+    public static function groupsForList(array $rules): array
     {
         $buckets = array(
-            'active-fail'       => array(),
-            'active-warning'    => array(),
-            'inactive-fail'     => array(),
-            'inactive-warning'  => array(),
+            'active-fail' => array(
+                'id'    => 'active-blocking',
+                'title' => 'Active Blocking',
+                'open'  => true,
+                'rules' => array(),
+            ),
+            'active-warning' => array(
+                'id'    => 'active-warning',
+                'title' => 'Active Warning',
+                'open'  => true,
+                'rules' => array(),
+            ),
+            'inactive-fail' => array(
+                'id'    => 'inactive-blocking',
+                'title' => 'Inactive Blocking',
+                'open'  => false,
+                'rules' => array(),
+            ),
+            'inactive-warning' => array(
+                'id'    => 'inactive-warning',
+                'title' => 'Inactive Warning',
+                'open'  => false,
+                'rules' => array(),
+            ),
         );
 
         foreach ($rules as $rule) {
@@ -209,15 +229,43 @@ final class RulesPage
 
             $status   = $rule->status === RuleStatus::Active ? 'active' : 'inactive';
             $severity = $rule->severity === RuleSeverity::Warning ? 'warning' : 'fail';
-            $buckets[$status . '-' . $severity][] = $rule;
+            $key      = $status . '-' . $severity;
+            if (!isset($buckets[$key])) {
+                continue;
+            }
+
+            $buckets[$key]['rules'][] = $rule;
         }
 
-        return array_values(array_merge(
-            $buckets['active-fail'],
-            $buckets['active-warning'],
-            $buckets['inactive-fail'],
-            $buckets['inactive-warning']
-        ));
+        $groups = array();
+        foreach ($buckets as $group) {
+            if ($group['rules'] === array()) {
+                continue;
+            }
+
+            $groups[] = $group;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Active before inactive; Blocking before Warning within each status.
+     * Relative order inside a status+severity group is kept.
+     *
+     * @param Rule[] $rules
+     * @return Rule[]
+     */
+    public static function sortForList(array $rules): array
+    {
+        $sorted = array();
+        foreach (self::groupsForList($rules) as $group) {
+            foreach ($group['rules'] as $rule) {
+                $sorted[] = $rule;
+            }
+        }
+
+        return $sorted;
     }
 
     /**

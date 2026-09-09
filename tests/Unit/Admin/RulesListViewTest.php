@@ -68,7 +68,7 @@ final class RulesListViewTest extends TestCase
         $this->assertStringNotContainsString('widefat', $html);
         $this->assertStringContainsString('contentguard-rule-list', $html);
         $this->assertStringContainsString('<article', $html);
-        $this->assertStringContainsString('<h2 class="contentguard-rule-item__title"', $html);
+        $this->assertStringContainsString('<h3 class="contentguard-rule-item__title"', $html);
         $this->assertStringContainsString('New Products need Page ID', $html);
         $this->assertStringContainsString('Applies to', $html);
         $this->assertStringContainsString('Product', $html);
@@ -153,6 +153,149 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('contentguard-status--neutral', $html);
         $this->assertStringContainsString('Applies to', $html);
         $this->assertStringContainsString('Product', $html);
+    }
+
+    public function testListGroupsRulesIntoFourSectionsWithCounts(): void
+    {
+        $html = $this->renderList(
+            array(
+                RuleFactory::rule(array(
+                    'id'       => 1,
+                    'name'     => 'Inactive warning rule',
+                    'status'   => RuleStatus::Inactive,
+                    'severity' => RuleSeverity::Warning,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 2,
+                    'name'     => 'Active warning rule',
+                    'status'   => RuleStatus::Active,
+                    'severity' => RuleSeverity::Warning,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 3,
+                    'name'     => 'Inactive blocking rule',
+                    'status'   => RuleStatus::Inactive,
+                    'severity' => RuleSeverity::Fail,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 4,
+                    'name'     => 'Active blocking first',
+                    'status'   => RuleStatus::Active,
+                    'severity' => RuleSeverity::Fail,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 5,
+                    'name'     => 'Active blocking second',
+                    'status'   => RuleStatus::Active,
+                    'severity' => RuleSeverity::Fail,
+                )),
+            ),
+            array(),
+            array('product' => 'Product')
+        );
+
+        $activeBlocking  = strpos($html, 'id="contentguard-rule-group-active-blocking"');
+        $activeWarning   = strpos($html, 'id="contentguard-rule-group-active-warning"');
+        $inactiveBlocking = strpos($html, 'id="contentguard-rule-group-inactive-blocking"');
+        $inactiveWarning = strpos($html, 'id="contentguard-rule-group-inactive-warning"');
+
+        $this->assertNotFalse($activeBlocking);
+        $this->assertNotFalse($activeWarning);
+        $this->assertNotFalse($inactiveBlocking);
+        $this->assertNotFalse($inactiveWarning);
+        $this->assertLessThan($activeWarning, $activeBlocking);
+        $this->assertLessThan($inactiveBlocking, $activeWarning);
+        $this->assertLessThan($inactiveWarning, $inactiveBlocking);
+
+        $this->assertLessThan(strpos($html, 'Active blocking first'), $activeBlocking);
+        $this->assertLessThan(strpos($html, 'Active warning rule'), $activeWarning);
+        $this->assertLessThan(strpos($html, 'Inactive blocking rule'), $inactiveBlocking);
+        $this->assertLessThan(strpos($html, 'Inactive warning rule'), $inactiveWarning);
+
+        $this->assertStringContainsString('Active Blocking', $html);
+        $this->assertStringContainsString('Active Warning', $html);
+        $this->assertStringContainsString('Inactive Blocking', $html);
+        $this->assertStringContainsString('Inactive Warning', $html);
+        $this->assertStringContainsString('2 rules', $html);
+        $this->assertStringContainsString('1 rule', $html);
+        $this->assertStringNotContainsString('0 rules', $html);
+
+        $this->assertMatchesRegularExpression('/<details class="contentguard-rule-group__details" open>/', $html);
+        $this->assertStringContainsString('aria-label="Edit: Active blocking first"', $html);
+        $this->assertStringContainsString('aria-label="Activate: Inactive warning rule"', $html);
+        $this->assertStringContainsString('admin-post.php?action=contentguard_delete_rule', $html);
+    }
+
+    public function testEmptyGroupsAreOmittedAndWarningOnlyListHidesBlocking(): void
+    {
+        $html = $this->renderList(
+            array(
+                RuleFactory::rule(array(
+                    'id'       => 8,
+                    'name'     => 'Live warning',
+                    'status'   => RuleStatus::Active,
+                    'severity' => RuleSeverity::Warning,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 9,
+                    'name'     => 'Off warning',
+                    'status'   => RuleStatus::Inactive,
+                    'severity' => RuleSeverity::Warning,
+                )),
+            ),
+            array(),
+            array('product' => 'Product')
+        );
+
+        $this->assertStringContainsString('Active Warning', $html);
+        $this->assertStringContainsString('Inactive Warning', $html);
+        $this->assertStringContainsString('Live warning', $html);
+        $this->assertStringContainsString('Off warning', $html);
+        $this->assertStringNotContainsString('Active Blocking', $html);
+        $this->assertStringNotContainsString('Inactive Blocking', $html);
+        $this->assertStringNotContainsString('contentguard-rule-group-active-blocking', $html);
+        $this->assertStringNotContainsString('0 rules', $html);
+    }
+
+    public function testActiveGroupsStartExpandedAndInactiveGroupsStartCollapsed(): void
+    {
+        $html = $this->renderList(
+            array(
+                RuleFactory::rule(array(
+                    'id'       => 11,
+                    'name'     => 'On blocking',
+                    'status'   => RuleStatus::Active,
+                    'severity' => RuleSeverity::Fail,
+                )),
+                RuleFactory::rule(array(
+                    'id'       => 12,
+                    'name'     => 'Off blocking',
+                    'status'   => RuleStatus::Inactive,
+                    'severity' => RuleSeverity::Fail,
+                )),
+            ),
+            array(),
+            array('product' => 'Product')
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/<section class="contentguard-rule-group"[^>]*aria-labelledby="contentguard-rule-group-active-blocking">\s*<details class="contentguard-rule-group__details" open>/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<section class="contentguard-rule-group"[^>]*aria-labelledby="contentguard-rule-group-inactive-blocking">\s*<details class="contentguard-rule-group__details">/',
+            $html
+        );
+        $this->assertStringContainsString('<summary class="contentguard-rule-group__summary">', $html);
+        $this->assertStringContainsString('<h2 class="contentguard-rule-group__title"', $html);
+
+        $css = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/rules.css');
+        $this->assertStringContainsString('.contentguard-rule-group__summary::before', $css);
+        $this->assertStringContainsString(
+            '.contentguard-rule-group__details[open] > .contentguard-rule-group__summary::before',
+            $css
+        );
+        $this->assertStringContainsString('transform: rotate(90deg)', $css);
     }
 
     public function testViewAffectedContentAppearsOnlyWhenTheLatestAuditHasMatches(): void

@@ -73,8 +73,11 @@ $rules          = RulesPage::sortForList($rules);
         <?php endif; ?>
 
         <div class="contentguard-rule-list">
-            <?php foreach ($rules as $rule) : ?>
-                <?php
+            <?php
+            $renderRule = static function ($rule) use ($summaries, $impacts, $postTypeLabels, $latestComplete): void {
+                if (!$rule instanceof \ContentGuard\Domain\Rule) {
+                    return;
+                }
                 $edit = admin_url('admin.php?page=' . RulesPage::SLUG . '&rule=' . (int) $rule->id);
                 $next = $rule->status === RuleStatus::Active ? RuleStatus::Inactive->value : RuleStatus::Active->value;
                 $statusUrl = wp_nonce_url(
@@ -112,7 +115,34 @@ $rules          = RulesPage::sortForList($rules);
                         'showAffected'  => $latestComplete !== null && $impact !== null && $impact->postCount > 0,
                     )
                 );
+            };
+
+            foreach (RulesPage::groupsForList($rules) as $group) :
+                $groupId    = (string) ($group['id'] ?? '');
+                $groupTitle = (string) ($group['title'] ?? '');
+                $groupRules = isset($group['rules']) && is_array($group['rules']) ? $group['rules'] : array();
+                $count      = count($groupRules);
+                $headingId  = 'contentguard-rule-group-' . $groupId;
+                $countLabel = sprintf(
+                    _n('%d rule', '%d rules', $count, 'contentguard'),
+                    $count
+                );
                 ?>
+                <section class="contentguard-rule-group" aria-labelledby="<?php echo esc_attr($headingId); ?>">
+                    <details class="contentguard-rule-group__details"<?php echo !empty($group['open']) ? ' open' : ''; ?>>
+                        <summary class="contentguard-rule-group__summary">
+                            <h2 class="contentguard-rule-group__title" id="<?php echo esc_attr($headingId); ?>">
+                                <?php echo esc_html__($groupTitle, 'contentguard'); ?>
+                            </h2>
+                            <span class="contentguard-rule-group__count"><?php echo esc_html($countLabel); ?></span>
+                        </summary>
+                        <div class="contentguard-rule-group__items">
+                            <?php foreach ($groupRules as $rule) : ?>
+                                <?php $renderRule($rule); ?>
+                            <?php endforeach; ?>
+                        </div>
+                    </details>
+                </section>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>

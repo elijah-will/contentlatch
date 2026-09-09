@@ -43,9 +43,9 @@ $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept
 ?>
 <article class="contentguard-panel contentguard-rule-item" aria-labelledby="<?php echo esc_attr($titleId); ?>">
     <header class="contentguard-rule-item__header">
-        <h2 class="contentguard-rule-item__title" id="<?php echo esc_attr($titleId); ?>">
+        <h3 class="contentguard-rule-item__title" id="<?php echo esc_attr($titleId); ?>">
             <a href="<?php echo esc_url($editUrl); ?>"><?php echo esc_html($rule->name); ?></a>
-        </h2>
+        </h3>
         <div class="contentguard-rule-item__status">
             <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?>
             <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?>

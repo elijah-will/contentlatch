@@ -1,8 +1,87 @@
 .contentguard-rule-list {
     display: flex;
     flex-direction: column;
-    gap: var(--cg-space-2, 8px);
+    gap: var(--cg-space-5, 24px);
     margin: var(--cg-space-3, 12px) 0 0;
+}
+
+.contentguard-rule-group {
+    margin: 0;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.contentguard-rule-group__details {
+    margin: 0;
+}
+
+.contentguard-rule-group__summary {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cg-space-1, 4px) var(--cg-space-3, 12px);
+    justify-content: space-between;
+    list-style: none;
+    margin: 0 0 var(--cg-space-2, 8px);
+    padding: 0 0 var(--cg-space-2, 8px);
+    border-bottom: var(--cg-border, 1px solid #c3c4c7);
+}
+
+.contentguard-rule-group__summary::-webkit-details-marker,
+.contentguard-rule-group__summary::marker {
+    content: none;
+    display: none;
+}
+
+.contentguard-rule-group__summary::before {
+    border-color: transparent transparent transparent var(--cg-text, #1d2327);
+    border-style: solid;
+    border-width: 5px 0 5px 7px;
+    content: "";
+    display: inline-block;
+    flex: 0 0 auto;
+    height: 0;
+    transform: rotate(0deg);
+    width: 0;
+}
+
+.contentguard-rule-group__details[open] > .contentguard-rule-group__summary::before {
+    transform: rotate(90deg);
+}
+
+.contentguard-rule-group__title {
+    flex: 1 1 auto;
+    font-size: var(--cg-font-size, 13px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: var(--cg-line-height-tight, 1.3);
+    margin: 0;
+    min-width: 0;
+}
+
+.contentguard-rule-group__count {
+    color: var(--cg-muted, #646970);
+    flex: 0 0 auto;
+    font-size: var(--cg-font-size-sm, 12px);
+    font-weight: 600;
+    line-height: var(--cg-line-height-tight, 1.3);
+    white-space: nowrap;
+}
+
+.contentguard-rule-group__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cg-space-2, 8px);
+}
+
+.contentguard-rule-group__summary:focus {
+    outline: none;
+}
+
+.contentguard-rule-group__summary:focus-visible {
+    outline: 2px solid var(--cg-focus, #2271b1);
+    outline-offset: 2px;
 }
 
 .contentguard-rule-item {
@@ -94,6 +173,10 @@
     .contentguard-rule-item__header {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .contentguard-rule-group__count {
+        margin-left: 0;
     }
 
     .contentguard-rule-item__logic > div {
