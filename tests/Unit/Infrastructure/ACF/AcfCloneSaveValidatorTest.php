@@ -7,14 +7,13 @@ declare(strict_types=1);
 
 namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\AcfCloneFixtures;
+use ContentGuard\Tests\Support\IncomingSaveFixtures;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -187,7 +186,6 @@ final class AcfCloneSaveValidatorTest extends TestCase
         $this->errors = array();
         $repository   = new InMemoryRuleRepository($rules);
         $validator    = new AcfSaveValidator(
-            new ContentEvaluator($repository, RuleEngine::v1()),
             $repository,
             AcfCloneFixtures::pageCatalog(),
             new IntendedPostStatusResolver(),
@@ -196,7 +194,8 @@ final class AcfCloneSaveValidatorTest extends TestCase
                     'input'   => $input,
                     'message' => $message,
                 );
-            }
+            },
+            IncomingSaveFixtures::evaluator($repository, AcfCloneFixtures::pageCatalog())
         );
 
         $validator->validate($request === array() ? $this->request() : $request, $payload);

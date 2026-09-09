@@ -33,6 +33,10 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertFalse($plugin->integrations()->has('test'));
         $this->assertFalse($plugin->integrations()->has('yoast'));
         $this->assertSame($plugin->fieldCatalog(), $plugin->fieldCatalog());
+        $this->assertInstanceOf(
+            \ContentGuard\Application\IncomingSaveEvaluator::class,
+            $plugin->incomingSaveEvaluator()
+        );
     }
 
     public function testRuleDocumentFactoryDependsOnTheCatalogNotAcfPrefixes(): void
@@ -46,12 +50,23 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertStringContainsString('$this->fieldCatalog()', $plugin);
         $this->assertStringContainsString('CoreIntegration::wordpress()', $plugin);
         $this->assertStringContainsString('$core->storedProvider', $plugin);
+        $this->assertStringContainsString('$this->coreIntegration()->storedProvider', $plugin);
         $this->assertStringContainsString('$acf->storedProvider', $plugin);
+        $this->assertStringContainsString('IncomingSaveEvaluator', $plugin);
+        $this->assertStringContainsString('storedProvider', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Application/IncomingSaveEvaluator.php'));
+        $this->assertStringContainsString('RestSaveValidator::register', $plugin);
+        $this->assertStringContainsString('EditorRestBlockNotice::register', $plugin);
+        $this->assertStringContainsString('unwrapRestValue', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Infrastructure/WordPress/CoreIncomingPayload.php'));
+        $this->assertStringContainsString('get_json_params', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Infrastructure/WordPress/CoreIncomingPayload.php'));
         $this->assertStringNotContainsString('FakeIntegration', $plugin);
         $this->assertStringNotContainsString("add_action('save_post'", $plugin);
-        $this->assertStringNotContainsString('rest_pre_insert_', $plugin);
         $this->assertStringNotContainsString('rest_after_insert_', $plugin);
         $this->assertStringNotContainsString('wp_insert_post_data', $plugin);
+        $rest = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Infrastructure/WordPress/RestSaveValidator.php');
+        $this->assertStringContainsString("'rest_pre_insert_'", $rest);
+        $this->assertStringContainsString('registeredType', $rest);
+        $this->assertStringContainsString("'status'   => 400", $rest);
+        $this->assertStringNotContainsString('403', $rest);
     }
 
     public function testRuleEngineStaysFreeOfIntegrationBranches(): void

@@ -4,6 +4,8 @@
  *
  * Reads through public WordPress APIs. Does not query the database
  * directly and does not use presentation/filter title or excerpt helpers.
+ * Stored reads use get_post_field( ..., 'raw' ) so REST/display filters
+ * cannot make a valid Core value look empty.
  *
  * @package ContentGuard
  */
@@ -93,7 +95,7 @@ final class CoreStoredValueProvider implements FieldValueProviderInterface
             return null;
         }
 
-        $value = get_post_field($field, $this->postId);
+        $value = get_post_field($field, $this->postId, 'raw');
 
         return $value === false ? null : $value;
     }

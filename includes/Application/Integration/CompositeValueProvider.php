@@ -3,6 +3,10 @@
  * Routes field reads to the first provider that owns the id.
  * Providers must only has() their own field ids.
  *
+ * Nested incoming fields (Repeater / Flexible) may report has() false
+ * while still exposing row instances. Owner lookup therefore also
+ * accepts a provider that returns instances for the id.
+ *
  * Unavailable integrations are omitted from the provider list by composition.
  * FieldValueProviderInterface cannot distinguish "unavailable" from "missing";
  * evaluating a required rule against a missing id still fails as empty.
@@ -47,7 +51,11 @@ final class CompositeValueProvider implements FieldValueProviderInterface
     private function owner(string $fieldId): ?FieldValueProviderInterface
     {
         foreach ($this->providers as $provider) {
-            if ($provider instanceof FieldValueProviderInterface && $provider->has($fieldId)) {
+            if (!$provider instanceof FieldValueProviderInterface) {
+                continue;
+            }
+
+            if ($provider->has($fieldId) || $provider->instances($fieldId) !== array()) {
                 return $provider;
             }
         }

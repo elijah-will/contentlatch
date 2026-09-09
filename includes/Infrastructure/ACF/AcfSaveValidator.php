@@ -3,10 +3,11 @@
  * ACF save-time validation adapter.
  *
  * Hooked to acf/validate_save_post. Reads $_POST only at this boundary,
- * evaluates through ContentEvaluator + RuleEngine, and reports blocking
- * failures with acf_add_validation_error(). Warning results are ignored
- * here because ACF treats every validation error as a hard save failure.
- * Post-save warning notices are handled by SaveWarningNotifier.
+ * evaluates Core + ACF incoming values through IncomingSaveEvaluator, and
+ * reports blocking failures with acf_add_validation_error(). Warning
+ * results are ignored here because ACF treats every validation error as a
+ * hard save failure. Post-save warning notices are handled by
+ * SaveWarningNotifier.
  *
  * @package ContentGuard
  */
@@ -15,11 +16,11 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
-use ContentGuard\Application\ContentEvaluator;
+use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
+use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentGuard\Infrastructure\WordPress\CoreIncomingPayload;
 use Throwable;
 
 final class AcfSaveValidator
@@ -28,18 +29,19 @@ final class AcfSaveValidator
      * @param callable(string $input, string $message): void $addError
      */
     public function __construct(
-        private ContentEvaluator $evaluator,
         private RuleRepositoryInterface $repository,
         private AcfFieldCatalog $catalog,
         private IntendedPostStatusResolver $statusResolver,
         private mixed $addError,
+        private IncomingSaveEvaluator $incoming,
     ) {
     }
 
-    public static function register(RuleRepositoryInterface $repository): void
-    {
+    public static function register(
+        RuleRepositoryInterface $repository,
+        IncomingSaveEvaluator $incoming,
+    ): void {
         $validator = new self(
-            new ContentEvaluator($repository, RuleEngine::v1()),
             $repository,
             new AcfFieldCatalog(),
             new IntendedPostStatusResolver(),
@@ -47,7 +49,8 @@ final class AcfSaveValidator
                 if (function_exists('acf_add_validation_error')) {
                     acf_add_validation_error($input, $message);
                 }
-            }
+            },
+            $incoming
         );
 
         add_action('acf/validate_save_post', array($validator, 'onValidateSavePost'));
@@ -56,7 +59,7 @@ final class AcfSaveValidator
     public function onValidateSavePost(): void
     {
         $request = $_POST;
-        $payload = $request['acf'] ?? null;
+        $payload = is_array($request) ? ($request['acf'] ?? null) : null;
         $this->validate(is_array($request) ? $request : array(), $payload);
     }
 
@@ -79,7 +82,9 @@ final class AcfSaveValidator
      */
     private function validateUnsafe(array $request, mixed $acfPayload): void
     {
-        if (!is_array($acfPayload)) {
+        $acfPayload  = is_array($acfPayload) ? $acfPayload : null;
+        $corePayload = CoreIncomingPayload::fromRequest($request);
+        if ($acfPayload === null && $corePayload === null) {
             return;
         }
 
@@ -97,34 +102,20 @@ final class AcfSaveValidator
             return;
         }
 
-        $catalogTypes = $this->catalog->fieldTypesForPostType($postType);
-        $rules        = $this->repository->findActiveForPostType($postType);
-        $fieldTypes   = array_intersect_key($catalogTypes, $this->referencedFieldKeys($rules));
-        $nestedMaps   = $this->catalog->nestedResolutionMaps($postType, $fieldTypes);
-        $fieldPaths   = $nestedMaps['paths'];
-
-        $evaluation = $this->evaluator->evaluate(
-            $postId,
+        $evaluation = $this->incoming->evaluate($postId, $postType, $corePayload, $acfPayload);
+        $nestedMaps = $this->catalog->nestedResolutionMaps(
             $postType,
-            new AcfIncomingValueProvider(
-                $acfPayload,
-                new AcfValueNormalizer(),
-                $fieldTypes,
-                $fieldPaths,
-                $nestedMaps['names'],
-                $nestedMaps['repeater_keys'],
-                $nestedMaps['flex_keys'] ?? array(),
-                $nestedMaps['layouts'] ?? array(),
-                $nestedMaps['clone_keys'] ?? array()
-            )
+            $this->catalog->fieldTypesForPostType($postType)
         );
+        $fieldPaths   = $nestedMaps['paths'];
+        $repeaterKeys = $nestedMaps['repeater_keys'];
 
         foreach ($evaluation->results as $result) {
             if (!$result->isFailed()) {
                 continue;
             }
 
-            $this->reportError($result, $fieldPaths, $nestedMaps['repeater_keys']);
+            $this->reportError($result, $fieldPaths, $repeaterKeys);
         }
     }
 
@@ -176,26 +167,6 @@ final class AcfSaveValidator
     }
 
     /**
-     * @param Rule[] $rules
-     * @return array<string, true>
-     */
-    private function referencedFieldKeys(array $rules): array
-    {
-        $keys = array();
-
-        foreach ($rules as $rule) {
-            foreach ($rule->conditions as $condition) {
-                $keys[$condition->field->resolutionId()] = true;
-            }
-            foreach ($rule->validations as $validation) {
-                $keys[$validation->field->resolutionId()] = true;
-            }
-        }
-
-        return $keys;
-    }
-
-    /**
      * @param array<string, list<string>> $fieldPaths
      * @param array<string, string> $repeaterKeys
      */
@@ -206,17 +177,24 @@ final class AcfSaveValidator
             return;
         }
 
+        $fieldId = $result->fieldId ?? '';
+        if ($fieldId !== '' && isset(CoreFieldCatalog::FIELDS[$fieldId])) {
+            $addError('', $this->errorMessage($result));
+
+            return;
+        }
+
         $input = '';
         $fromContext = trim((string) ($result->context['input_name'] ?? ''));
         if ($fromContext !== '') {
             $input = $fromContext;
-        } elseif ($result->fieldId !== null && $result->fieldId !== '') {
-            $path        = $fieldPaths[$result->fieldId] ?? array();
+        } elseif ($fieldId !== '') {
+            $path        = $fieldPaths[$fieldId] ?? array();
             $path        = is_array($path) ? $path : array();
-            $repeaterKey = $repeaterKeys[$result->fieldId] ?? '';
+            $repeaterKey = $repeaterKeys[$fieldId] ?? '';
             $input       = $result->code === 'no_rows' && $repeaterKey !== ''
                 ? AcfNestedField::repeaterInputName($path, $repeaterKey)
-                : AcfNestedField::inputName($result->fieldId, $path);
+                : AcfNestedField::inputName($fieldId, $path);
         }
 
         $addError($input, $this->errorMessage($result));

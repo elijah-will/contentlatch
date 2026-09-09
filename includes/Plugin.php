@@ -13,10 +13,12 @@ use ContentGuard\Admin\AuditAjaxController;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Admin\EditorAuditNotice;
 use ContentGuard\Admin\EditorFieldFocus;
+use ContentGuard\Admin\EditorRestBlockNotice;
 use ContentGuard\Admin\RuleEditorDraftStore;
 use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\Audit\ContentAuditService;
+use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Application\Integration\CompositeFieldCatalog;
 use ContentGuard\Application\Integration\CompositeValueProvider;
 use ContentGuard\Application\Integration\FieldCatalog;
@@ -24,6 +26,7 @@ use ContentGuard\Application\Integration\IntegrationRegistry;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RuleRepositoryInterface;
+use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
@@ -32,6 +35,7 @@ use ContentGuard\Infrastructure\WordPress\Capabilities;
 use ContentGuard\Infrastructure\WordPress\CoreIntegration;
 use ContentGuard\Infrastructure\WordPress\EditablePostTypes;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
 use ContentGuard\Infrastructure\WordPress\RulePostType;
 
 final class Plugin
@@ -63,6 +67,8 @@ final class Plugin
 
     private ?RuleDocumentFactory $ruleFactory = null;
 
+    private ?IncomingSaveEvaluator $incomingSaveEvaluator = null;
+
     public static function instance(): self
     {
         if (self::$instance === null) {
@@ -86,12 +92,23 @@ final class Plugin
         add_action('admin_init', array(AuditSchema::class, 'install'));
 
         $ruleDrafts = RuleEditorDraftStore::wordpress();
+        $incoming   = $this->incomingSaveEvaluator();
 
-        AcfSaveValidator::register($this->ruleRepository());
+        AcfSaveValidator::register($this->ruleRepository(), $incoming);
+        RestSaveValidator::register($incoming);
         EditorFieldFocus::register();
+        EditorRestBlockNotice::register();
         EditorAuditNotice::register($this->auditService(), $this->ruleRepository());
-        // SaveWarningNotifier stays ACF-specific in 12A (Core save/warnings are 12C/12D).
-        SaveWarningNotifier::register($this->ruleRepository());
+        SaveWarningNotifier::register(
+            $this->ruleRepository(),
+            $this->fieldCatalog(),
+            function (int $postId, string $postType, array $fieldTypes): CompositeValueProvider {
+                return new CompositeValueProvider(array(
+                    $this->coreIntegration()->storedProvider($postId, $postType, $fieldTypes),
+                    $this->acfIntegration()->storedProvider($postId, $postType, $fieldTypes),
+                ));
+            }
+        );
         RulesPage::register($this->ruleRepository(), $this->ruleFactory(), $ruleDrafts, $this->auditService());
         RulesController::register($this->ruleRepository(), $this->ruleCommands(), $this->ruleFactory(), $ruleDrafts);
         AuditPage::register($this->auditService(), $this->ruleRepository());
@@ -187,6 +204,21 @@ final class Plugin
         }
 
         return $this->ruleRepository;
+    }
+
+    public function incomingSaveEvaluator(): IncomingSaveEvaluator
+    {
+        if ($this->incomingSaveEvaluator === null) {
+            $this->incomingSaveEvaluator = new IncomingSaveEvaluator(
+                RuleEngine::v1(),
+                $this->ruleRepository(),
+                $this->fieldCatalog(),
+                $this->coreIntegration(),
+                $this->acfIntegration()
+            );
+        }
+
+        return $this->incomingSaveEvaluator;
     }
 
     private function ensureIntegrations(): void

@@ -30,4 +30,34 @@ final class CompositeValueProviderTest extends TestCase
         $this->assertEquals(array(new FieldInstance('Hello')), $composite->instances('field_title'));
         $this->assertSame(array(), $composite->instances('field_missing'));
     }
+
+    public function testInstancesAreRoutedWhenHasIsFalse(): void
+    {
+        $nested = new class implements \ContentGuard\Domain\Contracts\FieldValueProviderInterface {
+            public function has(string $fieldId): bool
+            {
+                return false;
+            }
+
+            public function get(string $fieldId): mixed
+            {
+                return null;
+            }
+
+            public function instances(string $fieldId): array
+            {
+                if ($fieldId !== 'field_row') {
+                    return array();
+                }
+
+                return array(new FieldInstance(''));
+            }
+        };
+
+        $composite = new CompositeValueProvider(array($nested));
+
+        $this->assertTrue($composite->has('field_row'));
+        $this->assertEquals(array(new FieldInstance('')), $composite->instances('field_row'));
+        $this->assertFalse($composite->has('field_other'));
+    }
 }

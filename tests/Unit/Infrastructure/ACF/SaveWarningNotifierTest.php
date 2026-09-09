@@ -99,6 +99,35 @@ final class SaveWarningNotifierTest extends TestCase
         );
     }
 
+    public function testCoreTitleWarningClearsWhenStoredTitleMeetsTheRule(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'   => \ContentGuard\Tests\Support\CoreCatalogFixtures::titleRef(),
+                    'type'    => 'min_length',
+                    'params'  => array('min' => 8),
+                    'message' => 'Title is too short.',
+                )),
+            ),
+        ));
+        $repository = new InMemoryRuleRepository(array($rule));
+        $core       = \ContentGuard\Tests\Support\CoreCatalogFixtures::integration();
+        $acfCatalog = new AcfFieldCatalog(static fn (): array => array());
+        $acf        = new \ContentGuard\Infrastructure\ACF\AcfIntegration($acfCatalog);
+        $composite  = new \ContentGuard\Application\Integration\CompositeFieldCatalog(array($core, $acf));
+
+        $short = $this->coreWarningNotifier($repository, $acfCatalog, $composite, $core, $acf, 'Hi');
+        $this->assertNotSame(array(), $short->warningsForPost(42));
+        $this->assertSame('Title is too short.', $short->warningsForPost(42)[0]['message']);
+
+        $long = $this->coreWarningNotifier($repository, $acfCatalog, $composite, $core, $acf, 'Long enough');
+        $this->assertSame(array(), $long->warningsForPost(42));
+    }
+
     public function testOneWarningTargetsItsOwnField(): void
     {
         $items = SaveWarningNotifier::warningItems($this->evaluationFromWarnings(array(
@@ -926,6 +955,40 @@ final class SaveWarningNotifierTest extends TestCase
             },
             static fn (): array => array(),
             static fn (string $fieldKey, int $postId): mixed => $values[$fieldKey] ?? null
+        );
+    }
+
+    private function coreWarningNotifier(
+        InMemoryRuleRepository $repository,
+        AcfFieldCatalog $acfCatalog,
+        \ContentGuard\Application\Integration\CompositeFieldCatalog $composite,
+        \ContentGuard\Infrastructure\WordPress\CoreIntegration $core,
+        \ContentGuard\Infrastructure\ACF\AcfIntegration $acf,
+        string $title,
+    ): SaveWarningNotifier {
+        return new SaveWarningNotifier(
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            $repository,
+            $acfCatalog,
+            static fn (int $postId): string => 'post',
+            static fn (int $postId): string => 'publish',
+            static function (array $messages): void {
+            },
+            static fn (): array => array(),
+            null,
+            null,
+            $composite,
+            static function (int $postId, string $postType, array $fieldTypes) use ($core, $acf, $title): \ContentGuard\Application\Integration\CompositeValueProvider {
+                return new \ContentGuard\Application\Integration\CompositeValueProvider(array(
+                    $core->storedProvider(
+                        $postId,
+                        $postType,
+                        $fieldTypes,
+                        static fn (string $fieldId, int $id): mixed => $fieldId === 'title' ? $title : null
+                    ),
+                    $acf->storedProvider($postId, $postType, $fieldTypes),
+                ));
+            }
         );
     }
 

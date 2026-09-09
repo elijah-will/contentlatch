@@ -31,8 +31,10 @@ use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\EditorNoticePresentation;
+use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
+use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleEngine;
@@ -58,6 +60,8 @@ final class SaveWarningNotifier
      * @param callable(): array<int, string> $pullMessages
      * @param callable(string $fieldKey, int $postId): mixed|null $reader
      * @param callable(): object|null|null $screenOf Optional get_current_screen() double.
+     * @param FieldCatalog|null $fieldCatalog Composite catalog so Core warnings use stored Core values.
+     * @param callable(int $postId, string $postType, array<string, string> $fieldTypes): FieldValueProviderInterface|null $providerFactory
      */
     public function __construct(
         private ContentEvaluator $evaluator,
@@ -69,11 +73,19 @@ final class SaveWarningNotifier
         private mixed $pullMessages,
         private mixed $reader = null,
         private mixed $screenOf = null,
+        private mixed $fieldCatalog = null,
+        private mixed $providerFactory = null,
     ) {
     }
 
-    public static function register(RuleRepositoryInterface $repository): self
-    {
+    /**
+     * @param callable(int $postId, string $postType, array<string, string> $fieldTypes): FieldValueProviderInterface|null $providerFactory
+     */
+    public static function register(
+        RuleRepositoryInterface $repository,
+        ?FieldCatalog $fieldCatalog = null,
+        mixed $providerFactory = null,
+    ): self {
         $notifier = new self(
             new ContentEvaluator($repository, RuleEngine::v1()),
             $repository,
@@ -100,7 +112,11 @@ final class SaveWarningNotifier
             },
             static function (): array {
                 return array();
-            }
+            },
+            null,
+            null,
+            $fieldCatalog,
+            $providerFactory
         );
 
         add_action('admin_enqueue_scripts', array($notifier, 'onAdminEnqueue'));
@@ -481,28 +497,45 @@ final class SaveWarningNotifier
             return array();
         }
 
-        $catalogTypes = $this->catalog->fieldTypesForPostType($postType);
+        $typesCatalog = $this->fieldCatalog instanceof FieldCatalog ? $this->fieldCatalog : $this->catalog;
+        $catalogTypes = $typesCatalog->fieldTypesForPostType($postType);
         $fieldTypes   = array_intersect_key($catalogTypes, $this->referencedFieldKeys($rules));
 
-        $maps = $this->catalog->nestedResolutionMaps($postType, $fieldTypes);
         $evaluation = $this->evaluator->evaluate(
             $postId,
             $postType,
-            new AcfStoredValueProvider(
-                $postId,
-                new AcfValueNormalizer(),
-                $fieldTypes,
-                $this->reader,
-                $maps['paths'],
-                $maps['names'],
-                $maps['repeater_keys'],
-                $maps['flex_keys'] ?? array(),
-                $maps['layouts'] ?? array(),
-                $maps['clone_keys'] ?? array()
-            )
+            $this->provider($postId, $postType, $fieldTypes)
         );
 
         return self::warningItems($evaluation);
+    }
+
+    /**
+     * @param array<string, string> $fieldTypes
+     */
+    private function provider(int $postId, string $postType, array $fieldTypes): FieldValueProviderInterface
+    {
+        if (is_callable($this->providerFactory)) {
+            $provider = ($this->providerFactory)($postId, $postType, $fieldTypes);
+            if ($provider instanceof FieldValueProviderInterface) {
+                return $provider;
+            }
+        }
+
+        $maps = $this->catalog->nestedResolutionMaps($postType, $fieldTypes);
+
+        return new AcfStoredValueProvider(
+            $postId,
+            new AcfValueNormalizer(),
+            $fieldTypes,
+            $this->reader,
+            $maps['paths'],
+            $maps['names'],
+            $maps['repeater_keys'],
+            $maps['flex_keys'] ?? array(),
+            $maps['layouts'] ?? array(),
+            $maps['clone_keys'] ?? array()
+        );
     }
 
     /**

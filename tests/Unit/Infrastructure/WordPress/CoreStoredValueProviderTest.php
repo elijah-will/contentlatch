@@ -113,6 +113,10 @@ final class CoreStoredValueProviderTest extends TestCase
 
     public function testMissingReaderCannotResolveWithoutWordpressApis(): void
     {
+        if (function_exists('get_post_field')) {
+            $this->markTestSkipped('WordPress post-field stubs are already loaded in this process.');
+        }
+
         $provider = new CoreStoredValueProvider(
             1,
             array(CoreFieldCatalog::TITLE => 'text'),
@@ -134,6 +138,7 @@ final class CoreStoredValueProviderTest extends TestCase
         $this->assertStringContainsString("postField('post_name'", $src);
         $this->assertStringContainsString("postField('post_author'", $src);
         $this->assertStringContainsString('get_post_field', $src);
+        $this->assertStringContainsString("'raw'", $src);
         $this->assertStringContainsString('get_post_thumbnail_id', $src);
         $this->assertStringNotContainsString('get_the_title(', $src);
         $this->assertStringNotContainsString('get_the_excerpt(', $src);

@@ -74,7 +74,10 @@ final class CoreIncomingValueProvider implements FieldValueProviderInterface
             return null;
         }
 
-        return $this->normalizer->normalize($fieldId, $this->payload[$key]);
+        return $this->normalizer->normalize(
+            $fieldId,
+            CoreIncomingPayload::unwrapRestValue($this->payload[$key])
+        );
     }
 
     public function instances(string $fieldId): array
@@ -93,12 +96,22 @@ final class CoreIncomingValueProvider implements FieldValueProviderInterface
 
     private function payloadKey(string $fieldId): ?string
     {
+        $fallback = null;
+
         foreach (self::ALIASES[$fieldId] ?? array($fieldId) as $key) {
-            if (array_key_exists($key, $this->payload)) {
-                return $key;
+            if (!array_key_exists($key, $this->payload)) {
+                continue;
             }
+
+            $value = $this->payload[$key];
+            if (CoreIncomingPayload::isEmptyRestPlaceholder($value)) {
+                $fallback ??= $key;
+                continue;
+            }
+
+            return $key;
         }
 
-        return null;
+        return $fallback;
     }
 }

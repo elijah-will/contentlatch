@@ -7,12 +7,10 @@ declare(strict_types=1);
 
 namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
@@ -21,6 +19,7 @@ use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 use ContentGuard\Infrastructure\WordPress\RulePostRecord;
 use ContentGuard\Tests\Support\FakeRulePostStore;
+use ContentGuard\Tests\Support\IncomingSaveFixtures;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -753,10 +752,6 @@ final class AcfSaveValidatorTest extends TestCase
             ),
         );
         $validator = new AcfSaveValidator(
-            new ContentEvaluator(
-                new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-                RuleEngine::v1()
-            ),
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
             \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             new IntendedPostStatusResolver(),
@@ -765,7 +760,11 @@ final class AcfSaveValidatorTest extends TestCase
                     'input'   => $input,
                     'message' => $message,
                 );
-            }
+            },
+            IncomingSaveFixtures::evaluator(
+                new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog()
+            )
         );
         $validator->validate(
             $this->publishRequest(),
@@ -1052,7 +1051,6 @@ final class AcfSaveValidatorTest extends TestCase
         $this->errors = array();
 
         $validator = new AcfSaveValidator(
-            new ContentEvaluator($repository, RuleEngine::v1()),
             $repository,
             $catalog,
             new IntendedPostStatusResolver(),
@@ -1061,7 +1059,8 @@ final class AcfSaveValidatorTest extends TestCase
                     'input'   => $input,
                     'message' => $message,
                 );
-            }
+            },
+            IncomingSaveFixtures::evaluator($repository, $catalog)
         );
 
         $validator->validate($request, $payload);

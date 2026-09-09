@@ -105,4 +105,34 @@ final class AcfIntegration implements FieldCatalog
             $maps['clone_keys'] ?? array()
         );
     }
+
+    /**
+     * @param array<string, string> $fieldTypes
+     */
+    public function incomingProvider(
+        mixed $payload,
+        string $postType,
+        array $fieldTypes,
+    ): FieldValueProviderInterface {
+        $owned = array();
+        foreach ($this->catalog->fieldTypesForPostType($postType) as $id => $type) {
+            if (isset($fieldTypes[$id])) {
+                $owned[$id] = $type;
+            }
+        }
+
+        $maps = $this->catalog->nestedResolutionMaps($postType, $owned);
+
+        return new AcfIncomingValueProvider(
+            $payload,
+            new AcfValueNormalizer(),
+            $owned,
+            $maps['paths'],
+            $maps['names'],
+            $maps['repeater_keys'],
+            $maps['flex_keys'] ?? array(),
+            $maps['layouts'] ?? array(),
+            $maps['clone_keys'] ?? array()
+        );
+    }
 }

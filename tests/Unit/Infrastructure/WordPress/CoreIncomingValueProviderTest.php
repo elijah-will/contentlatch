@@ -29,6 +29,22 @@ final class CoreIncomingValueProviderTest extends TestCase
         $this->assertTrue(Value::isEmpty($empty->get(CoreFieldCatalog::TITLE)));
     }
 
+    public function testGutenbergRestTitleObjectIsReadAsText(): void
+    {
+        $fromRest = $this->provider(array(
+            'title' => array(
+                'raw'      => 'This is a valid title',
+                'rendered' => 'This is a valid title',
+            ),
+        ));
+
+        $this->assertSame('This is a valid title', $fromRest->get(CoreFieldCatalog::TITLE));
+        $this->assertSame(21, Value::stringLength($fromRest->get(CoreFieldCatalog::TITLE)));
+        $this->assertSame(5, Value::stringLength($this->provider(array(
+            'title' => array('raw' => 'Short'),
+        ))->get(CoreFieldCatalog::TITLE)));
+    }
+
     public function testTitleAcceptsPostTitleAlias(): void
     {
         $provider = $this->provider(array('post_title' => 'From WP'));
@@ -65,6 +81,33 @@ final class CoreIncomingValueProviderTest extends TestCase
         ));
         $this->assertSame('Keep this', $gutenbergPresent->get(CoreFieldCatalog::CONTENT));
         $this->assertSame(9, Value::stringLength($gutenbergPresent->get(CoreFieldCatalog::CONTENT)));
+    }
+
+    public function testGutenbergRestContentObjectIsNotTreatedAsEmpty(): void
+    {
+        $markup = '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->';
+        $provider = $this->provider(array(
+            'content' => array(
+                'raw'           => $markup,
+                'rendered'      => '<p>Hello world</p>',
+                'protected'     => false,
+                'block_version' => 1,
+            ),
+        ));
+
+        $this->assertTrue($provider->has(CoreFieldCatalog::CONTENT));
+        $this->assertSame('Hello world', $provider->get(CoreFieldCatalog::CONTENT));
+        $this->assertFalse(Value::isEmpty($provider->get(CoreFieldCatalog::CONTENT)));
+    }
+
+    public function testSanitizedEmptyContentArrayFallsThroughToPostContent(): void
+    {
+        $provider = $this->provider(array(
+            'content'      => array(),
+            'post_content' => "<!-- wp:paragraph -->\n<p>Hello world</p>\n<!-- /wp:paragraph -->",
+        ));
+
+        $this->assertSame('Hello world', $provider->get(CoreFieldCatalog::CONTENT));
     }
 
     public function testContentHtmlIsNotCountedAsCharacters(): void

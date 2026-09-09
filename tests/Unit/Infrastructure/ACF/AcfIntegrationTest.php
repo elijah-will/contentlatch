@@ -141,6 +141,28 @@ final class AcfIntegrationTest extends TestCase
         $this->assertEquals($direct->instances($cloneId), $composite->instances($cloneId));
     }
 
+    public function testIncomingProviderExposesSubmittedAcfValues(): void
+    {
+        $native = AcfCloneFixtures::pageCatalog();
+        $acf    = new AcfIntegration($native);
+        $types  = $native->fieldTypesForPostType('page');
+        $cloneId = AcfCloneFixtures::cloneATitlePosted();
+
+        $provider = $acf->incomingProvider(
+            array(
+                AcfCloneFixtures::CLONE_A => array(
+                    $cloneId => 'Incoming clone title',
+                ),
+            ),
+            'page',
+            $types
+        );
+
+        $this->assertTrue($provider->has($cloneId));
+        $this->assertSame('Incoming clone title', $provider->get($cloneId));
+        $this->assertFalse($provider->has('title'));
+    }
+
     public function testPersistedAcfFieldRefsDoNotGainAnIntegrationProperty(): void
     {
         $ref = AcfCloneFixtures::cloneATitleRef();
