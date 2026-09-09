@@ -29,6 +29,8 @@ final class EditorRestBlockNoticeTest extends TestCase
         $this->assertStringContainsString('RestSaveValidator::ERROR_CODE', $php);
         $this->assertStringContainsString('contentguard-audit-blockers', $php);
         $this->assertStringContainsString('SAVE_POST_NOTICE_ID', $php);
+        $this->assertStringContainsString('editor-save', $php);
+        $this->assertSame(array('SAVE_POST_NOTICE_ID', 'editor-save'), EditorRestBlockNotice::SAVE_NOTICE_IDS);
         $this->assertStringContainsString('is_block_editor', $php);
         $this->assertStringNotContainsString('IncomingSaveEvaluator', $php);
         $this->assertStringNotContainsString('RuleEngine', $php);

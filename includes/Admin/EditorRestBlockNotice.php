@@ -18,8 +18,9 @@ use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
 
 final class EditorRestBlockNotice
 {
-    public const NOTICE_ID      = 'contentguard-audit-blockers';
-    public const SAVE_NOTICE_ID = 'SAVE_POST_NOTICE_ID';
+    public const NOTICE_ID       = 'contentguard-audit-blockers';
+    public const SAVE_NOTICE_ID  = 'SAVE_POST_NOTICE_ID';
+    public const SAVE_NOTICE_IDS = array('SAVE_POST_NOTICE_ID', 'editor-save');
 
     public static function register(): void
     {
@@ -55,9 +56,10 @@ final class EditorRestBlockNotice
             'contentguard-editor-rest-blockers',
             'contentguardEditorRestBlockers',
             array(
-                'errorCode'    => RestSaveValidator::ERROR_CODE,
-                'noticeId'     => self::NOTICE_ID,
-                'saveNoticeId' => self::SAVE_NOTICE_ID,
+                'errorCode'     => RestSaveValidator::ERROR_CODE,
+                'noticeId'      => self::NOTICE_ID,
+                'saveNoticeId'  => self::SAVE_NOTICE_ID,
+                'saveNoticeIds' => self::SAVE_NOTICE_IDS,
                 'i18n'         => array(
                     'blocking' => __('Blocking', 'contentguard'),
                     'count'    => __('%d blocking issues', 'contentguard'),

@@ -27,7 +27,12 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('id: NOTICE_ID', $js);
         $this->assertStringContainsString('SAVE_POST_NOTICE_ID', $js);
-        $this->assertStringContainsString('removeNotice(SAVE_NOTICE_ID)', $js);
+        $this->assertStringContainsString('editor-save', $js);
+        $this->assertStringContainsString('getNotices', $js);
+        $this->assertStringContainsString('notice.status !== "error"', $js);
+        $this->assertStringContainsString('removeNotice(notice.id', $js);
+        $this->assertStringContainsString('queueNativeSaveNoticeSuppress', $js);
+        $this->assertStringContainsString('nativeSaveErrorNotices', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
         $this->assertStringContainsString('didPostSaveRequestFail', $js);
         $this->assertStringContainsString('isAutosavingPost', $js);
@@ -47,6 +52,25 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringNotContainsString('min_length', $js);
         $this->assertStringNotContainsString('IncomingSaveEvaluator', $js);
         $this->assertStringNotContainsString('RuleEngine', $js);
+    }
+
+    public function testNoticeDispatchIsDeferredAndReentrancyGuarded(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-rest-blockers.js');
+
+        $this->assertStringContainsString('function afterCurrentCycle', $js);
+        $this->assertStringContainsString('setTimeout(callback, 0)', $js);
+        $this->assertStringContainsString('dispatchingNotice', $js);
+        $this->assertStringContainsString('lastNoticeHtml', $js);
+        $this->assertStringContainsString('afterCurrentCycle(hideBlockingNotice)', $js);
+        $this->assertStringContainsString('afterCurrentCycle(function () {', $js);
+        $this->assertStringContainsString('showContentGuardError(error)', $js);
+        $this->assertStringContainsString('wasSaving = isSaving', $js);
+        $this->assertStringContainsString('if (!editor || dispatchingNotice)', $js);
+        $this->assertStringContainsString('afterCurrentCycle(suppressGutenbergSaveNotice)', $js);
+        $this->assertStringContainsString('shouldReplaceNativeSaveNotice', $js);
+        $this->assertStringContainsString('shownFromSave', $js);
+        $this->assertStringNotContainsString('showContentGuardError(lastSaveError())', $js);
     }
 
     public function testWarningAndAuditScriptsStayOnTheirOwnNotices(): void

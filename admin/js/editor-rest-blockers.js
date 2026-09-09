@@ -3,8 +3,13 @@
   var ERROR_CODE = config.errorCode || "contentguard_validation_failed";
   var NOTICE_ID = config.noticeId || "contentguard-audit-blockers";
   var SAVE_NOTICE_ID = config.saveNoticeId || "SAVE_POST_NOTICE_ID";
+  var SAVE_NOTICE_IDS = Array.isArray(config.saveNoticeIds) && config.saveNoticeIds.length
+    ? config.saveNoticeIds
+    : [SAVE_NOTICE_ID, "editor-save"];
   var capturedError = null;
   var shownFromSave = false;
+  var lastNoticeHtml = null;
+  var dispatchingNotice = false;
 
   function editorSelect() {
     return window.wp && wp.data && wp.data.select ? wp.data.select("core/editor") : null;
@@ -14,8 +19,35 @@
     return window.wp && wp.data && wp.data.select ? wp.data.select("core") : null;
   }
 
+  function noticeSelect() {
+    return window.wp && wp.data && wp.data.select ? wp.data.select("core/notices") : null;
+  }
+
   function noticeStore() {
     return window.wp && wp.data && wp.data.dispatch ? wp.data.dispatch("core/notices") : null;
+  }
+
+  function listedNotices() {
+    var select = noticeSelect();
+    if (!select || typeof select.getNotices !== "function") {
+      return [];
+    }
+
+    var global = select.getNotices() || [];
+    var snackbar = select.getNotices("snackbar") || [];
+    return global.concat(snackbar);
+  }
+
+  function isNativeSaveErrorNotice(notice) {
+    if (!notice || notice.status !== "error") {
+      return false;
+    }
+
+    return SAVE_NOTICE_IDS.indexOf(asString(notice.id)) !== -1;
+  }
+
+  function nativeSaveErrorNotices() {
+    return listedNotices().filter(isNativeSaveErrorNotice);
   }
 
   function asString(value) {
@@ -151,26 +183,49 @@
     return { html: html, text: textLines.concat(lines).join("\n") };
   }
 
+  function afterCurrentCycle(callback) {
+    setTimeout(callback, 0);
+  }
+
   function showNotice(html, text) {
     var notices = noticeStore();
-    if (!notices) {
+    if (!notices || dispatchingNotice) {
       return;
     }
 
     if (typeof html !== "string" || html === "" || html === "[object Object]") {
-      if (typeof notices.removeNotice === "function") {
-        notices.removeNotice(NOTICE_ID);
+      if (lastNoticeHtml === "") {
+        return;
+      }
+      lastNoticeHtml = "";
+      dispatchingNotice = true;
+      try {
+        if (typeof notices.removeNotice === "function") {
+          notices.removeNotice(NOTICE_ID);
+        }
+      } finally {
+        dispatchingNotice = false;
       }
       return;
     }
 
-    notices.createNotice("error", html, {
-      id: NOTICE_ID,
-      isDismissible: true,
-      type: "default",
-      spokenMessage: typeof text === "string" ? text : "",
-      __unstableHTML: true
-    });
+    if (html === lastNoticeHtml) {
+      return;
+    }
+
+    lastNoticeHtml = html;
+    dispatchingNotice = true;
+    try {
+      notices.createNotice("error", html, {
+        id: NOTICE_ID,
+        isDismissible: true,
+        type: "default",
+        spokenMessage: typeof text === "string" ? text : "",
+        __unstableHTML: true
+      });
+    } finally {
+      dispatchingNotice = false;
+    }
   }
 
   function hideBlockingNotice() {
@@ -182,10 +237,36 @@
     showNotice("", "");
   }
 
+  function shouldReplaceNativeSaveNotice() {
+    return shownFromSave && isContentGuardError(lastSaveError());
+  }
+
   function suppressGutenbergSaveNotice() {
     var notices = noticeStore();
-    if (notices && typeof notices.removeNotice === "function") {
-      notices.removeNotice(SAVE_NOTICE_ID);
+    if (!shouldReplaceNativeSaveNotice() || dispatchingNotice || !notices || typeof notices.removeNotice !== "function") {
+      return;
+    }
+
+    nativeSaveErrorNotices().forEach(function (notice) {
+      dispatchingNotice = true;
+      try {
+        if (notice.context) {
+          notices.removeNotice(notice.id, notice.context);
+        } else {
+          notices.removeNotice(notice.id);
+        }
+      } finally {
+        dispatchingNotice = false;
+      }
+    });
+  }
+
+  function queueNativeSaveNoticeSuppress() {
+    afterCurrentCycle(suppressGutenbergSaveNotice);
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(function () {
+        afterCurrentCycle(suppressGutenbergSaveNotice);
+      });
     }
   }
 
@@ -197,11 +278,7 @@
     var built = buildNotice(error);
     shownFromSave = true;
     showNotice(built.html, built.text);
-    suppressGutenbergSaveNotice();
-    if (typeof requestAnimationFrame === "function") {
-      requestAnimationFrame(suppressGutenbergSaveNotice);
-    }
-    setTimeout(suppressGutenbergSaveNotice, 0);
+    queueNativeSaveNoticeSuppress();
   }
 
   function lastSaveError() {
@@ -236,7 +313,9 @@
       return next(options).catch(function (error) {
         if (isContentGuardError(error) && !isAutosaving()) {
           capturedError = error;
-          showContentGuardError(error);
+          afterCurrentCycle(function () {
+            showContentGuardError(error);
+          });
         }
         return Promise.reject(error);
       });
@@ -250,20 +329,41 @@
   var wasSaving = false;
   wp.data.subscribe(function () {
     var editor = editorSelect();
-    if (!editor) {
+    if (!editor || dispatchingNotice) {
       return;
     }
 
     var isSaving = !!editor.isSavingPost();
     var autosaving = isAutosaving();
-    if (wasSaving && !isSaving && !autosaving) {
-      if (typeof editor.didPostSaveRequestSucceed === "function" && editor.didPostSaveRequestSucceed()) {
-        capturedError = null;
-        hideBlockingNotice();
-      } else if (typeof editor.didPostSaveRequestFail === "function" && editor.didPostSaveRequestFail()) {
-        showContentGuardError(lastSaveError());
-      }
-    }
+    var finished = wasSaving && !isSaving && !autosaving;
     wasSaving = isSaving;
+    if (!finished) {
+      return;
+    }
+
+    if (typeof editor.didPostSaveRequestSucceed === "function" && editor.didPostSaveRequestSucceed()) {
+      capturedError = null;
+      afterCurrentCycle(hideBlockingNotice);
+      return;
+    }
+
+    if (typeof editor.didPostSaveRequestFail === "function" && editor.didPostSaveRequestFail()) {
+      var error = lastSaveError();
+      afterCurrentCycle(function () {
+        showContentGuardError(error);
+      });
+    }
+  });
+
+  wp.data.subscribe(function () {
+    if (!shouldReplaceNativeSaveNotice() || dispatchingNotice) {
+      return;
+    }
+
+    if (nativeSaveErrorNotices().length === 0) {
+      return;
+    }
+
+    afterCurrentCycle(suppressGutenbergSaveNotice);
   });
 })();
