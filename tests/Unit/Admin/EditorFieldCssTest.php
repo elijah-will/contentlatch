@@ -22,6 +22,8 @@ final class EditorFieldCssTest extends TestCase
         $this->assertStringContainsString('contentguard-audit-blockers', $css);
         $this->assertStringContainsString('contentguard-editor-warnings', $css);
         $this->assertStringContainsString('contentguard-editor-warnings-notice', $css);
+        $this->assertStringContainsString('.acf-notice.acf-error-message p', $css);
+        $this->assertStringContainsString('white-space: pre-line', $css);
         $this->assertStringNotContainsString('contentguard-field-target', $css);
         $this->assertStringNotContainsString('pointer-events: none', $css);
         $this->assertStringNotContainsString('opacity: 0.5', $css);

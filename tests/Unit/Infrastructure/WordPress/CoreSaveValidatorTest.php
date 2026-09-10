@@ -401,6 +401,35 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertSame('ContentGuard · Blocking', $this->deaths[0]['title']);
         $this->assertTrue($this->deaths[0]['args']['back_link']);
         $this->assertSame(400, $this->deaths[0]['args']['response']);
+        $this->assertStringNotContainsString('blocking issues', $this->deaths[0]['message']);
+        $this->assertStringNotContainsString('required..', $this->deaths[0]['message']);
+    }
+
+    public function testMultipleClassicBlockersRenderAsSeparateListItems(): void
+    {
+        $_POST = $this->publishRequest(array(
+            'post_title'    => '',
+            'content'       => '',
+            '_thumbnail_id' => '-1',
+        ));
+        $this->validator(array(
+            $this->required(CoreCatalogFixtures::titleRef()),
+            $this->required(CoreCatalogFixtures::contentRef()),
+            $this->required(CoreCatalogFixtures::featuredImageRef()),
+        ))->onLoadPost();
+
+        $html = $this->deaths[0]['message'];
+        $this->assertSame('ContentGuard · Blocking', $this->deaths[0]['title']);
+        $this->assertStringContainsString('ContentGuard · Blocking', $html);
+        $this->assertStringContainsString('3 blocking issues', $html);
+        $this->assertStringContainsString('<li>Title — This field is required.</li>', $html);
+        $this->assertStringContainsString('<li>Content — This field is required.</li>', $html);
+        $this->assertStringContainsString('<li>Featured Image — This field is required.</li>', $html);
+        $this->assertStringNotContainsString('required..', $html);
+        $this->assertStringNotContainsString(
+            'Title — This field is required. Content — This field is required.',
+            $html
+        );
     }
 
     public function testWarningDoesNotBlockClassicEditpost(): void

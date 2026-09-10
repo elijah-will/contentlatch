@@ -181,6 +181,70 @@ final class AcfSaveValidatorCoreTest extends TestCase
         );
     }
 
+    public function testClassicMultipleCoreBlockersAreOneMultilineNotice(): void
+    {
+        $this->validate(
+            array(
+                $this->required(CoreCatalogFixtures::titleRef()),
+                $this->required(CoreCatalogFixtures::contentRef()),
+                $this->required(CoreCatalogFixtures::featuredImageRef()),
+            ),
+            array(),
+            array(
+                'post_title'    => '',
+                'content'       => '',
+                '_thumbnail_id' => '-1',
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => '',
+                    'message' => "ContentGuard · Blocking\n3 blocking issues\n"
+                        . "Title — This field is required.\n"
+                        . "Content — This field is required.\n"
+                        . "Featured Image — This field is required.",
+                ),
+            ),
+            $this->errors
+        );
+        $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
+    }
+
+    public function testClassicMixedCoreAndAcfBlockersKeepFieldErrorsSeparate(): void
+    {
+        $this->validate(
+            array(
+                $this->required(CoreCatalogFixtures::titleRef()),
+                $this->required(CoreCatalogFixtures::contentRef()),
+                $this->required(RuleFactory::field('field_ingredients', 'ingredients', 'Ingredients')),
+            ),
+            array('field_ingredients' => ''),
+            array(
+                'post_title' => '',
+                'content'    => '',
+            )
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => '',
+                    'message' => "ContentGuard · Blocking\n2 blocking issues\n"
+                        . "Title — This field is required.\n"
+                        . "Content — This field is required.",
+                ),
+                array(
+                    'input'   => 'acf[field_ingredients]',
+                    'message' => 'Ingredients — This field is required.',
+                ),
+            ),
+            $this->errors
+        );
+        $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
+    }
+
     /**
      * @param array<int, mixed>    $rules
      * @param array<string, mixed> $acfPayload
@@ -228,12 +292,17 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
     private function titleRequired(): \ContentGuard\Domain\Rule
     {
+        return $this->required(CoreCatalogFixtures::titleRef());
+    }
+
+    private function required(\ContentGuard\Domain\FieldRef $field): \ContentGuard\Domain\Rule
+    {
         return RuleFactory::rule(array(
             'postType'    => 'post',
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field' => CoreCatalogFixtures::titleRef(),
+                    'field' => $field,
                 )),
             ),
         ));

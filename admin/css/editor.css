@@ -69,6 +69,15 @@
     padding: 8px 12px;
 }
 
+/*
+ * Classic ACF renders global errors inside one <p> and concatenates them
+ * with ". ". ContentGuard sends a single preformatted message; keep its
+ * newlines as separate lines without changing ACF's outer wrapper.
+ */
+.acf-notice.acf-error-message p {
+    white-space: pre-line;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .contentguard-warning-field {
         transition: none;

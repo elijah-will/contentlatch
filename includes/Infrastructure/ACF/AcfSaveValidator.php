@@ -111,12 +111,33 @@ final class AcfSaveValidator
         $fieldPaths   = $nestedMaps['paths'];
         $repeaterKeys = $nestedMaps['repeater_keys'];
 
+        $addError = $this->addError;
+        if (!is_callable($addError)) {
+            return;
+        }
+
+        $generalLines = array();
+        $fieldErrors  = array();
         foreach ($evaluation->results as $result) {
             if (!$result->isFailed()) {
                 continue;
             }
 
-            $this->reportError($result, $fieldPaths, $repeaterKeys);
+            $error = $this->errorForResult($result, $fieldPaths, $repeaterKeys);
+            if ($error['input'] === '') {
+                $generalLines[] = $error['message'];
+            } else {
+                $fieldErrors[] = $error;
+            }
+        }
+
+        $general = EditorNoticePresentation::blockingNoticeText($generalLines);
+        if ($general !== '') {
+            $addError('', $general);
+        }
+
+        foreach ($fieldErrors as $error) {
+            $addError($error['input'], $error['message']);
         }
     }
 
@@ -170,19 +191,17 @@ final class AcfSaveValidator
     /**
      * @param array<string, list<string>> $fieldPaths
      * @param array<string, string> $repeaterKeys
+     * @return array{input: string, message: string}
      */
-    private function reportError(EvaluationResult $result, array $fieldPaths, array $repeaterKeys = array()): void
+    private function errorForResult(EvaluationResult $result, array $fieldPaths, array $repeaterKeys = array()): array
     {
-        $addError = $this->addError;
-        if (!is_callable($addError)) {
-            return;
-        }
-
         $fieldId = $result->fieldId ?? '';
+        $message = $this->issueLine($result);
         if ($fieldId !== '' && isset(CoreFieldCatalog::FIELDS[$fieldId])) {
-            $addError('', $this->issueLine($result));
-
-            return;
+            return array(
+                'input'   => '',
+                'message' => $message,
+            );
         }
 
         $input = '';
@@ -198,7 +217,10 @@ final class AcfSaveValidator
                 : AcfNestedField::inputName($fieldId, $path);
         }
 
-        $addError($input, $this->issueLine($result));
+        return array(
+            'input'   => $input,
+            'message' => $message,
+        );
     }
 
     private function issueLine(EvaluationResult $result): string

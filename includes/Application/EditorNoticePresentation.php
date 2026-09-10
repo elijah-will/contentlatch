@@ -84,6 +84,34 @@ final class EditorNoticePresentation
         return implode("\n", $lines);
     }
 
+    /**
+     * Blocking copy for surfaces that can only deliver one text node
+     * (Classic ACF global errors). A single issue stays one line. Multiple
+     * issues reuse the shared ContentGuard · Blocking hierarchy.
+     *
+     * @param list<string> $itemText
+     */
+    public static function blockingNoticeText(array $itemText): string
+    {
+        $lines = array();
+        foreach ($itemText as $line) {
+            $line = trim((string) $line);
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        if ($lines === array()) {
+            return '';
+        }
+
+        if (count($lines) === 1) {
+            return $lines[0];
+        }
+
+        return self::noticeText(self::SEVERITY_BLOCKING, $lines);
+    }
+
     public static function issueText(string $label, string $message): string
     {
         $label   = trim($label);

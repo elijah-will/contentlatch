@@ -99,4 +99,31 @@ final class EditorNoticePresentationTest extends TestCase
             EditorNoticePresentation::issueLine('Title', 'Title — This field is required.', 'required')
         );
     }
+
+    public function testBlockingNoticeTextKeepsASingleIssueOnOneLine(): void
+    {
+        $this->assertSame(
+            'Title — This field is required.',
+            EditorNoticePresentation::blockingNoticeText(array('Title — This field is required.'))
+        );
+    }
+
+    public function testBlockingNoticeTextPutsMultipleIssuesOnSeparateLines(): void
+    {
+        $this->assertSame(
+            "ContentGuard · Blocking\n3 blocking issues\n"
+            . "Title — This field is required.\n"
+            . "Content — This field is required.\n"
+            . "Featured Image — This field is required.",
+            EditorNoticePresentation::blockingNoticeText(array(
+                'Title — This field is required.',
+                'Content — This field is required.',
+                'Featured Image — This field is required.',
+            ))
+        );
+        $this->assertStringNotContainsString('required..', EditorNoticePresentation::blockingNoticeText(array(
+            'Title — This field is required.',
+            'Content — This field is required.',
+        )));
+    }
 }

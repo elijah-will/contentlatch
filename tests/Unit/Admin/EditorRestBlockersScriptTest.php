@@ -23,6 +23,8 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringContainsString('contentguard-audit-blockers', $js);
         $this->assertStringContainsString('contentguard-audit-blockers__title', $js);
         $this->assertStringContainsString('contentguard-audit-blockers__list', $js);
+        $this->assertStringContainsString('html += "<li>" + item + "</li>";', $js);
+        $this->assertStringNotContainsString("error.message + '. '", $js);
         $this->assertStringContainsString('createNotice("error"', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('id: NOTICE_ID', $js);
