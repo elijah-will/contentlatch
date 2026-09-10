@@ -39,7 +39,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . AcfCloneFixtures::CLONE_A . '][' . AcfCloneFixtures::cloneATitlePosted() . ']',
-                    'message' => 'Shared Content → Title is required.',
+                    'message' => 'Shared Content → Title — This field is required.',
                 ),
             ),
             $this->errors
@@ -61,7 +61,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . AcfCloneFixtures::CLONE_B . '][' . AcfCloneFixtures::TITLE . ']',
-                    'message' => 'Hero Clone → Title is required.',
+                    'message' => 'Hero Clone → Title — This field is required.',
                 ),
             ),
             $this->errors

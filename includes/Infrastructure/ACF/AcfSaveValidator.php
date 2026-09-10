@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\EvaluationResult;
@@ -179,7 +180,7 @@ final class AcfSaveValidator
 
         $fieldId = $result->fieldId ?? '';
         if ($fieldId !== '' && isset(CoreFieldCatalog::FIELDS[$fieldId])) {
-            $addError('', $this->errorMessage($result));
+            $addError('', $this->issueLine($result));
 
             return;
         }
@@ -197,26 +198,19 @@ final class AcfSaveValidator
                 : AcfNestedField::inputName($fieldId, $path);
         }
 
-        $addError($input, $this->errorMessage($result));
+        $addError($input, $this->issueLine($result));
     }
 
-    private function errorMessage(EvaluationResult $result): string
+    private function issueLine(EvaluationResult $result): string
     {
-        $message = $result->message;
-        $label   = (string) ($result->context['field_label'] ?? '');
-
-        if ($result->code === 'no_rows' && $message !== '') {
-            return $message;
+        if ($result->code === 'no_rows' && $result->message !== '') {
+            return $result->message;
         }
 
-        if ($result->code === 'required' && $message === 'This field is required.' && $label !== '') {
-            return sprintf('%s is required.', $label);
-        }
-
-        if ($message !== '') {
-            return $message;
-        }
-
-        return $label !== '' ? sprintf('%s is invalid.', $label) : 'Content validation failed.';
+        return EditorNoticePresentation::issueLine(
+            (string) ($result->context['field_label'] ?? ''),
+            $result->message,
+            $result->code
+        );
     }
 }

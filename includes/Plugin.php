@@ -33,6 +33,7 @@ use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
 use ContentGuard\Infrastructure\WordPress\AuditSchema;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
 use ContentGuard\Infrastructure\WordPress\CoreIntegration;
+use ContentGuard\Infrastructure\WordPress\CoreSaveValidator;
 use ContentGuard\Infrastructure\WordPress\EditablePostTypes;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
@@ -96,6 +97,7 @@ final class Plugin
 
         AcfSaveValidator::register($this->ruleRepository(), $incoming);
         RestSaveValidator::register($incoming);
+        CoreSaveValidator::register($incoming);
         EditorFieldFocus::register();
         EditorRestBlockNotice::register();
         EditorAuditNotice::register($this->auditService(), $this->ruleRepository());

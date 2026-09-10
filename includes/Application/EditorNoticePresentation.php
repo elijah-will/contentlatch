@@ -96,6 +96,40 @@ final class EditorNoticePresentation
         return $message !== '' ? $message : $label;
     }
 
+    /**
+     * Single evaluation-result line shared by Classic, ACF, and Gutenberg.
+     *
+     * Default required failures become "Label — This field is required.".
+     * Custom messages keep their wording; the label is prefixed only when
+     * it is not already the start of the message.
+     */
+    public static function issueLine(string $label, string $message, string $code = ''): string
+    {
+        $label   = trim($label);
+        $message = trim($message);
+
+        if ($label !== '' && $message !== '' && str_starts_with($message, $label . ' — ')) {
+            return $message;
+        }
+
+        $required          = self::translate('This field is required.');
+        $isDefaultRequired = $code === 'required'
+            && ($message === '' || $message === $required || $message === 'This field is required.');
+        $isLabelRequired   = $label !== '' && $message === $label . ' is required.';
+
+        if ($label !== '' && ($isDefaultRequired || $isLabelRequired)) {
+            return self::issueText($label, $required);
+        }
+
+        if ($label !== '' && $message !== '' && !str_starts_with($message, $label)) {
+            return self::issueText($label, $message);
+        }
+
+        $line = $message !== '' ? $message : $label;
+
+        return $line !== '' ? $line : self::translate('ContentGuard validation failed.');
+    }
+
     private static function severityLabel(string $severity): string
     {
         if ($severity === self::SEVERITY_WARNING) {

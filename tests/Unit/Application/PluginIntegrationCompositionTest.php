@@ -55,6 +55,7 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertStringContainsString('IncomingSaveEvaluator', $plugin);
         $this->assertStringContainsString('storedProvider', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Application/IncomingSaveEvaluator.php'));
         $this->assertStringContainsString('RestSaveValidator::register', $plugin);
+        $this->assertStringContainsString('CoreSaveValidator::register', $plugin);
         $this->assertStringContainsString('EditorRestBlockNotice::register', $plugin);
         $this->assertStringContainsString('unwrapRestValue', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Infrastructure/WordPress/CoreIncomingPayload.php'));
         $this->assertStringContainsString('get_json_params', (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Infrastructure/WordPress/CoreIncomingPayload.php'));

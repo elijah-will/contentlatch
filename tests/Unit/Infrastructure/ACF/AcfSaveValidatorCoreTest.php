@@ -36,7 +36,7 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array(
                 array(
                     'input'   => '',
-                    'message' => 'Title is required.',
+                    'message' => 'Title — This field is required.',
                 ),
             ),
             $this->errors
@@ -138,7 +138,7 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array(
                 array(
                     'input'   => '',
-                    'message' => 'Title is required.',
+                    'message' => 'Title — This field is required.',
                 ),
             ),
             $this->errors

@@ -39,7 +39,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description is required.',
+                    'message' => 'Recipe Description — This field is required.',
                 ),
             ),
             $this->errors
@@ -85,7 +85,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description is required.',
+                    'message' => 'Recipe Description — This field is required.',
                 ),
             ),
             $this->errors
@@ -189,7 +189,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_64f8a42a61f56]',
-                    'message' => 'Recipe Description is required.',
+                    'message' => 'Recipe Description — This field is required.',
                 ),
             ),
             $this->errors
@@ -323,11 +323,11 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description is required.',
+                    'message' => 'Recipe Description — This field is required.',
                 ),
                 array(
                     'input'   => 'acf[field_title]',
-                    'message' => 'Recipe Title is required.',
+                    'message' => 'Recipe Title — This field is required.',
                 ),
             ),
             $this->errors
@@ -360,7 +360,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_description]',
-                    'message' => 'Please add a signature recipe description.',
+                    'message' => 'Recipe Description — Please add a signature recipe description.',
                 ),
             ),
             $this->errors
@@ -527,7 +527,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_product_details][field_ingredients]',
-                    'message' => 'Product Details → Ingredients is required.',
+                    'message' => 'Product Details → Ingredients — This field is required.',
                 ),
             ),
             $this->errors
@@ -613,11 +613,11 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient is required.',
+                    'message' => 'Ingredient List → Ingredient — This field is required.',
                 ),
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient is required.',
+                    'message' => 'Ingredient List → Ingredient — This field is required.',
                 ),
             ),
             $this->errors
@@ -645,7 +645,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
-                    'message' => 'Product Information → Item Size → Product Size is required.',
+                    'message' => 'Product Information → Item Size → Product Size — This field is required.',
                 ),
             ),
             $this->errors
@@ -811,7 +811,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[field_product_details][field_nutrition][field_calories]',
-                    'message' => 'Product Details → Nutrition → Calories is required.',
+                    'message' => 'Product Details → Nutrition → Calories — This field is required.',
                 ),
             ),
             $this->errors
@@ -872,11 +872,11 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
-                    'message' => 'Modules → Hero → Title is required.',
+                    'message' => 'Modules → Hero → Title — This field is required.',
                 ),
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
-                    'message' => 'Modules → Hero → Title is required.',
+                    'message' => 'Modules → Hero → Title — This field is required.',
                 ),
             ),
             $this->errors
@@ -907,7 +907,7 @@ final class AcfSaveValidatorTest extends TestCase
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
                         . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
                         . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
-                    'message' => 'Modules → Content Block → Content Block 1 → Headline is required.',
+                    'message' => 'Modules → Content Block → Content Block 1 → Headline — This field is required.',
                 ),
             ),
             $this->errors

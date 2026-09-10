@@ -75,4 +75,28 @@ final class EditorNoticePresentationTest extends TestCase
             EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_BLOCKING, $items)
         );
     }
+
+    public function testIssueLineUsesTheSharedRequiredVocabulary(): void
+    {
+        $this->assertSame(
+            'Title — This field is required.',
+            EditorNoticePresentation::issueLine('Title', 'This field is required.', 'required')
+        );
+        $this->assertSame(
+            'Featured Image — This field is required.',
+            EditorNoticePresentation::issueLine('Featured Image', 'Featured Image is required.', 'required')
+        );
+        $this->assertSame(
+            'Recipe Description — Keep this unique.',
+            EditorNoticePresentation::issueLine('Recipe Description', 'Keep this unique.')
+        );
+        $this->assertSame(
+            'Ingredients are required.',
+            EditorNoticePresentation::issueLine('Ingredients', 'Ingredients are required.')
+        );
+        $this->assertSame(
+            'Title — This field is required.',
+            EditorNoticePresentation::issueLine('Title', 'Title — This field is required.', 'required')
+        );
+    }
 }

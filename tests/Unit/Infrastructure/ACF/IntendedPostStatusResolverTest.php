@@ -60,6 +60,38 @@ final class IntendedPostStatusResolverTest extends TestCase
         );
     }
 
+    public function testClassicUpdateFromPublishToDraftIsDraft(): void
+    {
+        $this->assertSame(
+            'draft',
+            $this->resolver->resolve(
+                array(
+                    'action'               => 'editpost',
+                    'post_status'          => 'draft',
+                    'original_post_status' => 'publish',
+                    'save'                 => 'Update',
+                )
+            )
+        );
+    }
+
+    public function testAcfAjaxUpdateFromPublishToDraftIsDraft(): void
+    {
+        $this->assertSame(
+            'draft',
+            $this->resolver->resolve(
+                array(
+                    'action'               => 'acf/validate_save_post',
+                    'post_status'          => 'draft',
+                    'original_post_status' => 'publish',
+                    'save'                 => 'Update',
+                    '_acf_screen'          => 'post',
+                )
+            )
+        );
+        $this->assertFalse($this->resolver->isBlockingStatus('draft'));
+    }
+
     public function testPrivateButtonProducesPrivate(): void
     {
         $this->assertSame(

@@ -28,6 +28,10 @@ final class IntendedPostStatusResolver
             return 'private';
         }
 
+        if ($this->isPresent($request, 'saveasdraft')) {
+            return 'draft';
+        }
+
         if ($this->isPresent($request, 'publish')) {
             return $status === 'private' ? 'private' : 'publish';
         }
@@ -45,6 +49,10 @@ final class IntendedPostStatusResolver
         }
 
         if (in_array($status, array('draft', 'auto-draft'), true)) {
+            if ($this->isUnpublishingToDraft($request)) {
+                return 'draft';
+            }
+
             return $this->acfValidationImpliesPublish($request) ? 'publish' : 'draft';
         }
 
@@ -53,6 +61,22 @@ final class IntendedPostStatusResolver
         }
 
         return $this->acfValidationImpliesPublish($request) ? 'publish' : 'draft';
+    }
+
+    /**
+     * Classic Update after Status → Draft still triggers ACF's validate_save_post
+     * AJAX. That request is not a publish: the submitted post_status is draft and
+     * original_post_status is the previous published status.
+     *
+     * @param array<string, mixed> $request
+     */
+    private function isUnpublishingToDraft(array $request): bool
+    {
+        $status   = $this->string($request, 'post_status');
+        $original = $this->string($request, 'original_post_status');
+
+        return in_array($status, array('draft', 'auto-draft'), true)
+            && in_array($original, array('publish', 'private', 'future'), true);
     }
 
     /**
