@@ -13,6 +13,7 @@ use ContentGuard\Domain\FieldInstance;
 use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
+use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
 use ContentGuard\Tests\Support\AcfRepeaterFixtures;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
@@ -163,6 +164,53 @@ final class RuleEngineRepeaterTest extends TestCase
             static fn ($result): int => (int) $result->context['display_row'],
             $evaluation->results
         ));
+    }
+
+    public function testEveryQuantifierValidatesEachNestedRepeaterInstance(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'      => AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+
+        $evaluation = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array(
+                AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    new FieldInstance('Cut', array('repeater_rows' => array(
+                        array('display_row' => 1),
+                        array('display_row' => 1),
+                    ))),
+                    new FieldInstance('', array('repeater_rows' => array(
+                        array('display_row' => 1),
+                        array('display_row' => 2),
+                    ))),
+                    new FieldInstance('Grill', array('repeater_rows' => array(
+                        array('display_row' => 2),
+                        array('display_row' => 1),
+                    ))),
+                    new FieldInstance('', array('repeater_rows' => array(
+                        array('display_row' => 2),
+                        array('display_row' => 2),
+                    ))),
+                ),
+            ))
+        );
+
+        $this->assertTrue($evaluation->isFailed());
+        $this->assertCount(2, $evaluation->results);
+        $this->assertSame('required', $evaluation->results[0]->code);
+        $this->assertSame('required', $evaluation->results[1]->code);
+        $this->assertSame(AcfNestedRepeaterFixtures::STEP_NAME, $evaluation->results[0]->fieldId);
+        $this->assertSame(2, $evaluation->results[0]->context['repeater_rows'][1]['display_row']);
+        $this->assertSame(2, $evaluation->results[1]->context['repeater_rows'][0]['display_row']);
+        $this->assertSame('every', $rule->validations[0]->quantifier);
     }
 
     public function testConditionsRemainUnchangedAndSkipRepeaterThen(): void

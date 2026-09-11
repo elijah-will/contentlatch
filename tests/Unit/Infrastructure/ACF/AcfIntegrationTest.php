@@ -19,6 +19,7 @@ use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
 use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
 use ContentGuard\Tests\Support\AcfCloneFixtures;
 use ContentGuard\Tests\Support\AcfFlexibleFixtures;
+use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
 use ContentGuard\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
@@ -161,6 +162,42 @@ final class AcfIntegrationTest extends TestCase
         $this->assertTrue($provider->has($cloneId));
         $this->assertSame('Incoming clone title', $provider->get($cloneId));
         $this->assertFalse($provider->has('title'));
+    }
+
+    public function testNestedRepeaterLeavesStayHiddenFromTheRuleBuilderCatalog(): void
+    {
+        $native = AcfNestedRepeaterFixtures::recipeCatalog();
+        $acf    = new AcfIntegration($native);
+        $ids    = array_map(
+            static fn (array $field): string => (string) ($field['resolution_id'] ?? $field['key'] ?? ''),
+            $acf->fieldsForPostType('recipe')
+        );
+
+        $this->assertContains(AcfNestedRepeaterFixtures::STEP_NAME, array_keys($native->fieldTypesForPostType('recipe')));
+        $this->assertNotContains(AcfNestedRepeaterFixtures::STEP_NAME, $ids);
+
+        $maps = $native->nestedResolutionMaps('recipe', $native->fieldTypesForPostType('recipe'));
+        $this->assertSame(
+            AcfNestedRepeaterFixtures::chain(),
+            $maps['repeater_chains'][AcfNestedRepeaterFixtures::STEP_NAME]
+        );
+
+        $provider = $acf->incomingProvider(
+            array(
+                AcfNestedRepeaterFixtures::DIRECTIONS => array(
+                    'row-0' => array(
+                        AcfNestedRepeaterFixtures::STEPS => array(
+                            'row-0' => array(AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
+                        ),
+                    ),
+                ),
+            ),
+            'recipe',
+            $native->fieldTypesForPostType('recipe')
+        );
+        $instances = $provider->instances(AcfNestedRepeaterFixtures::STEP_NAME);
+        $this->assertCount(1, $instances);
+        $this->assertSame('Cut', $instances[0]->value);
     }
 
     public function testPersistedAcfFieldRefsDoNotGainAnIntegrationProperty(): void

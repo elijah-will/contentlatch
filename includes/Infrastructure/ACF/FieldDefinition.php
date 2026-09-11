@@ -18,6 +18,7 @@ final class FieldDefinition
      * @param list<string>          $path Root-to-leaf ACF field keys. Empty means top-level.
      * @param list<string>          $pathNames Parallel field names for stored-value fallback.
      * @param list<string>          $pathLabels Root-to-leaf labels for breadcrumbs.
+     * @param list<string>          $repeaterChain Outer-to-inner Repeater keys. Empty means none.
      */
     public function __construct(
         public readonly string $key,
@@ -36,7 +37,27 @@ final class FieldDefinition
         public readonly string $clone = '',
         public readonly string $cloneLabel = '',
         public readonly string $cloneDisplay = '',
+        public readonly array $repeaterChain = array(),
     ) {
+    }
+
+    /**
+     * Outer-to-inner Repeater keys. One-level fields are a single-item list.
+     *
+     * @return list<string>
+     */
+    public function repeaterChain(): array
+    {
+        if ($this->repeaterChain !== array()) {
+            return array_values($this->repeaterChain);
+        }
+
+        return $this->repeaterKey !== '' ? array($this->repeaterKey) : array();
+    }
+
+    public function isNestedRepeaterChild(): bool
+    {
+        return count($this->repeaterChain()) > 1;
     }
 
     public function resolutionId(): string

@@ -401,7 +401,7 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertSame('', $ref->container);
     }
 
-    public function testNestedRepeaterAndUnsupportedRepeaterChildrenAreExcluded(): void
+    public function testNestedRepeaterScalarIsCataloguedAndUnsupportedRepeaterChildrenRemainExcluded(): void
     {
         $catalog = new AcfFieldCatalog(
             static function (): array {
@@ -481,15 +481,85 @@ final class AcfFieldCatalogTest extends TestCase
             $catalog->fieldsForPostType('product')
         );
 
-        $this->assertSame(array('field_outer_title'), $keys);
+        $this->assertSame(array('field_outer_title', 'field_inner_title'), $keys);
         $this->assertNotContains('field_outer', $keys);
         $this->assertNotContains('field_inner', $keys);
-        $this->assertNotContains('field_inner_title', $keys);
         $this->assertNotContains('field_row_group', $keys);
         $this->assertNotContains('field_row_group_title', $keys);
         $this->assertNotContains('field_row_flex', $keys);
         $this->assertNotContains('field_row_flex_title', $keys);
         $this->assertNotContains('field_row_clone', $keys);
+
+        $byKey = array();
+        foreach ($catalog->fieldsForPostType('product') as $field) {
+            $byKey[$field->key] = $field;
+        }
+
+        $inner = $byKey['field_inner_title'];
+        $this->assertSame(array('field_outer', 'field_inner', 'field_inner_title'), $inner->path);
+        $this->assertSame(array('field_outer', 'field_inner'), $inner->repeaterChain());
+        $this->assertSame('field_outer', $inner->repeaterKey);
+        $this->assertTrue($inner->isNestedRepeaterChild());
+        $this->assertSame('repeater', $inner->container);
+
+        $maps = $catalog->nestedResolutionMaps('product', $catalog->fieldTypesForPostType('product'));
+        $this->assertSame('field_outer', $maps['repeater_keys']['field_inner_title']);
+        $this->assertSame(array('field_outer', 'field_inner'), $maps['repeater_chains']['field_inner_title']);
+        $this->assertSame(array('field_outer'), $maps['repeater_chains']['field_outer_title']);
+    }
+
+    public function testThirdRepeaterLevelRemainsExcluded(): void
+    {
+        $catalog = new AcfFieldCatalog(
+            static function (): array {
+                return array(
+                    array(
+                        'key'        => 'field_outer',
+                        'name'       => 'outer',
+                        'label'      => 'Outer',
+                        'type'       => 'repeater',
+                        'sub_fields' => array(
+                            array(
+                                'key'        => 'field_inner',
+                                'name'       => 'inner',
+                                'label'      => 'Inner',
+                                'type'       => 'repeater',
+                                'sub_fields' => array(
+                                    array(
+                                        'key'        => 'field_deep',
+                                        'name'       => 'deep',
+                                        'label'      => 'Deep',
+                                        'type'       => 'repeater',
+                                        'sub_fields' => array(
+                                            array(
+                                                'key'   => 'field_deep_title',
+                                                'name'  => 'title',
+                                                'label' => 'Deep Title',
+                                                'type'  => 'text',
+                                            ),
+                                        ),
+                                    ),
+                                    array(
+                                        'key'   => 'field_inner_title',
+                                        'name'  => 'title',
+                                        'label' => 'Inner Title',
+                                        'type'  => 'text',
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                );
+            }
+        );
+
+        $keys = array_map(
+            static fn ($field): string => $field->key,
+            $catalog->fieldsForPostType('recipe')
+        );
+
+        $this->assertSame(array('field_inner_title'), $keys);
+        $this->assertNotContains('field_deep_title', $keys);
     }
 
     public function testProduct636AndRecipe12325RepeaterChildrenAreCatalogued(): void
@@ -545,5 +615,22 @@ final class AcfFieldCatalogTest extends TestCase
             'quantifier',
             $ingredient->toCatalogArray()
         );
+        $this->assertSame(
+            array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST),
+            $ingredient->repeaterChain()
+        );
+        $this->assertFalse($ingredient->isNestedRepeaterChild());
+    }
+
+    public function testRecipeNestedRepeaterLeafIsCataloguedWithATwoLevelChain(): void
+    {
+        $catalog = \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
+        $name    = $catalog->fieldsForPostType('recipe')[0];
+
+        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $name->key);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::path(), $name->path);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::chain(), $name->repeaterChain());
+        $this->assertSame('Directions → Steps → Name', $name->breadcrumb());
+        $this->assertTrue($name->isNestedRepeaterChild());
     }
 }

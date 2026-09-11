@@ -531,7 +531,8 @@ final class SaveWarningNotifier
             $maps['repeater_keys'],
             $maps['flex_keys'] ?? array(),
             $maps['layouts'] ?? array(),
-            $maps['clone_keys'] ?? array()
+            $maps['clone_keys'] ?? array(),
+            $maps['repeater_chains'] ?? array()
         );
     }
 

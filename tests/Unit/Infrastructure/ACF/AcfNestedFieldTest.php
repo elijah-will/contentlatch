@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
 
 use ContentGuard\Infrastructure\ACF\AcfNestedField;
+use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
 use ContentGuard\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
@@ -77,5 +78,48 @@ final class AcfNestedFieldTest extends TestCase
         ));
 
         $this->assertSame(array('row-0', 'row-1'), array_column($rows, 'key'));
+    }
+
+    public function testNestedRepeaterInputNameInsertsBothRowKeys(): void
+    {
+        $this->assertSame(
+            'acf[' . AcfNestedRepeaterFixtures::DIRECTIONS . '][row-0]['
+            . AcfNestedRepeaterFixtures::STEPS . '][row-1]['
+            . AcfNestedRepeaterFixtures::STEP_NAME . ']',
+            AcfNestedField::instanceInputNameForRepeaters(
+                AcfNestedRepeaterFixtures::path(),
+                array(
+                    AcfNestedRepeaterFixtures::DIRECTIONS => 'row-0',
+                    AcfNestedRepeaterFixtures::STEPS      => 'row-1',
+                )
+            )
+        );
+    }
+
+    public function testNestedRepeaterCellsSkipEmptyOrScalarInnerRepeaters(): void
+    {
+        $cells = AcfNestedField::nestedRepeaterCells(
+            array(
+                'row-0' => array(
+                    AcfNestedRepeaterFixtures::STEPS => array(
+                        'row-0' => array(AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
+                    ),
+                ),
+                'row-1' => array(
+                    AcfNestedRepeaterFixtures::STEPS => array(),
+                ),
+                'row-2' => array(
+                    AcfNestedRepeaterFixtures::STEPS => 'not-rows',
+                ),
+            ),
+            AcfNestedRepeaterFixtures::path(),
+            AcfNestedRepeaterFixtures::pathNames(),
+            AcfNestedRepeaterFixtures::chain()
+        );
+
+        $this->assertCount(1, $cells);
+        $this->assertSame('Cut', $cells[0]['value']);
+        $this->assertSame('row-0', $cells[0]['outer']['key']);
+        $this->assertSame('row-0', $cells[0]['inner']['key']);
     }
 }

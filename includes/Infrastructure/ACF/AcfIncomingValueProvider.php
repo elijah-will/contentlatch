@@ -40,6 +40,7 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
         private array $flexKeys = array(),
         private array $layouts = array(),
         private array $cloneKeys = array(),
+        private array $repeaterChains = array(),
     ) {
         $this->payload = is_array($payload) ? $payload : array();
     }
@@ -86,7 +87,12 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
             return $this->flexInstances($fieldId, $flexKey);
         }
 
-        $repeaterKey = $this->repeaterKeys[$fieldId] ?? '';
+        $chain = $this->repeaterChainFor($fieldId);
+        if (count($chain) > 1) {
+            return $this->nestedRepeaterInstances($fieldId, $chain);
+        }
+
+        $repeaterKey = $chain[0] ?? '';
         $path        = $this->pathFor($fieldId);
         if ($repeaterKey === '' || count($path) < 2) {
             if (!$this->has($fieldId)) {
@@ -125,6 +131,54 @@ final class AcfIncomingValueProvider implements FieldValueProviderInterface
         }
 
         return $instances;
+    }
+
+    /**
+     * @param list<string> $chain
+     * @return list<FieldInstance>
+     */
+    private function nestedRepeaterInstances(string $fieldId, array $chain): array
+    {
+        $path = $this->pathFor($fieldId);
+        $names = $this->namesFor($fieldId);
+        $outerIndex = array_search($chain[0], $path, true);
+        if ($outerIndex === false) {
+            return array();
+        }
+
+        $found = AcfNestedField::read(
+            $this->payload,
+            array_slice($path, 0, $outerIndex + 1),
+            array_slice($names, 0, $outerIndex + 1)
+        );
+        if (!$found['found']) {
+            return array();
+        }
+
+        $instances = array();
+        foreach (AcfNestedField::nestedRepeaterCells($found['value'], $path, $names, $chain) as $cell) {
+            $instances[] = new FieldInstance(
+                $this->normalizer->normalize($cell['value'], $this->fieldTypes[$fieldId]),
+                AcfNestedField::nestedRepeaterContext($path, $chain, $cell['outer'], $cell['inner'])
+            );
+        }
+
+        return $instances;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function repeaterChainFor(string $fieldId): array
+    {
+        $chain = $this->repeaterChains[$fieldId] ?? array();
+        if (is_array($chain) && $chain !== array()) {
+            return array_values($chain);
+        }
+
+        $one = $this->repeaterKeys[$fieldId] ?? '';
+
+        return $one !== '' ? array($one) : array();
     }
 
     /**

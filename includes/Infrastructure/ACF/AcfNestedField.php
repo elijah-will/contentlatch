@@ -38,16 +38,116 @@ final class AcfNestedField
      */
     public static function instanceInputName(array $path, string $repeaterKey, string $rowKey): string
     {
+        $rows = array();
+        if ($repeaterKey !== '' && $rowKey !== '') {
+            $rows[$repeaterKey] = $rowKey;
+        }
+
+        return self::instanceInputNameForRepeaters($path, $rows);
+    }
+
+    /**
+     * Insert a live row key after each Repeater segment that has one.
+     *
+     * @param list<string>         $path
+     * @param array<string, string> $rowKeysByRepeater Repeater field key => row key.
+     */
+    public static function instanceInputNameForRepeaters(array $path, array $rowKeysByRepeater): string
+    {
         $name = 'acf';
 
         foreach ($path as $segment) {
             $name .= '[' . $segment . ']';
-            if ($repeaterKey !== '' && $segment === $repeaterKey && $rowKey !== '') {
+            $rowKey = $rowKeysByRepeater[$segment] ?? '';
+            if ($rowKey !== '') {
                 $name .= '[' . $rowKey . ']';
             }
         }
 
         return $name;
+    }
+
+    /**
+     * Expand exactly two Repeater levels into cells. An empty or missing
+     * inner Repeater contributes no cells for that outer row.
+     *
+     * @param list<string> $path
+     * @param list<string> $names
+     * @param list<string> $chain [outerRepeaterKey, innerRepeaterKey]
+     * @return list<array{value: mixed, outer: array{key: string, index: int}, inner: array{key: string, index: int}}>
+     */
+    public static function nestedRepeaterCells(mixed $outerValue, array $path, array $names, array $chain): array
+    {
+        if (count($chain) !== 2) {
+            return array();
+        }
+
+        $outerIndex = array_search($chain[0], $path, true);
+        $innerIndex = array_search($chain[1], $path, true);
+        if ($outerIndex === false || $innerIndex === false || $innerIndex <= $outerIndex) {
+            return array();
+        }
+
+        $innerRelPath  = array_slice($path, $outerIndex + 1, $innerIndex - $outerIndex);
+        $innerRelNames = array_slice($names, $outerIndex + 1, $innerIndex - $outerIndex);
+        $leafPath      = array_slice($path, $innerIndex + 1);
+        $leafNames     = array_slice($names, $innerIndex + 1);
+        $cells         = array();
+
+        foreach (self::rows($outerValue) as $outerIdx => $outerEntry) {
+            $innerValue = self::walkStored($outerEntry['row'], $innerRelPath, $innerRelNames);
+            foreach (self::rows($innerValue) as $innerIdx => $innerEntry) {
+                $raw = $leafPath === array()
+                    ? $innerEntry['row']
+                    : self::walkStored($innerEntry['row'], $leafPath, $leafNames);
+                $cells[] = array(
+                    'value' => $raw,
+                    'outer' => array(
+                        'key'   => $outerEntry['key'],
+                        'index' => $outerIdx,
+                    ),
+                    'inner' => array(
+                        'key'   => $innerEntry['key'],
+                        'index' => $innerIdx,
+                    ),
+                );
+            }
+        }
+
+        return $cells;
+    }
+
+    /**
+     * Nested Repeater coordinates. Does not set one-level display_row.
+     *
+     * @param list<string>                    $path
+     * @param list<string>                    $chain
+     * @param array{key: string, index: int}  $outer
+     * @param array{key: string, index: int}  $inner
+     * @return array<string, mixed>
+     */
+    public static function nestedRepeaterContext(array $path, array $chain, array $outer, array $inner): array
+    {
+        return array(
+            'input_name'    => self::instanceInputNameForRepeaters($path, array(
+                $chain[0] => $outer['key'],
+                $chain[1] => $inner['key'],
+            )),
+            'repeater_rows' => array(
+                array(
+                    'repeater'    => $chain[0],
+                    'key'         => $outer['key'],
+                    'index'       => $outer['index'],
+                    'display_row' => $outer['index'] + 1,
+                ),
+                array(
+                    'repeater'    => $chain[1],
+                    'key'         => $inner['key'],
+                    'index'       => $inner['index'],
+                    'display_row' => $inner['index'] + 1,
+                ),
+            ),
+        );
     }
 
     /**

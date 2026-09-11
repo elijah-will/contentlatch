@@ -5,12 +5,14 @@
  * Phase 10A catalogues supported scalar leaves inside Group fields.
  * Phase 10B also catalogues supported scalar leaves inside Repeater fields
  * (top-level Repeater → scalar, and Group → Repeater → scalar).
+ * Phase 15A also catalogues Repeater → Repeater → scalar (exactly two
+ * Repeater levels). Deeper Repeaters remain excluded.
  * Phase 10C catalogues supported scalar leaves inside Flexible Content
  * layouts (top-level Flex → scalar, and Flex → Group → scalar).
  * Phase 10D catalogues supported scalar leaves inside Clone fields
  * (Seamless and Group display, Clone → Group, and Clone inside
  * Repeater/Flexible). Clone → Clone/Repeater/Flexible remain excluded.
- * Containers themselves are not selectable. Nested Repeaters, Repeater
+ * Containers themselves are not selectable. Repeater → Group, Repeater
  * inside Flex, nested Flex, and Flex inside Repeater/Group remain
  * excluded.
  *
@@ -91,6 +93,7 @@ final class AcfFieldCatalog
      *     paths: array<string, list<string>>,
      *     names: array<string, list<string>>,
      *     repeater_keys: array<string, string>,
+     *     repeater_chains: array<string, list<string>>,
      *     flex_keys: array<string, string>,
      *     layouts: array<string, string>,
      *     clone_keys: array<string, string>
@@ -101,6 +104,7 @@ final class AcfFieldCatalog
         $paths     = array();
         $names     = array();
         $repeaters = array();
+        $chains    = array();
         $flexKeys  = array();
         $layouts   = array();
         $cloneKeys = array();
@@ -113,8 +117,10 @@ final class AcfFieldCatalog
 
             $paths[$id] = $field->path;
             $names[$id] = $field->pathNames;
-            if ($field->repeaterKey !== '') {
-                $repeaters[$id] = $field->repeaterKey;
+            $chain      = $field->repeaterChain();
+            if ($chain !== array()) {
+                $repeaters[$id] = $field->repeaterKey !== '' ? $field->repeaterKey : $chain[0];
+                $chains[$id]    = $chain;
             }
             if ($field->container === FieldRef::CONTAINER_FLEXIBLE && $field->layout !== '') {
                 $flexKeys[$id] = $field->path[0];
@@ -126,12 +132,13 @@ final class AcfFieldCatalog
         }
 
         return array(
-            'paths'         => $paths,
-            'names'         => $names,
-            'repeater_keys' => $repeaters,
-            'flex_keys'     => $flexKeys,
-            'layouts'       => $layouts,
-            'clone_keys'    => $cloneKeys,
+            'paths'           => $paths,
+            'names'           => $names,
+            'repeater_keys'   => $repeaters,
+            'repeater_chains' => $chains,
+            'flex_keys'       => $flexKeys,
+            'layouts'         => $layouts,
+            'clone_keys'      => $cloneKeys,
         );
     }
 
@@ -155,16 +162,18 @@ final class AcfFieldCatalog
         string $cloneKey = '',
         string $cloneLabel = '',
         string $cloneDisplay = '',
+        array $repeaterChain = array(),
     ): array {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
+        $chain = $this->resolvedRepeaterChain($repeaterKey, $repeaterChain);
 
         if ($key === '' || !str_starts_with($key, 'field_')) {
             return array();
         }
 
         if ($type === FieldRef::CONTAINER_CLONE) {
-            if ($cloneKey !== '') {
+            if ($cloneKey !== '' || count($chain) >= 2) {
                 return array();
             }
 
@@ -177,7 +186,8 @@ final class AcfFieldCatalog
                 $flexKey,
                 $layout,
                 $layoutKey,
-                $layoutLabel
+                $layoutLabel,
+                $chain
             );
         }
 
@@ -210,21 +220,32 @@ final class AcfFieldCatalog
                 $layoutLabel,
                 $cloneKey,
                 $cloneLabel,
-                $cloneDisplay
+                $cloneDisplay,
+                $chain
             );
         }
 
         if ($type === FieldRef::CONTAINER_REPEATER) {
-            if ($repeaterKey !== '' || $flexKey !== '' || $cloneKey !== '') {
+            if ($flexKey !== '' || $cloneKey !== '' || count($chain) >= 2) {
                 return array();
             }
+
+            $nextChain = array_merge($chain, array($key));
 
             return $this->collectChildren(
                 $field,
                 $ancestorKeys,
                 $ancestorNames,
                 $ancestorLabels,
-                $key
+                $nextChain[0],
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                $nextChain
             );
         }
 
@@ -244,7 +265,8 @@ final class AcfFieldCatalog
             $layoutLabel,
             $cloneKey,
             $cloneLabel,
-            $cloneDisplay
+            $cloneDisplay,
+            $chain
         );
 
         return $definition !== null ? array($definition) : array();
@@ -270,6 +292,7 @@ final class AcfFieldCatalog
         string $cloneKey = '',
         string $cloneLabel = '',
         string $cloneDisplay = '',
+        array $repeaterChain = array(),
     ): array {
         $name  = (string) ($field['name'] ?? '');
         $label = (string) ($field['label'] ?? '');
@@ -296,7 +319,8 @@ final class AcfFieldCatalog
                 $layoutLabel,
                 $cloneKey,
                 $cloneLabel,
-                $cloneDisplay
+                $cloneDisplay,
+                $repeaterChain
             ) as $definition) {
                 $collected[] = $definition;
             }
@@ -321,7 +345,8 @@ final class AcfFieldCatalog
         string $flexKey,
         string $layout,
         string $layoutKey,
-        string $layoutLabel
+        string $layoutLabel,
+        array $repeaterChain = array()
     ): array {
         $key = (string) ($field['key'] ?? '');
         if ($key === '' || !str_starts_with($key, 'field_')) {
@@ -365,7 +390,8 @@ final class AcfFieldCatalog
                 $layoutLabel,
                 $key,
                 $label,
-                $display
+                $display,
+                $repeaterChain
             ) as $definition) {
                 $collected[] = $definition;
             }
@@ -448,6 +474,7 @@ final class AcfFieldCatalog
         string $cloneKey = '',
         string $cloneLabel = '',
         string $cloneDisplay = '',
+        array $repeaterChain = array(),
     ): ?FieldDefinition {
         $postedKey = (string) ($field['key'] ?? '');
         $type      = (string) ($field['type'] ?? '');
@@ -509,8 +536,22 @@ final class AcfFieldCatalog
             $layoutLabel,
             $cloneKey,
             $cloneLabel,
-            $cloneDisplay
+            $cloneDisplay,
+            $this->resolvedRepeaterChain($repeaterKey, $repeaterChain)
         );
+    }
+
+    /**
+     * @param list<string> $repeaterChain
+     * @return list<string>
+     */
+    private function resolvedRepeaterChain(string $repeaterKey, array $repeaterChain): array
+    {
+        if ($repeaterChain !== array()) {
+            return array_values($repeaterChain);
+        }
+
+        return $repeaterKey !== '' ? array($repeaterKey) : array();
     }
 
     /**
