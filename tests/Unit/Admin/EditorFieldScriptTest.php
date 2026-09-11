@@ -24,6 +24,8 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('[" + clone + "][" + originalKey + "]', $js);
         $this->assertStringNotContainsString('acfe-modal', $js);
         $this->assertStringContainsString('acf.addAction', $js);
+        $this->assertStringContainsString('startFromUrl', $js);
+        $this->assertStringContainsString('config.fieldKey', $js);
         $this->assertStringContainsString('prefers-reduced-motion', $js);
         $this->assertStringContainsString('aria-live', $js);
         $this->assertStringContainsString('postbox.closed', $js);

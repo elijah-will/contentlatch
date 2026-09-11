@@ -229,6 +229,19 @@
     });
   }
 
+  var historyDetails = document.querySelector(".contentguard-history__details");
+  if (historyDetails) {
+    var historySummary = historyDetails.querySelector(".contentguard-history__summary");
+    var syncHistoryState = function () {
+      if (!historySummary) {
+        return;
+      }
+      historySummary.setAttribute("aria-expanded", historyDetails.open ? "true" : "false");
+    };
+    syncHistoryState();
+    historyDetails.addEventListener("toggle", syncHistoryState);
+  }
+
   if (activePanel && !activePanel.hidden && cancelButton) {
     var activeId = cancelButton.getAttribute("data-run");
     if (activeId) {

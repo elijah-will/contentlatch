@@ -22,6 +22,8 @@ final class AuditScriptTest extends TestCase
         $this->assertStringContainsString('updateProgress', $js);
         $this->assertStringContainsString('prefers-reduced-motion', $js);
         $this->assertStringContainsString('contentguard-audit-cancel-confirm', $js);
+        $this->assertStringContainsString('contentguard-history__details', $js);
+        $this->assertStringContainsString('aria-expanded', $js);
         $this->assertStringNotContainsString('window.alert', $js);
     }
 }

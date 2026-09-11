@@ -38,6 +38,14 @@ final class EditorAuditNoticeTest extends TestCase
         $this->assertStringNotContainsString('contentguard_row', $php);
     }
 
+    public function testAuditArrivalNoticeDependsOnTheRunNotTheFieldQuery(): void
+    {
+        $php = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/EditorAuditNotice.php');
+        $this->assertStringContainsString('requestedRunId', $php);
+        $this->assertStringContainsString('AUDIT_RUN_ARG', $php);
+        $this->assertStringNotContainsString('requestedFieldKey', $php);
+    }
+
     public function testSuccessfulSaveRedirectKeepsTheAuditRun(): void
     {
         $php = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/EditorAuditNotice.php');

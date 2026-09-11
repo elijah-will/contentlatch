@@ -1044,6 +1044,11 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('contentguard-history', $html);
         $this->assertStringContainsString(AuditPresentation::historyHeading(), $html);
+        $this->assertStringContainsString('contentguard-history__details', $html);
+        $this->assertStringContainsString('contentguard-history__details" open', $html);
+        $this->assertStringContainsString('aria-expanded="true"', $html);
+        $this->assertStringContainsString(AuditPresentation::showHistoryLabel(), $html);
+        $this->assertStringContainsString(AuditPresentation::hideHistoryLabel(), $html);
         $this->assertStringNotContainsString('widefat', $html);
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
         $this->assertStringContainsString('contentguard-history__item--current', $html);
@@ -1095,6 +1100,22 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
         $this->assertStringContainsString(AuditPresentation::viewResultsLabel(), $html);
+        $this->assertStringContainsString('contentguard-history__details', $html);
+        $this->assertStringNotContainsString('contentguard-history__details" open', $html);
+        $this->assertStringContainsString('aria-expanded="false"', $html);
+        $this->assertStringContainsString(AuditPresentation::showHistoryLabel(), $html);
+        $this->assertStringContainsString('<summary class="contentguard-history__summary"', $html);
+        $this->assertStringContainsString('contentguard-history__panel', $html);
+        $this->assertStringContainsString('contentguard-history__list', $html);
+        $this->assertLessThan(
+            (int) strpos($html, '<details class="contentguard-history__details"'),
+            (int) strpos($html, AuditPresentation::findingsHeading())
+        );
+        $detailsStart = (int) strpos($html, '<details class="contentguard-history__details"');
+        $detailsEnd   = (int) strpos($html, '</details>', $detailsStart);
+        $listPos      = (int) strpos($html, 'contentguard-history__list');
+        $this->assertGreaterThan($detailsStart, $listPos);
+        $this->assertLessThan($detailsEnd, $listPos);
         $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;run=4', $html);
         $this->assertStringNotContainsString('page=contentguard-audit&amp;run=9', $html);
         $this->assertStringNotContainsString('contentguard-history__viewing', $html);
@@ -1166,6 +1187,13 @@ final class AuditViewTest extends TestCase
         $this->assertSame(10, AuditPage::HISTORY_PAGE_SIZE);
         $this->assertSame(10, count($page));
         $this->assertStringContainsString('contentguard-history--wide', $first);
+        $this->assertStringNotContainsString('contentguard-history__details" open', $first);
+        $this->assertStringContainsString('aria-expanded="false"', $first);
+        $this->assertStringContainsString('<summary class="contentguard-history__summary"', $first);
+        $this->assertLessThan(
+            (int) strpos($first, '<details class="contentguard-history__details"'),
+            (int) strpos($first, AuditPresentation::findingsHeading())
+        );
         $this->assertStringContainsString('contentguard-pagination--history', $first);
         $this->assertStringContainsString('aria-label="Audit history pagination"', $first);
         $this->assertStringContainsString('Showing 1–10 of 37 audits', $first);
@@ -1210,6 +1238,8 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('hpaged=2', $middle);
         $this->assertStringContainsString('paged=3', $middle);
         $this->assertStringContainsString('contentguard-history__viewing', $middle);
+        $this->assertStringContainsString('contentguard-history__details" open', $middle);
+        $this->assertStringContainsString('aria-expanded="true"', $middle);
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $middle);
         $this->assertStringContainsString('hpaged=2', $middle);
 

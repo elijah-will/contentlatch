@@ -164,17 +164,24 @@ final class AcfIntegrationTest extends TestCase
         $this->assertFalse($provider->has('title'));
     }
 
-    public function testNestedRepeaterLeavesStayHiddenFromTheRuleBuilderCatalog(): void
+    public function testNestedRepeaterLeavesAreBuilderSelectableWithCatalogMetadata(): void
     {
         $native = AcfNestedRepeaterFixtures::recipeCatalog();
         $acf    = new AcfIntegration($native);
-        $ids    = array_map(
-            static fn (array $field): string => (string) ($field['resolution_id'] ?? $field['key'] ?? ''),
-            $acf->fieldsForPostType('recipe')
+        $field  = $this->fieldByResolutionId(
+            $acf->fieldsForPostType('recipe'),
+            AcfNestedRepeaterFixtures::STEP_NAME
         );
 
-        $this->assertContains(AcfNestedRepeaterFixtures::STEP_NAME, array_keys($native->fieldTypesForPostType('recipe')));
-        $this->assertNotContains(AcfNestedRepeaterFixtures::STEP_NAME, $ids);
+        $this->assertSame(AcfNestedRepeaterFixtures::STEP_NAME, $field['key']);
+        $this->assertSame('repeater', $field['container']);
+        $this->assertSame('Directions → Steps → Name', $field['breadcrumb']);
+        $this->assertSame('Directions → Steps', $field['group_label']);
+        $this->assertSame(AcfNestedRepeaterFixtures::path(), $field['path']);
+        $this->assertSame(AcfNestedRepeaterFixtures::DIRECTIONS, $field['repeater_key']);
+        $this->assertArrayNotHasKey('layout', $field);
+        $this->assertArrayNotHasKey('clone', $field);
+        $this->assertSame(Integration::ACF, $field['integration']);
 
         $maps = $native->nestedResolutionMaps('recipe', $native->fieldTypesForPostType('recipe'));
         $this->assertSame(

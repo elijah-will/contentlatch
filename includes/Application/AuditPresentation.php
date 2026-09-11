@@ -338,6 +338,16 @@ final class AuditPresentation
         return 'Audit History';
     }
 
+    public static function showHistoryLabel(): string
+    {
+        return 'Show History';
+    }
+
+    public static function hideHistoryLabel(): string
+    {
+        return 'Hide History';
+    }
+
     public static function historyEmptyText(): string
     {
         return 'No audit history yet.';

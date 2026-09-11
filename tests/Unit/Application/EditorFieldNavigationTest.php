@@ -76,6 +76,13 @@ final class EditorFieldNavigationTest extends TestCase
             'contentguard_field' => 'field_64f8a42a61f56/../x',
         )));
         $this->assertSame('', EditorFieldNavigation::requestedFieldKey(array()));
+        $this->assertSame(
+            'field_650071058895b',
+            EditorFieldNavigation::requestedFieldKey(array(
+                'contentguard_field' => 'field_650071058895b',
+                'contentguard_run'   => '7',
+            ))
+        );
     }
 
     public function testAuditAdminUrlsAreNeverUsedAsEditDestinations(): void

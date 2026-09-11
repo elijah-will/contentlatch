@@ -239,6 +239,73 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('field_type', $match[1]);
     }
 
+    public function testTwoLevelRepeaterChildAppearsInThenWithExistingBreadcrumbGrouping(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Direction required',
+                'target_post_type' => 'recipes',
+                'conditions'       => array(
+                    array(
+                        'field_key' => '',
+                        'operator'  => '',
+                    ),
+                ),
+                'validations'      => array(
+                    array(
+                        'field_key' => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                    'name'        => 'section_title',
+                    'label'       => 'Section Title',
+                    'type'        => 'text',
+                    'path'        => array(
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                    ),
+                    'container'   => 'repeater',
+                    'breadcrumb'  => 'Directions → Section Title',
+                    'group_label' => 'Directions',
+                ),
+                array(
+                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                    'name'        => 'direction',
+                    'label'       => 'Direction',
+                    'type'        => 'text',
+                    'path'        => array(
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_DIRECTIONS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                    ),
+                    'container'   => 'repeater',
+                    'breadcrumb'  => 'Directions → Section Directions → Direction',
+                    'group_label' => 'Directions → Section Directions',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('Directions → Section Title (every row)', $html);
+        $this->assertStringContainsString('Directions → Section Directions → Direction (every row)', $html);
+        $this->assertStringContainsString('<optgroup label="Directions">', $html);
+        $this->assertStringContainsString('<optgroup label="Directions → Section Directions">', $html);
+        if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('WHEN field select missing');
+        }
+        $this->assertStringNotContainsString(
+            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+            $match[1]
+        );
+        $this->assertStringNotContainsString(
+            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+            $match[1]
+        );
+    }
+
     public function testFlexibleChildAppearsInThenWithEveryLayoutRowAndNotInWhen(): void
     {
         $html = $this->renderEditor(

@@ -43,6 +43,10 @@ final class EditorAuditNoticeRefreshTest extends TestCase
 
         $notice = $this->notice($values);
         $request = array(EditorFieldNavigation::AUDIT_RUN_ARG => 1);
+        $this->assertSame(array(), $notice->issuesForRequest(42, array(
+            EditorFieldNavigation::QUERY_ARG => 'field_description',
+        )));
+        $this->assertNotSame(array(), $notice->issuesForRequest(42, $request));
 
         $initial = $notice->issuesForRequest(42, $request);
         $this->assertSame(

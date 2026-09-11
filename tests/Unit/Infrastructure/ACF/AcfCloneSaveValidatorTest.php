@@ -35,14 +35,9 @@ final class AcfCloneSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => 'acf[' . AcfCloneFixtures::CLONE_A . '][' . AcfCloneFixtures::cloneATitlePosted() . ']',
-                    'message' => 'Shared Content → Title — This field is required.',
-                ),
-            ),
-            $this->errors
+        $this->assertClassicFieldError(
+            'acf[' . AcfCloneFixtures::CLONE_A . '][' . AcfCloneFixtures::cloneATitlePosted() . ']',
+            'Shared Content → Title — This field is required.'
         );
     }
 
@@ -57,14 +52,9 @@ final class AcfCloneSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => 'acf[' . AcfCloneFixtures::CLONE_B . '][' . AcfCloneFixtures::TITLE . ']',
-                    'message' => 'Hero Clone → Title — This field is required.',
-                ),
-            ),
-            $this->errors
+        $this->assertClassicFieldError(
+            'acf[' . AcfCloneFixtures::CLONE_B . '][' . AcfCloneFixtures::TITLE . ']',
+            'Hero Clone → Title — This field is required.'
         );
     }
 
@@ -81,9 +71,11 @@ final class AcfCloneSaveValidatorTest extends TestCase
             )
         );
 
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::CLONE_GROUP . '][' . AcfCloneFixtures::cloneGroupDetailsPosted() . '][' . AcfCloneFixtures::INGREDIENTS . ']',
-            $this->errors[0]['input']
+            $this->errors[1]['input']
         );
     }
 
@@ -107,9 +99,11 @@ final class AcfCloneSaveValidatorTest extends TestCase
             )
         );
 
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::REPEATER . '][row-0][' . AcfCloneFixtures::CLONE_REP . '][' . AcfCloneFixtures::cloneRepTitlePosted() . ']',
-            $this->errors[0]['input']
+            $this->errors[1]['input']
         );
     }
 
@@ -129,9 +123,11 @@ final class AcfCloneSaveValidatorTest extends TestCase
             )
         );
 
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::FLEX . '][row-2][' . AcfCloneFixtures::CLONE_FLEX . '][' . AcfCloneFixtures::cloneFlexTitlePosted() . ']',
-            $this->errors[0]['input']
+            $this->errors[1]['input']
         );
     }
 
@@ -174,6 +170,22 @@ final class AcfCloneSaveValidatorTest extends TestCase
             );
             $this->assertNotSame(array(), $this->errors, $status . ' should block');
         }
+    }
+
+    private function assertClassicFieldError(string $input, string $message): void
+    {
+        $this->assertNotSame(array(), $this->errors);
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => $input,
+                    'message' => $message,
+                ),
+            ),
+            array_slice($this->errors, 1)
+        );
     }
 
     /**

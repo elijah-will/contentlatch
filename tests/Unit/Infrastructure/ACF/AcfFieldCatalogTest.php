@@ -500,7 +500,10 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertSame(array('field_outer', 'field_inner'), $inner->repeaterChain());
         $this->assertSame('field_outer', $inner->repeaterKey);
         $this->assertTrue($inner->isNestedRepeaterChild());
+        $this->assertTrue($inner->isBuilderSelectable());
         $this->assertSame('repeater', $inner->container);
+        $this->assertTrue($byKey['field_outer_title']->isBuilderSelectable());
+        $this->assertFalse($byKey['field_outer_title']->isNestedRepeaterChild());
 
         $maps = $catalog->nestedResolutionMaps('product', $catalog->fieldTypesForPostType('product'));
         $this->assertSame('field_outer', $maps['repeater_keys']['field_inner_title']);
@@ -620,6 +623,8 @@ final class AcfFieldCatalogTest extends TestCase
             $ingredient->repeaterChain()
         );
         $this->assertFalse($ingredient->isNestedRepeaterChild());
+        $this->assertTrue($ingredient->isBuilderSelectable());
+        $this->assertTrue($size->isBuilderSelectable());
     }
 
     public function testRecipeNestedRepeaterLeafIsCataloguedWithATwoLevelChain(): void
@@ -632,5 +637,6 @@ final class AcfFieldCatalogTest extends TestCase
         $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::chain(), $name->repeaterChain());
         $this->assertSame('Directions → Steps → Name', $name->breadcrumb());
         $this->assertTrue($name->isNestedRepeaterChild());
+        $this->assertTrue($name->isBuilderSelectable());
     }
 }

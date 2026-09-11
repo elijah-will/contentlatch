@@ -58,11 +58,13 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         $this->assertSame(array(HH::DIRECTIONS, HH::SECTION_TITLE), $title->path);
         $this->assertSame('Directions → Section Title', $title->breadcrumb());
         $this->assertFalse($title->isNestedRepeaterChild());
+        $this->assertTrue($title->isBuilderSelectable());
 
         $this->assertArrayHasKey(HH::DIRECTION, $byKey);
         $direction = $byKey[HH::DIRECTION];
         $this->assertSame(array(HH::DIRECTIONS, HH::SECTION_DIRECTIONS), $direction->repeaterChain());
         $this->assertTrue($direction->isNestedRepeaterChild());
+        $this->assertTrue($direction->isBuilderSelectable());
     }
 
     public function testIncomingAndStoredProvidersAttachTheDirectionsRow(): void
@@ -222,15 +224,139 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
             HH::incomingDirectionsWithEmptySecondTitle()
         );
 
+        $this->assertSame('', $errors[0]['input']);
+        $this->assertStringContainsString('ContentGuard · Blocking', $errors[0]['message']);
+        $this->assertStringContainsString('Section Title is required in row 2.', $errors[0]['message']);
         $this->assertSame(
             array(
-                array(
-                    'input'   => 'acf[' . HH::DIRECTIONS . '][row-1][' . HH::SECTION_TITLE . ']',
-                    'message' => 'Directions → Section Title — This field is required in row 2.',
-                ),
+                'input'   => 'acf[' . HH::DIRECTIONS . '][row-1][' . HH::SECTION_TITLE . ']',
+                'message' => 'Directions → Section Title — This field is required in row 2.',
             ),
-            $errors
+            $errors[1]
         );
+    }
+
+    public function testClassicSummaryNamesOneLevelAndNestedRowsWithoutAFieldQuery(): void
+    {
+        $errors     = array();
+        $rules      = array(
+            $this->ingredientTitleRule(),
+            $this->sectionTitleRule(),
+            $this->ingredientRule(),
+        );
+        $repository = new InMemoryRuleRepository($rules);
+        $catalog    = HH::catalog();
+        $validator  = new AcfSaveValidator(
+            $repository,
+            $catalog,
+            new IntendedPostStatusResolver(),
+            static function (string $input, string $message) use (&$errors): void {
+                $errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            },
+            IncomingSaveFixtures::evaluator($repository, $catalog)
+        );
+
+        $validator->validate(
+            array(
+                'post_ID'     => 374,
+                'post_type'   => 'recipes',
+                'post_status' => 'publish',
+            ),
+            array(
+                HH::INGREDIENTS => array(
+                    'row-0' => array(
+                        HH::INGREDIENT_TITLE => 'Produce',
+                        HH::SECTION_INGREDIENTS => $this->innerIngredientRows(14, 14),
+                    ),
+                    'row-1' => array(
+                        HH::INGREDIENT_TITLE => '',
+                        HH::SECTION_INGREDIENTS => array(
+                            'row-0' => array(HH::INGREDIENT => 'Salt'),
+                        ),
+                    ),
+                ),
+                HH::DIRECTIONS => array(
+                    'row-0' => array(HH::SECTION_TITLE => ''),
+                ),
+            )
+        );
+
+        $this->assertArrayNotHasKey('contentguard_field', array(
+            'post_ID'     => 374,
+            'post_type'   => 'recipes',
+            'post_status' => 'publish',
+        ));
+        $this->assertSame('', $errors[0]['input']);
+        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $errors[0]['message']);
+        $this->assertStringContainsString(
+            'Ingredients → Ingredient Title — Ingredient Title is required in row 2.',
+            $errors[0]['message']
+        );
+        $this->assertStringContainsString(
+            'Directions → Section Title — Section Title is required in row 1.',
+            $errors[0]['message']
+        );
+        $this->assertStringContainsString(
+            'Ingredients → Section Ingredients → Ingredient — Ingredient is required in row 1/14.',
+            $errors[0]['message']
+        );
+        $this->assertCount(4, $errors);
+        $this->assertNotSame('', $errors[1]['input']);
+        $this->assertNotSame('', $errors[2]['input']);
+        $this->assertNotSame('', $errors[3]['input']);
+        $this->assertStringContainsString('This field is required in row 2.', $errors[1]['message'] . $errors[2]['message'] . $errors[3]['message']);
+    }
+
+    public function testClassicNestedDirectionSummaryUsesOuterInnerPair(): void
+    {
+        $errors     = array();
+        $repository = new InMemoryRuleRepository(array($this->directionRule()));
+        $catalog    = HH::catalog();
+        $validator  = new AcfSaveValidator(
+            $repository,
+            $catalog,
+            new IntendedPostStatusResolver(),
+            static function (string $input, string $message) use (&$errors): void {
+                $errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            },
+            IncomingSaveFixtures::evaluator($repository, $catalog)
+        );
+
+        $inner = array();
+        for ($i = 0; $i < 14; $i++) {
+            $inner['row-' . $i] = array(
+                HH::DIRECTION => $i === 13 ? '' : 'Step ' . ($i + 1),
+            );
+        }
+
+        $validator->validate(
+            array(
+                'post_ID'     => 374,
+                'post_type'   => 'recipes',
+                'post_status' => 'publish',
+            ),
+            array(
+                HH::DIRECTIONS => array(
+                    'row-0' => array(
+                        HH::SECTION_TITLE => 'Preheat',
+                        HH::SECTION_DIRECTIONS => $inner,
+                    ),
+                ),
+            )
+        );
+
+        $this->assertSame('', $errors[0]['input']);
+        $this->assertStringContainsString(
+            'Directions → Section Directions → Direction — Direction is required in row 1/14.',
+            $errors[0]['message']
+        );
+        $this->assertNotSame('', $errors[1]['input']);
     }
 
     public function testExistingOneLevelAndNestedRepeaterCoordinatesStayDistinct(): void
@@ -292,6 +418,21 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         $this->assertArrayNotHasKey('repeater_rows', $instances[1]->context);
     }
 
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private function innerIngredientRows(int $count, int $emptyDisplayRow): array
+    {
+        $rows = array();
+        for ($i = 0; $i < $count; $i++) {
+            $rows['row-' . $i] = array(
+                HH::INGREDIENT => ($i + 1) === $emptyDisplayRow ? '' : 'Item ' . ($i + 1),
+            );
+        }
+
+        return $rows;
+    }
+
     private function sectionTitleRule(): \ContentGuard\Domain\Rule
     {
         return RuleFactory::rule(array(
@@ -302,6 +443,57 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
                 RuleFactory::validation(array(
                     'id'         => 'v-section-title',
                     'field'      => HH::sectionTitleRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+    }
+
+    private function directionRule(): \ContentGuard\Domain\Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 75,
+            'postType'    => 'recipes',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-direction',
+                    'field'      => HH::directionRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+    }
+
+    private function ingredientTitleRule(): \ContentGuard\Domain\Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 73,
+            'postType'    => 'recipes',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-ingredient-title',
+                    'field'      => HH::ingredientTitleRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+    }
+
+    private function ingredientRule(): \ContentGuard\Domain\Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 76,
+            'postType'    => 'recipes',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-ingredient',
+                    'field'      => HH::ingredientRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),

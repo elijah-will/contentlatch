@@ -109,6 +109,28 @@ final class AcfHollandHouseRecipeFixtures
         );
     }
 
+    public static function ingredientTitleRef(): FieldRef
+    {
+        return new FieldRef(
+            self::INGREDIENT_TITLE,
+            'ingredient_title',
+            'Ingredients → Ingredient Title',
+            array(self::INGREDIENTS, self::INGREDIENT_TITLE),
+            FieldRef::CONTAINER_REPEATER
+        );
+    }
+
+    public static function ingredientRef(): FieldRef
+    {
+        return new FieldRef(
+            self::INGREDIENT,
+            'ingredient',
+            'Ingredients → Section Ingredients → Ingredient',
+            array(self::INGREDIENTS, self::SECTION_INGREDIENTS, self::INGREDIENT),
+            FieldRef::CONTAINER_REPEATER
+        );
+    }
+
     public static function sectionTitleRef(): FieldRef
     {
         return new FieldRef(
@@ -116,6 +138,17 @@ final class AcfHollandHouseRecipeFixtures
             'section_title',
             'Directions → Section Title',
             array(self::DIRECTIONS, self::SECTION_TITLE),
+            FieldRef::CONTAINER_REPEATER
+        );
+    }
+
+    public static function directionRef(): FieldRef
+    {
+        return new FieldRef(
+            self::DIRECTION,
+            'direction',
+            'Directions → Section Directions → Direction',
+            array(self::DIRECTIONS, self::SECTION_DIRECTIONS, self::DIRECTION),
             FieldRef::CONTAINER_REPEATER
         );
     }

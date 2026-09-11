@@ -102,6 +102,8 @@ final class AuditPresentationTest extends TestCase
         $this->assertSame('Viewing', AuditPresentation::viewingAuditLabel());
         $this->assertSame('View results', AuditPresentation::viewResultsLabel());
         $this->assertSame('Audit History', AuditPresentation::historyHeading());
+        $this->assertSame('Show History', AuditPresentation::showHistoryLabel());
+        $this->assertSame('Hide History', AuditPresentation::hideHistoryLabel());
         $this->assertSame('12 content items checked', AuditPresentation::contentItemsCheckedLabel(12));
         $this->assertSame('3 need attention · 2 need review', AuditPresentation::historyContentOutcomeLabel(3, 2));
         $this->assertSame('Severity', AuditPresentation::severityFilterLabel());

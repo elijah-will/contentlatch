@@ -60,6 +60,29 @@ final class FieldDefinition
         return count($this->repeaterChain()) > 1;
     }
 
+    /**
+     * Explicit Rule Builder allowlist. The native catalog may keep
+     * runtime-only leaves; Builder exposure is a separate decision.
+     *
+     * Supported: scalar, Repeater → scalar, and Repeater → Repeater → scalar
+     * (including when the outer Repeater sits on a field group or Group).
+     */
+    public function isBuilderSelectable(): bool
+    {
+        $depth = count($this->repeaterChain());
+        if ($depth > 2) {
+            return false;
+        }
+
+        if ($depth === 2) {
+            return $this->container === FieldRef::CONTAINER_REPEATER
+                && $this->layout === ''
+                && $this->clone === '';
+        }
+
+        return true;
+    }
+
     public function resolutionId(): string
     {
         return FieldRef::resolutionIdFor($this->clone, $this->key);

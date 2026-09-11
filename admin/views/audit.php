@@ -58,6 +58,7 @@ $historyTotal     = isset($historyTotal) ? (int) $historyTotal : count($history)
 $historyPaged     = isset($historyPaged) ? (int) $historyPaged : 1;
 $historyTotalPages = isset($historyTotalPages) ? (int) $historyTotalPages : AuditPage::totalPages($historyTotal, AuditPage::HISTORY_PAGE_SIZE);
 $historyArgs      = isset($historyArgs) && is_array($historyArgs) ? $historyArgs : array('page' => AuditPage::SLUG);
+$historyOpen      = $viewingHistory || $historyPaged > 1;
 $typeNames   = array();
 foreach ($postTypes as $type) {
     $typeNames[] = AdminPresentation::postTypeLabel($type);
@@ -530,7 +531,15 @@ foreach ($postTypes as $type) {
     <?php endif; ?>
 
     <section class="contentguard-history contentguard-history--wide" aria-labelledby="contentguard-history-heading">
-        <h2 id="contentguard-history-heading"><?php echo esc_html(AuditPresentation::historyHeading()); ?></h2>
+        <details class="contentguard-history__details"<?php echo $historyOpen ? ' open' : ''; ?>>
+            <summary class="contentguard-history__summary" aria-expanded="<?php echo $historyOpen ? 'true' : 'false'; ?>">
+                <h2 id="contentguard-history-heading"><?php echo esc_html(AuditPresentation::historyHeading()); ?></h2>
+                <span class="contentguard-history__toggle">
+                    <span class="contentguard-history__toggle-show"><?php echo esc_html(AuditPresentation::showHistoryLabel()); ?></span>
+                    <span class="contentguard-history__toggle-hide"><?php echo esc_html(AuditPresentation::hideHistoryLabel()); ?></span>
+                </span>
+            </summary>
+            <div class="contentguard-history__panel" id="contentguard-history-panel">
         <?php if ($history === array()) : ?>
             <p class="contentguard-history__empty"><?php echo esc_html(AuditPresentation::historyEmptyText()); ?></p>
         <?php else : ?>
@@ -621,5 +630,7 @@ foreach ($postTypes as $type) {
                 </nav>
             <?php endif; ?>
         <?php endif; ?>
+            </div>
+        </details>
     </section>
 </div>

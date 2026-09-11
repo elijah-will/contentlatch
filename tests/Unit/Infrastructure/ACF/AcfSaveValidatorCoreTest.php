@@ -170,14 +170,15 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array('post_title' => 'Product')
         );
 
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('Ingredients — Ingredients are required.', $this->errors[0]['message']);
         $this->assertSame(
             array(
-                array(
-                    'input'   => 'acf[field_ingredients]',
-                    'message' => 'Ingredients are required.',
-                ),
+                'input'   => 'acf[field_ingredients]',
+                'message' => 'Ingredients are required.',
             ),
-            $this->errors
+            $this->errors[1]
         );
     }
 
@@ -231,9 +232,10 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array(
                 array(
                     'input'   => '',
-                    'message' => "ContentGuard · Blocking\n2 blocking issues\n"
+                    'message' => "ContentGuard · Blocking\n3 blocking issues\n"
                         . "Title — This field is required.\n"
-                        . "Content — This field is required.",
+                        . "Content — This field is required.\n"
+                        . "Ingredients — This field is required.",
                 ),
                 array(
                     'input'   => 'acf[field_ingredients]',

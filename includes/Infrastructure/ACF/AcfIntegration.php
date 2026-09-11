@@ -64,9 +64,7 @@ final class AcfIntegration implements FieldCatalog
         $fields = array();
 
         foreach ($this->catalog->fieldsForPostType($postType) as $field) {
-            // Phase 15A: nested Repeater leaves stay in the native catalog
-            // for providers, but are not selectable in the Rule Builder yet.
-            if ($field->isNestedRepeaterChild()) {
+            if (!$field->isBuilderSelectable()) {
                 continue;
             }
 

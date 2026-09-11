@@ -35,15 +35,14 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validate($this->publishRequest(), $this->signaturePayload(''));
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description — This field is required.',
-                ),
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
             ),
-            $this->errors
-        );
+        ));
+        $this->assertStringContainsString('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertStringNotContainsString('contentguard_field', json_encode($this->errors) ?: '');
     }
 
     public function testMatchingConditionFilledFieldOnPublishDoesNotError(): void
@@ -81,15 +80,12 @@ final class AcfSaveValidatorTest extends TestCase
             $this->signaturePayload('')
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description — This field is required.',
-                ),
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testGutenbergAcfAjaxPublishWithoutPostStatusIsBlocked(): void
@@ -275,8 +271,12 @@ final class AcfSaveValidatorTest extends TestCase
             $this->signaturePayload('')
         );
 
-        $this->assertCount(1, $this->errors);
-        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+        ));
     }
 
     public function testWarningSeverityNeverBlocks(): void
@@ -319,19 +319,16 @@ final class AcfSaveValidatorTest extends TestCase
             array($this->signatureRule(), $titleRule)
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description — This field is required.',
-                ),
-                array(
-                    'input'   => 'acf[field_title]',
-                    'message' => 'Recipe Title — This field is required.',
-                ),
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
             ),
-            $this->errors
-        );
+            array(
+                'input'   => 'acf[field_title]',
+                'message' => 'Recipe Title — This field is required.',
+            ),
+        ));
     }
 
     public function testCustomRuleMessageIsUsed(): void
@@ -356,15 +353,12 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->validate($this->publishRequest(), $this->signaturePayload(''), array($rule));
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description — Please add a signature recipe description.',
-                ),
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — Please add a signature recipe description.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testUnknownNonCatalogFieldKeyIsRejected(): void
@@ -428,15 +422,24 @@ final class AcfSaveValidatorTest extends TestCase
             $this->signaturePayload('')
         );
 
-        $this->assertCount(1, $this->errors);
-        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+        ));
         $this->assertSame(1, $store->findCalls);
     }
 
     public function testIncomingTrueFalseUsesTheSameDomainEvaluationAsStored(): void
     {
         $this->validate($this->publishRequest(), $this->signaturePayload(''));
-        $this->assertCount(1, $this->errors);
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+        ));
 
         $this->errors = array();
         $this->validate(
@@ -446,7 +449,12 @@ final class AcfSaveValidatorTest extends TestCase
                 'field_description' => '',
             )
         );
-        $this->assertCount(1, $this->errors);
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+        ));
 
         $this->errors = array();
         $this->validate(
@@ -523,15 +531,12 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_product_details][field_ingredients]',
-                    'message' => 'Product Details → Ingredients — This field is required.',
-                ),
+                'input'   => 'acf[field_product_details][field_ingredients]',
+                'message' => 'Product Details → Ingredients — This field is required.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testGroupRequiredFieldPopulatedOnPublishDoesNotError(): void
@@ -593,6 +598,97 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertSame(array(), $this->errors);
     }
 
+    public function testClassicAcfBlockersEmitContentGuardSummaryWithoutAFieldQuery(): void
+    {
+        $titleRule = RuleFactory::rule(array(
+            'id'          => 2,
+            'name'        => 'Title required',
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => RuleFactory::field('field_title', 'recipe_title', 'Recipe Title'),
+                    'type'  => 'required',
+                )),
+            ),
+        ));
+
+        $this->validate(
+            $this->publishRequest(),
+            array(
+                'field_signature'   => '1',
+                'field_description' => '',
+                'field_title'       => '',
+            ),
+            array($this->signatureRule(), $titleRule)
+        );
+
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+            array(
+                'input'   => 'acf[field_title]',
+                'message' => 'Recipe Title — This field is required.',
+            ),
+        ));
+        $this->assertStringContainsString("ContentGuard · Blocking\n2 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('Recipe Title — This field is required.', $this->errors[0]['message']);
+        $this->assertArrayNotHasKey('contentguard_field', $this->publishRequest());
+
+        $withoutField = $this->errors;
+        $this->validate(
+            $this->publishRequest(array('contentguard_field' => 'field_description')),
+            array(
+                'field_signature'   => '1',
+                'field_description' => '',
+                'field_title'       => '',
+            ),
+            array($this->signatureRule(), $titleRule)
+        );
+        $this->assertSame($withoutField, $this->errors);
+    }
+
+    public function testSaveValidatorDoesNotUseContentguardFieldForPresentation(): void
+    {
+        $php = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/ACF/AcfSaveValidator.php');
+
+        $this->assertStringContainsString('isClassicEditorRequest', $php);
+        $this->assertStringContainsString('EditorAuditIssues::noticeText', $php);
+        $this->assertStringNotContainsString('requestedFieldKey', $php);
+        $this->assertStringNotContainsString('QUERY_ARG', $php);
+        $this->assertStringNotContainsString('requestedRunId', $php);
+    }
+
+    public function testGutenbergAcfAjaxKeepsFieldErrorsWithoutAClassicSummary(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->signatureRule())),
+            $this->recipeCatalog(),
+            array(
+                'action'               => 'acf/validate_save_post',
+                'post_type'            => 'recipe',
+                '_acf_screen'          => 'post',
+                '_acf_post_id'         => '42',
+                'original_post_status' => 'auto-draft',
+            ),
+            $this->signaturePayload('')
+        );
+
+        $this->assertSame(
+            array(
+                array(
+                    'input'   => 'acf[field_description]',
+                    'message' => 'Recipe Description — This field is required.',
+                ),
+            ),
+            $this->errors
+        );
+        $this->assertStringNotContainsString('ContentGuard · Blocking', $this->errors[0]['message']);
+    }
+
     public function testRepeaterChildTargetsExactPostedRowInput(): void
     {
         $this->validateWith(
@@ -609,19 +705,18 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient — This field is required in row 1.',
-                ),
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient — This field is required in row 3.',
-                ),
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                'message' => 'Ingredient List → Ingredient — This field is required in row 1.',
             ),
-            $this->errors
-        );
+            array(
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                'message' => 'Ingredient List → Ingredient — This field is required in row 3.',
+            ),
+        ));
+        $this->assertStringContainsString('Ingredient is required in row 1.', $this->errors[0]['message']);
+        $this->assertStringContainsString('Ingredient is required in row 3.', $this->errors[0]['message']);
     }
 
     public function testGroupRepeaterChildTargetsNestedPostedRowInput(): void
@@ -641,15 +736,12 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
-                    'message' => 'Product Information → Item Size → Product Size — This field is required in row 1.',
-                ),
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
+                'message' => 'Product Information → Item Size → Product Size — This field is required in row 1.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testRepeaterZeroRowsTargetsRepeaterContainer(): void
@@ -668,15 +760,12 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . ']',
-                    'message' => 'Add at least one Item Size row.',
-                ),
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . ']',
+                'message' => 'Add at least one Item Size row.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testRepeaterDraftAllowedPublishAndPrivateBlocked(): void
@@ -807,15 +896,12 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[field_product_details][field_nutrition][field_calories]',
-                    'message' => 'Product Details → Nutrition → Calories — This field is required.',
-                ),
+                'input'   => 'acf[field_product_details][field_nutrition][field_calories]',
+                'message' => 'Product Details → Nutrition → Calories — This field is required.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     /**
@@ -868,19 +954,16 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
-                    'message' => 'Modules → Hero → Title — This field is required.',
-                ),
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
-                    'message' => 'Modules → Hero → Title — This field is required.',
-                ),
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                'message' => 'Modules → Hero → Title — This field is required.',
             ),
-            $this->errors
-        );
+            array(
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                'message' => 'Modules → Hero → Title — This field is required.',
+            ),
+        ));
     }
 
     public function testFlexibleGroupChildTargetsNestedPostedInput(): void
@@ -901,17 +984,14 @@ final class AcfSaveValidatorTest extends TestCase
             )
         );
 
-        $this->assertSame(
+        $this->assertClassicBlockingSummary(array(
             array(
-                array(
-                    'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
-                        . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
-                        . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
-                    'message' => 'Modules → Content Block → Content Block 1 → Headline — This field is required.',
-                ),
+                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
+                    . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
+                    . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
+                'message' => 'Modules → Content Block → Content Block 1 → Headline — This field is required.',
             ),
-            $this->errors
-        );
+        ));
     }
 
     public function testFlexibleZeroLayoutsDoNotError(): void
@@ -1040,6 +1120,19 @@ final class AcfSaveValidatorTest extends TestCase
                 )),
             ),
         ));
+    }
+
+    /**
+     * Classic ACF saves emit a ContentGuard summary, then the field errors.
+     *
+     * @param list<array{input: string, message: string}> $fieldErrors
+     */
+    private function assertClassicBlockingSummary(array $fieldErrors): void
+    {
+        $this->assertNotSame(array(), $this->errors);
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertSame($fieldErrors, array_slice($this->errors, 1));
     }
 
     private function validateWith(

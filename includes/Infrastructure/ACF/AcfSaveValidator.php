@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace ContentGuard\Infrastructure\ACF;
 
 use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
+use ContentGuard\Application\EditorAuditIssues;
 use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Application\RuleRepositoryInterface;
@@ -117,8 +118,8 @@ final class AcfSaveValidator
             return;
         }
 
-        $generalLines = array();
-        $fieldErrors  = array();
+        $coreLines   = array();
+        $fieldErrors = array();
         foreach ($evaluation->results as $result) {
             if (!$result->isFailed()) {
                 continue;
@@ -126,20 +127,42 @@ final class AcfSaveValidator
 
             $error = $this->errorForResult($result, $fieldPaths, $repeaterKeys);
             if ($error['input'] === '') {
-                $generalLines[] = $error['message'];
+                $coreLines[] = $error['message'];
             } else {
                 $fieldErrors[] = $error;
             }
         }
 
-        $general = EditorNoticePresentation::blockingNoticeText($generalLines);
-        if ($general !== '') {
-            $addError('', $general);
+        if ($fieldErrors !== array() && $this->isClassicEditorRequest($request)) {
+            $summary = EditorAuditIssues::noticeText(
+                EditorAuditIssues::fromEvaluation($evaluation, $postId)
+            );
+            if ($summary !== '') {
+                $addError('', $summary);
+            }
+        } else {
+            $general = EditorNoticePresentation::blockingNoticeText($coreLines);
+            if ($general !== '') {
+                $addError('', $general);
+            }
         }
 
         foreach ($fieldErrors as $error) {
             $addError($error['input'], $error['message']);
         }
+    }
+
+    /**
+     * Classic post form includes post_status. Gutenberg ACF AJAX does not.
+     * contentguard_field is navigation-only and is not consulted here.
+     *
+     * @param array<string, mixed> $request
+     */
+    private function isClassicEditorRequest(array $request): bool
+    {
+        return isset($request['post_status'])
+            && is_scalar($request['post_status'])
+            && trim((string) $request['post_status']) !== '';
     }
 
     /**
