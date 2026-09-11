@@ -347,6 +347,101 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertArrayNotHasKey('affectedRows', $repeater[0]);
         $this->assertArrayNotHasKey('layout', $repeater[0]);
         $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($repeater[0]));
+
+        $nested = EditorAuditIssues::fromFindings(
+            array($this->finding(array(
+                'fieldKey' => 'field_step_name',
+                'message'  => 'Name is required in 3 rows (rows 1/1, 1/2, 2/1).',
+            ))),
+            42,
+            array('15:field_step_name' => 'Directions → Steps → Name')
+        );
+        $this->assertArrayNotHasKey('affectedRows', $nested[0]);
+        $this->assertArrayNotHasKey('layout', $nested[0]);
+        $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($nested[0]));
+        $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $nested[0]['message']);
+    }
+
+    public function testLiveNestedEvaluationKeepsPairedCoordinatesInTheNotice(): void
+    {
+        $evaluation = new ContentEvaluation(
+            42,
+            \ContentGuard\Domain\ContentStatus::Failed,
+            array(
+                $this->nestedFailure(1, 1),
+                $this->nestedFailure(1, 2),
+                $this->nestedFailure(2, 1),
+            )
+        );
+
+        $issues = EditorAuditIssues::fromEvaluation($evaluation, 42);
+        $this->assertCount(1, $issues);
+        $this->assertSame('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $issues[0]['message']);
+        $this->assertArrayNotHasKey('affectedRows', $issues[0]);
+        $this->assertArrayNotHasKey('layout', $issues[0]);
+
+        $html = EditorAuditIssues::noticeHtml($issues);
+        $this->assertStringContainsString('1/1', $html);
+        $this->assertStringContainsString('1/2', $html);
+        $this->assertStringContainsString('2/1', $html);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+        $this->assertStringNotContainsString('contentguard-warning-rows', $html);
+    }
+
+    public function testLiveOneLevelRepeaterEvaluationNamesTheRowWithoutFlexNavigation(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                374,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array(
+                    new EvaluationResult(
+                        EvaluationStatus::Failed,
+                        74,
+                        374,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                        'This field is required.',
+                        RuleSeverity::Fail,
+                        'required',
+                        array(
+                            'field_label' => 'Directions → Section Title',
+                            'display_row' => 2,
+                            'row_key'     => 'row-1',
+                            'row_index'   => 1,
+                        )
+                    ),
+                )
+            ),
+            374
+        );
+
+        $this->assertSame('Section Title is required in row 2.', $issues[0]['message']);
+        $this->assertArrayNotHasKey('affectedRows', $issues[0]);
+        $this->assertArrayNotHasKey('layout', $issues[0]);
+        $this->assertStringContainsString(
+            'Section Title is required in row 2.',
+            EditorAuditIssues::issueHtml($issues[0])
+        );
+        $this->assertStringNotContainsString(
+            'data-contentguard-display-row',
+            EditorAuditIssues::issueHtml($issues[0])
+        );
+    }
+
+    public function testLiveSingleNestedEvaluationNamesTheOuterInnerRow(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array($this->nestedFailure(2, 1))
+            ),
+            42
+        );
+
+        $this->assertSame('Name is required in row 2/1.', $issues[0]['message']);
+        $this->assertStringContainsString('2/1', EditorAuditIssues::issueHtml($issues[0]));
+        $this->assertStringNotContainsString('data-contentguard-display-row', EditorAuditIssues::issueHtml($issues[0]));
     }
 
     public function testCoreTitleIsClickableOnGutenbergAndClassic(): void
@@ -449,6 +544,36 @@ final class EditorAuditIssuesTest extends TestCase
             RuleSeverity::Fail,
             'required',
             array('field_label' => $label)
+        );
+    }
+
+    private function nestedFailure(int $outer, int $inner): EvaluationResult
+    {
+        return new EvaluationResult(
+            EvaluationStatus::Failed,
+            90,
+            42,
+            'field_step_name',
+            'This field is required.',
+            RuleSeverity::Fail,
+            'required',
+            array(
+                'field_label'   => 'Directions → Steps → Name',
+                'repeater_rows' => array(
+                    array(
+                        'repeater'    => 'field_directions',
+                        'key'         => 'row-' . ($outer - 1),
+                        'index'       => $outer - 1,
+                        'display_row' => $outer,
+                    ),
+                    array(
+                        'repeater'    => 'field_steps',
+                        'key'         => 'row-' . ($inner - 1),
+                        'index'       => $inner - 1,
+                        'display_row' => $inner,
+                    ),
+                ),
+            )
         );
     }
 

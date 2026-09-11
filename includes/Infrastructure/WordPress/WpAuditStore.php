@@ -11,6 +11,7 @@ namespace ContentGuard\Infrastructure\WordPress;
 
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditFindingQuery;
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\AuditRunStatus;
@@ -483,6 +484,8 @@ WHERE id = %d";
      */
     private function hydrateFinding(array $row): AuditFinding
     {
+        $message = (string) $row['message'];
+
         return new AuditFinding(
             (int) $row['id'],
             (int) $row['run_id'],
@@ -493,8 +496,11 @@ WHERE id = %d";
             (string) ($row['validation_id'] ?? ''),
             (string) ($row['code'] ?? ''),
             RuleSeverity::from((string) $row['severity']),
-            (string) $row['message'],
+            $message,
             (string) $row['created_at'],
+            AuditRepeaterCoordinates::contextFromCells(
+                AuditRepeaterCoordinates::cellsFromSnapshot($message)
+            ),
         );
     }
 

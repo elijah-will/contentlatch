@@ -119,6 +119,9 @@ final class AcfRepeaterIncomingValueProviderTest extends TestCase
         $this->assertCount(2, $instances);
         $this->assertSame('2.5oz', $instances[0]->value);
         $this->assertNull($instances[1]->value);
+        $this->assertSame(1, $instances[0]->context['display_row']);
+        $this->assertSame(2, $instances[1]->context['display_row']);
+        $this->assertArrayNotHasKey('repeater_rows', $instances[1]->context);
         $this->assertSame(
             'acf[' . AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . AcfRepeaterFixtures::PRODUCT_SIZE . ']',
             $instances[0]->context['input_name']

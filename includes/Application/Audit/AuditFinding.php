@@ -13,6 +13,11 @@ use ContentGuard\Domain\RuleSeverity;
 
 final class AuditFinding
 {
+    /**
+     * @param array<string, mixed> $context Collapsed evaluation context. Nested
+     *                                      Repeater cells keep their instance
+     *                                      repeater_rows chains here.
+     */
     public function __construct(
         public readonly int $id,
         public readonly int $runId,
@@ -25,6 +30,7 @@ final class AuditFinding
         public readonly RuleSeverity $severity,
         public readonly string $message,
         public readonly string $createdAt,
+        public readonly array $context = array(),
     ) {
     }
 }

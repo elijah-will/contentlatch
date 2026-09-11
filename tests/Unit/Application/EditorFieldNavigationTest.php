@@ -168,6 +168,9 @@ final class EditorFieldNavigationTest extends TestCase
         $this->assertSame(array(), EditorFieldNavigation::flexDisplayRowsFromSnapshot(
             'Ingredient is required in 3 rows (rows 1, 3, 5).'
         ));
+        $this->assertSame(array(), EditorFieldNavigation::flexDisplayRowsFromSnapshot(
+            'Name is required in 3 rows (rows 1/1, 1/2, 2/1).'
+        ));
         $this->assertSame(
             'Title is required in 2 Hero rows.',
             EditorFieldNavigation::snapshotMessageWithoutRows('Title is required in 2 Hero rows (rows 1, 3).')

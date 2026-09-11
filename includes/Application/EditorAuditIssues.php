@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace ContentGuard\Application;
 
 use ContentGuard\Application\Audit\AuditFinding;
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Domain\ContentEvaluation;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Domain\RuleSeverity;
@@ -78,8 +79,11 @@ final class EditorAuditIssues
             }
 
             $item = self::fromResult($result);
-            $id   = $item['message'] . "\0" . $item['fieldKey'] . "\0" . $item['label'];
+            $id   = AuditRepeaterCoordinates::messageWithoutPairs($item['message'])
+                . "\0" . $item['fieldKey']
+                . "\0" . $item['label'];
             if (isset($seen[$id])) {
+                $items[$seen[$id]] = self::mergeNestedPresentation($items[$seen[$id]], $item);
                 $items[$seen[$id]] = EditorFieldNavigation::mergeRowTargets($items[$seen[$id]], $item);
                 continue;
             }
@@ -103,6 +107,22 @@ final class EditorAuditIssues
 
         $fieldKey = EditorFieldNavigation::navigationId($result->fieldId);
         $label    = trim((string) ($result->context['field_label'] ?? ''));
+        $chain    = AuditRepeaterCoordinates::instanceChain($result->context);
+        if ($chain !== array()) {
+            $message = AuditRepeaterCoordinates::formatSnapshot(
+                self::nestedBaseMessage($result, $message),
+                array($chain)
+            );
+        } else {
+            $displayRow = EditorFieldNavigation::sanitizeDisplayRow($result->context['display_row'] ?? null);
+            if ($displayRow > 0 && EditorFieldNavigation::layoutFromContext($result->context) === '') {
+                $message = sprintf(
+                    '%s in row %d.',
+                    rtrim(self::nestedBaseMessage($result, $message), '.'),
+                    $displayRow
+                );
+            }
+        }
 
         return EditorFieldNavigation::withEvaluationRowTargets(
             array(
@@ -303,6 +323,48 @@ final class EditorAuditIssues
         }
 
         return self::fromFindings($findings, $postId, $fieldLabels);
+    }
+
+    /**
+     * @param array<string, mixed> $into
+     * @param array<string, mixed> $from
+     * @return array<string, mixed>
+     */
+    private static function mergeNestedPresentation(array $into, array $from): array
+    {
+        $cells = array_merge(
+            AuditRepeaterCoordinates::cellsFromSnapshot((string) ($into['message'] ?? '')),
+            AuditRepeaterCoordinates::cellsFromSnapshot((string) ($from['message'] ?? ''))
+        );
+        if ($cells === array()) {
+            return $into;
+        }
+
+        $base = AuditRepeaterCoordinates::messageWithoutPairs((string) ($into['message'] ?? ''));
+        if ($base === '') {
+            $base = AuditRepeaterCoordinates::messageWithoutPairs((string) ($from['message'] ?? ''));
+        }
+
+        $into['message'] = AuditRepeaterCoordinates::formatSnapshot(
+            $base !== '' ? $base : 'This field is required.',
+            $cells
+        );
+
+        return $into;
+    }
+
+    private static function nestedBaseMessage(EvaluationResult $result, string $fallback): string
+    {
+        if ($result->code === 'required') {
+            $parts = preg_split('/\s*→\s*/u', (string) ($result->context['field_label'] ?? '')) ?: array();
+            $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
+            $label = $parts !== array() ? (string) $parts[count($parts) - 1] : '';
+            if ($label !== '') {
+                return sprintf('%s is required.', $label);
+            }
+        }
+
+        return $fallback !== '' ? $fallback : 'This field is required.';
     }
 
     private static function humanLabel(string $label, string $fieldKey): string

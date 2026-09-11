@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Application\RuleRepositoryInterface;
@@ -229,10 +230,27 @@ final class AcfSaveValidator
             return $result->message;
         }
 
-        return EditorNoticePresentation::issueLine(
+        $line = EditorNoticePresentation::issueLine(
             (string) ($result->context['field_label'] ?? ''),
             $result->message,
             $result->code
         );
+
+        if (AuditRepeaterCoordinates::instanceChain($result->context) !== array()) {
+            return $line;
+        }
+
+        $displayRow = 0;
+        $row        = $result->context['display_row'] ?? null;
+        if (is_int($row) || (is_numeric($row) && (int) $row > 0)) {
+            $displayRow = (int) $row;
+        }
+
+        $layout = trim((string) ($result->context['layout'] ?? ''));
+        if ($displayRow > 0 && $layout === '') {
+            return rtrim($line, '.') . sprintf(' in row %d.', $displayRow);
+        }
+
+        return $line;
     }
 }

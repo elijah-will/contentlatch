@@ -489,6 +489,9 @@ final class ContentAuditService
                 $first->severity,
                 $this->snapshotMessage($results),
                 $this->datetime(),
+                AuditRepeaterCoordinates::contextFromCells(
+                    AuditRepeaterCoordinates::cellsFromResults($results)
+                ),
             );
         }
 
@@ -502,12 +505,21 @@ final class ContentAuditService
     {
         $first = $results[0];
         $base  = $this->instanceMessage($first);
+        $cells = AuditRepeaterCoordinates::cellsFromResults($results);
+        if ($cells !== array()) {
+            return AuditRepeaterCoordinates::formatSnapshot($base, $cells);
+        }
+
         if (count($results) === 1) {
             $row         = $first->context['display_row'] ?? null;
             $row         = is_int($row) || (is_numeric($row) && (int) $row > 0) ? (int) $row : 0;
             $layoutLabel = $this->layoutLabel($first);
             if ($row > 0 && $layoutLabel !== '') {
                 return sprintf('%s in %s row %d.', rtrim($base, '.'), $layoutLabel, $row);
+            }
+
+            if ($row > 0) {
+                return sprintf('%s in row %d.', rtrim($base, '.'), $row);
             }
 
             return $base;
@@ -555,7 +567,9 @@ final class ContentAuditService
             return $result->message;
         }
 
-        if (isset($result->context['display_row']) && $result->code === 'required') {
+        $hasRowContext = isset($result->context['display_row'])
+            || AuditRepeaterCoordinates::instanceChain($result->context) !== array();
+        if ($hasRowContext && $result->code === 'required') {
             $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
             if ($label !== '') {
                 return sprintf('%s is required.', $label);

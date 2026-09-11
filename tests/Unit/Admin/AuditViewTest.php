@@ -530,6 +530,132 @@ final class AuditViewTest extends TestCase
         $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
     }
 
+    public function testNestedRepeaterFindingShowsPairedCoordinatesInTheIssueText(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings' => array($this->makeFinding(array(
+                'fieldKey' => 'field_step_name',
+                'message'  => 'Name is required in 3 rows (rows 1/1, 1/2, 2/1).',
+            ))),
+            'fieldLabels' => array('15:field_step_name' => 'Directions → Steps → Name'),
+            'ruleNames'   => array('15' => 'Step name required'),
+        )));
+
+        $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $html);
+        $this->assertStringContainsString('contentguard-finding__rows', $html);
+        $this->assertStringContainsString('Affected rows:', $html);
+        $this->assertStringContainsString('>1/1</span>', $html);
+        $this->assertStringContainsString('>1/2</span>', $html);
+        $this->assertStringContainsString('>2/1</span>', $html);
+        $this->assertStringNotContainsString('>Row 1</span>', $html);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+    }
+
+    public function testSingleNestedRepeaterFindingShowsTheOuterInnerRow(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings' => array($this->makeFinding(array(
+                'fieldKey' => 'field_step_name',
+                'message'  => 'Name is required in row 2/1.',
+            ))),
+            'fieldLabels' => array('15:field_step_name' => 'Directions → Steps → Name'),
+        )));
+
+        $this->assertStringContainsString('Name is required in row 2/1.', $html);
+        $this->assertStringContainsString('>2/1</span>', $html);
+        $this->assertStringNotContainsString('>Row 2</span>', $html);
+    }
+
+    public function testGroupedCardStillShowsNestedCoordinatesWhenSummaryIsGeneric(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'allFindingTotal' => 2,
+            'findingTotal'    => 2,
+            'findings'        => array(
+                $this->makeFinding(array(
+                    'id'           => 71,
+                    'fieldKey'     => 'field_step_name',
+                    'validationId' => 'v-nested',
+                    'message'      => 'Name is required in 3 rows (rows 1/1, 1/2, 2/1).',
+                )),
+                $this->makeFinding(array(
+                    'id'           => 72,
+                    'fieldKey'     => 'field_description',
+                    'validationId' => 'v-desc',
+                    'message'      => 'Description is required.',
+                )),
+            ),
+            'fieldLabels' => array(
+                '15:field_step_name'     => 'Directions → Steps → Name',
+                '15:field_description'   => 'Recipe Description',
+            ),
+        )));
+
+        $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $html);
+        $this->assertStringContainsString('>1/1</span>', $html);
+        $this->assertStringContainsString('>1/2</span>', $html);
+        $this->assertStringContainsString('>2/1</span>', $html);
+    }
+
+    public function testOneLevelRepeaterSingleRowFindingNamesTheRowInTheIssueText(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(374 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            374 => 'http://example.test/wp-admin/post.php?post=374&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings' => array($this->makeFinding(array(
+                'postId'   => 374,
+                'fieldKey' => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                'message'  => 'Section Title is required in row 2.',
+            ))),
+            'fieldLabels' => array(
+                '15:' . \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE => 'Directions → Section Title',
+            ),
+        )));
+
+        $this->assertStringContainsString('Section Title is required in row 2.', $html);
+        $this->assertStringNotContainsString('1/1', $html);
+        $this->assertStringNotContainsString('contentguard-finding__rows', $html);
+    }
+
+    public function testOneLevelRepeaterFindingKeepsItsExistingWording(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings' => array($this->makeFinding(array(
+                'fieldKey' => 'field_ingredients',
+                'message'  => 'Ingredient is required in 3 rows (rows 1, 3, 5).',
+            ))),
+            'fieldLabels' => array('15:field_ingredients' => 'Ingredients'),
+        )));
+
+        $this->assertStringContainsString('Ingredient is required in 3 rows (rows 1, 3, 5).', $html);
+        $this->assertStringNotContainsString('1/1', $html);
+        $this->assertStringNotContainsString('contentguard-finding__rows', $html);
+    }
+
     public function testManyFieldsCollapseWithAMoreCount(): void
     {
         $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');

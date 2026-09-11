@@ -23,6 +23,7 @@
 defined('ABSPATH') || exit;
 
 use ContentGuard\Admin\AdminView;
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Application\EditorFieldNavigation;
 
@@ -140,22 +141,40 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
     <?php endif; ?>
     <?php
     $affectedRows   = array();
+    $nestedTokens   = AuditRepeaterCoordinates::tokensFromMessages($messages);
     $summaryDisplay = $summary;
-    foreach ($messages as $snapshot) {
-        $parsed = EditorFieldNavigation::flexDisplayRowsFromSnapshot($snapshot);
-        if (count($parsed) > 1) {
-            $affectedRows = $parsed;
-            if ($summary === $snapshot) {
-                $summaryDisplay = EditorFieldNavigation::snapshotMessageWithoutRows($summary);
+    if ($nestedTokens !== array()) {
+        if (AuditRepeaterCoordinates::cellsFromSnapshot($summaryDisplay) === array()) {
+            $nestedSnapshot = AuditRepeaterCoordinates::firstSnapshotWithPairs($messages);
+            if ($nestedSnapshot !== '') {
+                $summaryDisplay = $nestedSnapshot;
             }
-            break;
+        }
+    } else {
+        foreach ($messages as $snapshot) {
+            $parsed = EditorFieldNavigation::flexDisplayRowsFromSnapshot($snapshot);
+            if (count($parsed) > 1) {
+                $affectedRows = $parsed;
+                if ($summary === $snapshot) {
+                    $summaryDisplay = EditorFieldNavigation::snapshotMessageWithoutRows($summary);
+                }
+                break;
+            }
         }
     }
     ?>
     <?php if ($summaryDisplay !== '') : ?>
         <p class="contentguard-finding__issue">
             <?php echo esc_html($summaryDisplay); ?>
-            <?php if ($affectedRows !== array()) : ?>
+            <?php if ($nestedTokens !== array()) : ?>
+                <span class="contentguard-finding__rows">
+                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentguard'); ?></span>
+                    <?php foreach ($nestedTokens as $index => $token) : ?>
+                        <?php if ($index > 0) : ?><span aria-hidden="true"> · </span><?php endif; ?>
+                        <span><?php echo esc_html($token); ?></span>
+                    <?php endforeach; ?>
+                </span>
+            <?php elseif ($affectedRows !== array()) : ?>
                 <span class="contentguard-finding__rows">
                     <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentguard'); ?></span>
                     <?php foreach ($affectedRows as $index => $row) : ?>

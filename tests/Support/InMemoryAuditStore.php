@@ -151,6 +151,7 @@ final class InMemoryAuditStore implements AuditStoreInterface
                 $finding->severity,
                 $finding->message,
                 $finding->createdAt,
+                $finding->context,
             );
         }
 

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ContentGuard\Tests\Unit\Application\Audit;
 
 use ContentGuard\Application\Audit\AuditFindingQuery;
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Application\Audit\AuditRunStatus;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\ContentEvaluator;
@@ -719,6 +720,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame('v-required', $findings[0]->validationId);
         $this->assertSame('required', $findings[0]->code);
         $this->assertSame('Ingredient is required in 3 rows (rows 1, 3, 5).', $findings[0]->message);
+        $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($findings[0]));
         $this->assertObjectNotHasProperty('instanceKey', $findings[0]);
         $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
     }
@@ -767,6 +769,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame('v-required', $findings[0]->validationId);
         $this->assertSame('required', $findings[0]->code);
         $this->assertSame('Title is required in 2 Hero rows (rows 2, 5).', $findings[0]->message);
+        $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($findings[0]));
         $this->assertObjectNotHasProperty('instanceKey', $findings[0]);
         $this->assertObjectNotHasProperty('rowIndex', $findings[0]);
         $this->assertObjectNotHasProperty('layout', $findings[0]);
@@ -884,13 +887,418 @@ final class ContentAuditServiceTest extends TestCase
             $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $finding->fieldKey);
             $this->assertSame('v-required', $finding->validationId);
         }
-        $this->assertSame('Product Size is required.', $byPost[10]->message);
+        $this->assertSame('Product Size is required in row 2.', $byPost[10]->message);
+        $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($byPost[10]));
         $this->assertSame('Add at least one Item Size row.', $byPost[20]->message);
+        $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($byPost[20]));
         $this->assertSame('no_rows', $byPost[20]->code);
         $this->assertSame(
             'Product Information → Item Size → Product Size',
             AuditPresentation::fieldLabel($rule, \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE)
         );
+    }
+
+    public function testNestedRepeaterFailuresRetainEveryOuterInnerCoordinate(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 90,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    $this->nestedCell('', 1, 1),
+                    $this->nestedCell('', 1, 2),
+                    $this->nestedCell('Grill', 2, 2),
+                    $this->nestedCell('', 2, 1),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $findings[0]->fieldKey);
+        $this->assertSame('required', $findings[0]->code);
+        $this->assertSame('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $findings[0]->message);
+        $this->assertStringContainsString('1/1', $findings[0]->message);
+        $this->assertStringContainsString('1/2', $findings[0]->message);
+        $this->assertStringContainsString('2/1', $findings[0]->message);
+        $this->assertSame(
+            array(array(1, 1), array(1, 2), array(2, 1)),
+            AuditRepeaterCoordinates::pairsFromFinding($findings[0])
+        );
+        $this->assertSame(1, $findings[0]->context['repeater_rows'][0][0]['display_row']);
+        $this->assertSame(1, $findings[0]->context['repeater_rows'][0][1]['display_row']);
+        $this->assertSame(2, $findings[0]->context['repeater_rows'][2][0]['display_row']);
+        $this->assertSame(1, $findings[0]->context['repeater_rows'][2][1]['display_row']);
+        $this->assertArrayNotHasKey('display_row', $findings[0]->context);
+        $this->assertObjectNotHasProperty('display_row', $findings[0]);
+    }
+
+    public function testSingleNestedRepeaterFailureNamesTheOuterInnerRow(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 97,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    $this->nestedCell('', 1, 1),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $finding = $this->store->findFindings($run->id)[0];
+        $this->assertSame('Name is required in row 1/1.', $finding->message);
+        $this->assertSame(array(array(1, 1)), AuditRepeaterCoordinates::pairsFromFinding($finding));
+    }
+
+    public function testHistoricalNestedSnapshotStillPresentsPairsAfterStoreRoundTrip(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 98,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    $this->nestedCell('', 1, 1),
+                    $this->nestedCell('', 1, 2),
+                    $this->nestedCell('', 2, 1),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $stored = $this->store->findFindings($run->id)[0];
+        $hydrated = new \ContentGuard\Application\Audit\AuditFinding(
+            $stored->id,
+            $stored->runId,
+            $stored->postId,
+            $stored->postType,
+            $stored->ruleId,
+            $stored->fieldKey,
+            $stored->validationId,
+            $stored->code,
+            $stored->severity,
+            $stored->message,
+            $stored->createdAt,
+            AuditRepeaterCoordinates::contextFromCells(
+                AuditRepeaterCoordinates::cellsFromSnapshot($stored->message)
+            )
+        );
+
+        $this->assertSame('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $hydrated->message);
+        $this->assertSame(
+            array(array(1, 1), array(1, 2), array(2, 1)),
+            AuditRepeaterCoordinates::pairsFromFinding($hydrated)
+        );
+        $this->assertSame(array('1/1', '1/2', '2/1'), AuditRepeaterCoordinates::tokensFromMessages(array($hydrated->message)));
+    }
+
+    public function testStoredNestedProviderAuditSnapshotShowsPairedCoordinates(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 99,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $catalog = \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
+        $types   = $catalog->fieldTypesForPostType('recipe');
+        $maps    = $catalog->nestedResolutionMaps('recipe', $types);
+        $payload = array(
+            array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                ),
+            ),
+            array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                ),
+            ),
+        );
+        $repository = new InMemoryRuleRepository(array($rule));
+        $service = new ContentAuditService(
+            $this->store,
+            new InMemoryAuditPostScanner(array(
+                array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+            )),
+            $this->lock,
+            $repository,
+            new ContentEvaluator($repository, RuleEngine::v1()),
+            new AcfIntegration($catalog),
+            static function () use ($types, $maps, $payload): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                    10,
+                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    $types,
+                    static function (string $key) use ($payload): mixed {
+                        return $key === \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
+                            ? $payload
+                            : null;
+                    },
+                    $maps['paths'],
+                    $maps['names'],
+                    $maps['repeater_keys'],
+                    $maps['flex_keys'] ?? array(),
+                    $maps['layouts'] ?? array(),
+                    $maps['clone_keys'] ?? array(),
+                    $maps['repeater_chains'] ?? array()
+                );
+            },
+            static function (array $ids): void {
+                unset($ids);
+            },
+            function (): int {
+                return $this->now;
+            },
+            1
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $finding = $this->store->findFindings($run->id)[0];
+        $this->assertSame('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $finding->message);
+        $this->assertSame(
+            array(array(1, 1), array(1, 2), array(2, 1)),
+            AuditRepeaterCoordinates::pairsFromFinding($finding)
+        );
+    }
+
+    public function testNestedRepeaterCollapseKeepsSameOuterAndCrossOuterCellsDistinct(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 91,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    $this->nestedCell('', 1, 2),
+                    $this->nestedCell('', 1, 3),
+                    $this->nestedCell('', 2, 2),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $pairs = AuditRepeaterCoordinates::pairsFromFinding($this->store->findFindings($run->id)[0]);
+        $this->assertSame(array(array(1, 2), array(1, 3), array(2, 2)), $pairs);
+        $this->assertNotContains(array(2, 1), $pairs);
+    }
+
+    public function testMixedNestedAndScalarFailuresStaySeparateFindings(): void
+    {
+        $nested = RuleFactory::rule(array(
+            'id'          => 92,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-nested',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $scalar = RuleFactory::rule(array(
+            'id'          => 93,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'    => 'v-desc',
+                    'field' => RuleFactory::field('field_description', 'recipe_description', 'Recipe Description'),
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                'field_description' => '',
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    $this->nestedCell('', 3, 3),
+                    $this->nestedCell('', 3, 4),
+                ),
+            ),
+        );
+        $service = $this->service(
+            array($nested, $scalar),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(2, $findings);
+        $byField = array();
+        foreach ($findings as $finding) {
+            $byField[$finding->fieldKey] = $finding;
+        }
+        $this->assertSame(
+            array(array(3, 3), array(3, 4)),
+            AuditRepeaterCoordinates::pairsFromFinding($byField[\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME])
+        );
+        $this->assertSame(
+            'Name is required in 2 rows (rows 3/3, 3/4).',
+            $byField[\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME]->message
+        );
+        $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($byField['field_description']));
+        $this->assertSame('This field is required.', $byField['field_description']->message);
+    }
+
+    public function testNestedEmptyOuterAndEmptyInnerUseFieldLevelNoRows(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'id'          => 94,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'         => 'v-required',
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
+            ),
+            20 => array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
+            ),
+        );
+        $service = $this->service(
+            array($rule),
+            array(
+                array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+                array('id' => 20, 'postType' => 'recipe', 'status' => 'publish'),
+            )
+        );
+        $run = $service->processBatch($service->start(1)->id);
+        $run = $service->processBatch($run->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(2, $findings);
+        foreach ($findings as $finding) {
+            $this->assertSame('no_rows', $finding->code);
+            $this->assertSame('Add at least one Steps row.', $finding->message);
+            $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($finding));
+        }
+    }
+
+    public function testCloneAndCoreAuditFindingsDoNotGainRepeaterCoordinates(): void
+    {
+        $clone = RuleFactory::rule(array(
+            'id'          => 95,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'    => 'v-clone',
+                    'field' => RuleFactory::field(
+                        \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+                        'title',
+                        'Shared Content → Title'
+                    ),
+                )),
+            ),
+        ));
+        $core = RuleFactory::rule(array(
+            'id'          => 96,
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'id'    => 'v-core',
+                    'field' => RuleFactory::field('title', 'post_title', 'Title'),
+                )),
+            ),
+        ));
+        $this->values = array(
+            10 => array(
+                \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
+                'title' => '',
+            ),
+        );
+        $service = $this->service(
+            array($clone, $core),
+            array(array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'))
+        );
+        $run = $service->processBatch($service->start(1)->id);
+
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(2, $findings);
+        foreach ($findings as $finding) {
+            $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($finding));
+            $this->assertSame(array(), $finding->context);
+            $this->assertSame('This field is required.', $finding->message);
+        }
     }
 
     public function testEvaluateStoredPostUsesCurrentValuesNotPersistedFindings(): void
@@ -998,6 +1406,26 @@ final class ContentAuditServiceTest extends TestCase
             },
             1
         );
+    }
+
+    private function nestedCell(mixed $value, int $outer, int $inner): FieldInstance
+    {
+        return new FieldInstance($value, array(
+            'repeater_rows' => array(
+                array(
+                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
+                    'key'         => 'row-' . ($outer - 1),
+                    'index'       => $outer - 1,
+                    'display_row' => $outer,
+                ),
+                array(
+                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
+                    'key'         => 'row-' . ($inner - 1),
+                    'index'       => $inner - 1,
+                    'display_row' => $inner,
+                ),
+            ),
+        ));
     }
 
     private function signatureRule(): \ContentGuard\Domain\Rule

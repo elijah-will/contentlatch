@@ -613,11 +613,11 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient — This field is required.',
+                    'message' => 'Ingredient List → Ingredient — This field is required in row 1.',
                 ),
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
-                    'message' => 'Ingredient List → Ingredient — This field is required.',
+                    'message' => 'Ingredient List → Ingredient — This field is required in row 3.',
                 ),
             ),
             $this->errors
@@ -645,7 +645,7 @@ final class AcfSaveValidatorTest extends TestCase
             array(
                 array(
                     'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
-                    'message' => 'Product Information → Item Size → Product Size — This field is required.',
+                    'message' => 'Product Information → Item Size → Product Size — This field is required in row 1.',
                 ),
             ),
             $this->errors
