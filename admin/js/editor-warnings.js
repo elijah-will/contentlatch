@@ -22,6 +22,19 @@
     return typeof fieldKey === "string" && /^field_[A-Za-z0-9]+$/.test(fieldKey);
   }
 
+  function gutenbergCoreIds() {
+    var core = window.contentguardEditorField && window.contentguardEditorField.core;
+    if (core && Array.isArray(core.gutenberg)) {
+      return core.gutenberg;
+    }
+
+    return ["title", "content", "excerpt", "featured_image"];
+  }
+
+  function isSupportedCore(fieldId) {
+    return typeof fieldId === "string" && gutenbergCoreIds().indexOf(fieldId) !== -1;
+  }
+
   function navigate(fieldKey, layout, displayRow) {
     if (typeof window.contentguardNavigateToField === "function") {
       window.contentguardNavigateToField(fieldKey, layout, displayRow);
@@ -78,15 +91,19 @@
   }
 
   function isClickable(warning) {
-    return !!(
-      warning &&
-      typeof warning === "object" &&
-      isSafeFieldKey(asString(warning.fieldKey)) &&
-      asString(warning.label) !== ""
-    );
+    if (!warning || typeof warning !== "object" || asString(warning.label) === "") {
+      return false;
+    }
+
+    var fieldKey = asString(warning.fieldKey);
+    return isSafeFieldKey(fieldKey) || isSupportedCore(fieldKey);
   }
 
   function fieldTriggerAttributes(fieldKey, layout, displayRow) {
+    if (isSupportedCore(fieldKey) && !isSafeFieldKey(fieldKey)) {
+      return 'data-contentguard-core="' + escapeHtml(fieldKey) + '"';
+    }
+
     var attrs = 'data-contentguard-field="' + escapeHtml(fieldKey) + '"';
     if (safeLayout(layout)) {
       attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';

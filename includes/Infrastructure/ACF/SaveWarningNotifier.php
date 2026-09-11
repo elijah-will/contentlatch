@@ -29,6 +29,7 @@ namespace ContentGuard\Infrastructure\ACF;
 
 use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Application\ContentEvaluator;
+use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\Integration\FieldCatalog;
@@ -171,7 +172,7 @@ final class SaveWarningNotifier
                 $warnings
             )),
             'warnings' => $warnings,
-            'html'     => self::noticeHtml($warnings),
+            'html'     => self::noticeHtml($warnings, EditorCoreNavigation::SURFACE_GUTENBERG),
             'text'     => self::noticeText($warnings),
         );
     }
@@ -217,7 +218,7 @@ final class SaveWarningNotifier
                 'messages' => $messages,
                 'warnings' => $warnings,
                 'restPath' => self::REST_NAMESPACE . '/warnings/' . $postId,
-                'html'     => self::noticeHtml($warnings),
+                'html'     => self::noticeHtml($warnings, EditorCoreNavigation::SURFACE_GUTENBERG),
                 'text'     => self::noticeText($warnings),
                 'i18n'     => array(
                     'warning'   => __('Warning', 'contentguard'),
@@ -339,12 +340,15 @@ final class SaveWarningNotifier
     /**
      * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
      */
-    public static function isClickableWarning(array $warning): bool
+    public static function isClickableWarning(array $warning, ?string $surface = null): bool
     {
-        $label    = trim((string) ($warning['label'] ?? ''));
-        $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
+        $surface ??= EditorCoreNavigation::currentSurface();
 
-        return $label !== '' && $fieldKey !== '';
+        return EditorFieldNavigation::isClickableTarget(
+            (string) ($warning['fieldKey'] ?? ''),
+            (string) ($warning['label'] ?? ''),
+            $surface
+        );
     }
 
     /**
@@ -367,7 +371,10 @@ final class SaveWarningNotifier
      */
     public static function classicNoticeHtml(array $warningOrWarnings): string
     {
-        $inner = self::noticeHtml(self::normalizeWarningList($warningOrWarnings));
+        $inner = self::noticeHtml(
+            self::normalizeWarningList($warningOrWarnings),
+            EditorCoreNavigation::SURFACE_CLASSIC
+        );
         if ($inner === '') {
             return '';
         }
@@ -378,15 +385,18 @@ final class SaveWarningNotifier
     /**
      * @param list<array{text?: string, message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>}> $warnings
      */
-    public static function noticeHtml(array $warnings): string
+    public static function noticeHtml(array $warnings, ?string $surface = null): string
     {
-        $items = array();
+        $surface = EditorCoreNavigation::normalizeSurface(
+            $surface ?? EditorCoreNavigation::currentSurface()
+        );
+        $items   = array();
         foreach ($warnings as $warning) {
             if (!is_array($warning)) {
                 continue;
             }
 
-            $items[] = self::itemHtml($warning);
+            $items[] = self::itemHtml($warning, $surface);
         }
 
         return EditorNoticePresentation::noticeHtml(EditorNoticePresentation::SEVERITY_WARNING, $items);
@@ -415,32 +425,19 @@ final class SaveWarningNotifier
     /**
      * @param array{text?: string, message?: string, label?: string, fieldKey?: string} $warning
      */
-    public static function itemHtml(array $warning): string
+    public static function itemHtml(array $warning, ?string $surface = null): string
     {
-        $label    = trim((string) ($warning['label'] ?? ''));
-        $message  = (string) ($warning['message'] ?? '');
-        $fieldKey = EditorFieldNavigation::navigableFieldKey($warning['fieldKey'] ?? null);
-        $text     = self::displayText($warning);
+        $surface ??= EditorCoreNavigation::currentSurface();
 
-        $layout = EditorFieldNavigation::layoutFromItem($warning);
-        $rows   = EditorFieldNavigation::affectedRowsFromItem($warning);
-
-        if ($fieldKey === '' || $label === '') {
-            return self::escapeHtml($text);
-        }
-
-        $primaryRow = EditorFieldNavigation::primaryDisplayRow($rows);
-        $aria       = count($rows) === 1
-            ? EditorFieldNavigation::goToLayoutRowAria($label, $primaryRow)
-            : EditorFieldNavigation::goToFieldAria($label);
-
-        return '<button type="button" class="contentguard-warning-field" '
-            . EditorFieldNavigation::fieldTriggerAttributes($fieldKey, $layout, $primaryRow)
-            . ' aria-label="' . self::escapeAttr($aria) . '">'
-            . self::escapeHtml($label)
-            . '</button> — '
-            . self::escapeHtml($message !== '' ? $message : 'Content warning.')
-            . EditorFieldNavigation::rowButtonsHtml($fieldKey, $label, $layout, $rows);
+        return EditorFieldNavigation::clickableIssueHtml(
+            (string) ($warning['fieldKey'] ?? ''),
+            (string) ($warning['label'] ?? ''),
+            (string) ($warning['message'] ?? ''),
+            'Content warning.',
+            $surface,
+            EditorFieldNavigation::layoutFromItem($warning),
+            EditorFieldNavigation::affectedRowsFromItem($warning)
+        );
     }
 
     /**
@@ -551,7 +548,7 @@ final class SaveWarningNotifier
                 'text'     => self::formatWarning($result),
                 'message'  => $message,
                 'label'    => $label,
-                'fieldKey' => EditorFieldNavigation::navigableFieldKey($result->fieldId),
+                'fieldKey' => EditorFieldNavigation::navigationId($result->fieldId),
             ),
             $result->context
         );

@@ -15,6 +15,7 @@ use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Application\EditorAuditIssues;
+use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
@@ -125,7 +126,10 @@ final class EditorAuditNotice
      */
     public function payloadForRequest(int $postId, array $request): array
     {
-        return EditorAuditIssues::payload($this->issuesForRequest($postId, $request));
+        return EditorAuditIssues::payload(
+            $this->issuesForRequest($postId, $request),
+            EditorCoreNavigation::SURFACE_GUTENBERG
+        );
     }
 
     public function registerRestRoute(): void
@@ -223,7 +227,7 @@ final class EditorAuditNotice
             'contentguard-editor-audit',
             'contentguardEditorAudit',
             array(
-                'html'     => EditorAuditIssues::noticeHtml($issues),
+                'html'     => EditorAuditIssues::noticeHtml($issues, EditorCoreNavigation::SURFACE_GUTENBERG),
                 'text'     => EditorAuditIssues::noticeText($issues),
                 'restPath' => self::REST_NAMESPACE . '/editor-blockers/' . $postId
                     . ($runId > 0 ? '?run=' . $runId : ''),

@@ -582,6 +582,23 @@ final class AuditViewTest extends TestCase
         $this->assertStringNotContainsString('contentguard_field=', $html);
     }
 
+    public function testCoreTitleAuditFieldIsANavigableEditLink(): void
+    {
+        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentguard_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
+        );
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'findings'    => array($this->makeFinding(array('fieldKey' => 'title'))),
+            'fieldLabels' => array('15:title' => 'Title'),
+        )));
+
+        $this->assertStringContainsString('contentguard_field=title', $html);
+        $this->assertStringContainsString('aria-label="Edit content and go to field: Title"', $html);
+        $this->assertStringContainsString('>Title</a>', $html);
+    }
+
     public function testMixedSeverityGroupAnnouncesBothStatuses(): void
     {
         $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');

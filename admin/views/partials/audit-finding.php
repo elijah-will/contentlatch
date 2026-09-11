@@ -117,7 +117,7 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
                 $issueLabel = (string) $issue['label'];
                 $issueKey   = isset($issue['fieldKey']) && is_string($issue['fieldKey']) ? $issue['fieldKey'] : '';
                 $issueEdit  = isset($issue['editUrl']) && is_string($issue['editUrl']) ? $issue['editUrl'] : '';
-                $canLink    = $issueEdit !== '' && EditorFieldNavigation::isSafeFieldKey($issueKey);
+                $canLink    = $issueEdit !== '' && EditorFieldNavigation::isQueryTarget($issueKey);
                 ?>
                 <?php if ($postType !== '' || $index > 0) : ?>
                     <span class="contentguard-finding__sep" aria-hidden="true">·</span>

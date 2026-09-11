@@ -45,10 +45,12 @@ final class EditorRestBlockNotice
             return;
         }
 
+        EditorFieldFocus::enqueueAssets(is_array($_GET) ? $_GET : array());
+
         wp_register_script(
             'contentguard-editor-rest-blockers',
             CONTENTGUARD_URL . 'admin/js/editor-rest-blockers.js',
-            array('wp-api-fetch', 'wp-data'),
+            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
             \ContentGuard\Plugin::VERSION,
             true
         );
@@ -64,6 +66,7 @@ final class EditorRestBlockNotice
                     'blocking' => __('Blocking', 'contentguard'),
                     'count'    => __('%d blocking issues', 'contentguard'),
                     'required' => __('This field is required.', 'contentguard'),
+                    'goToField' => __('Go to field: %s', 'contentguard'),
                 ),
             )
         );

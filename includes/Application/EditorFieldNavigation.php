@@ -24,6 +24,24 @@ final class EditorFieldNavigation
         return FieldRef::isSafeFieldKey($fieldKey);
     }
 
+    /**
+     * ACF field key or allowlisted Core id. Not a widening of isSafeFieldKey().
+     */
+    public static function navigationId(?string $fieldId): string
+    {
+        $acf = self::navigableFieldKey($fieldId);
+        if ($acf !== '') {
+            return $acf;
+        }
+
+        return EditorCoreNavigation::id($fieldId);
+    }
+
+    public static function isQueryTarget(string $fieldId): bool
+    {
+        return self::isSafeFieldKey($fieldId) || EditorCoreNavigation::isId($fieldId);
+    }
+
     public static function isSafeLayoutName(string $layout): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9_-]+$/', $layout);
@@ -36,7 +54,7 @@ final class EditorFieldNavigation
     {
         $raw = isset($request[self::QUERY_ARG]) ? (string) $request[self::QUERY_ARG] : '';
 
-        return self::isSafeFieldKey($raw) ? $raw : '';
+        return self::isQueryTarget($raw) ? $raw : '';
     }
 
     /**
@@ -76,7 +94,7 @@ final class EditorFieldNavigation
             return '';
         }
 
-        if (self::isSafeFieldKey($fieldKey) && !str_contains($editUrl, self::QUERY_ARG . '=')) {
+        if (self::isQueryTarget($fieldKey) && !str_contains($editUrl, self::QUERY_ARG . '=')) {
             $separator = str_contains($editUrl, '?') ? '&' : '?';
             $editUrl  .= $separator . self::QUERY_ARG . '=' . rawurlencode($fieldKey);
         }
@@ -333,6 +351,71 @@ final class EditorFieldNavigation
         $rows = self::sanitizeDisplayRows($rows);
 
         return $rows[0] ?? 0;
+    }
+
+    /**
+     * Clickable issue line. ACF uses data-contentguard-field; Core uses
+     * data-contentguard-core and only when the current surface supports it.
+     *
+     * @param list<int> $rows
+     */
+    public static function clickableIssueHtml(
+        string $fieldId,
+        string $label,
+        string $message,
+        string $fallbackMessage,
+        string $surface,
+        string $layout = '',
+        array $rows = array(),
+    ): string {
+        $label   = trim($label);
+        $message = trim($message);
+        $text    = EditorNoticePresentation::issueText($label, $message);
+        if ($text === '') {
+            $text = $fallbackMessage;
+        }
+
+        $acf     = self::navigableFieldKey($fieldId);
+        $surface = EditorCoreNavigation::normalizeSurface($surface);
+        $core    = EditorCoreNavigation::isSupported($fieldId, $surface)
+            ? EditorCoreNavigation::id($fieldId)
+            : '';
+
+        if ($label === '' || ($acf === '' && $core === '')) {
+            return self::escapeHtml($text);
+        }
+
+        $primaryRow = self::primaryDisplayRow($rows);
+        $aria       = $acf !== '' && count($rows) === 1
+            ? self::goToLayoutRowAria($label, $primaryRow)
+            : self::goToFieldAria($label);
+        $attrs      = $acf !== ''
+            ? self::fieldTriggerAttributes($acf, $layout, $primaryRow)
+            : EditorCoreNavigation::triggerAttributes($core);
+        $suffix     = $acf !== ''
+            ? self::rowButtonsHtml($acf, $label, $layout, $rows)
+            : '';
+
+        return '<button type="button" class="contentguard-warning-field" '
+            . $attrs
+            . ' aria-label="' . self::escapeAttr($aria) . '">'
+            . self::escapeHtml($label)
+            . '</button> — '
+            . self::escapeHtml($message !== '' ? $message : $fallbackMessage)
+            . $suffix;
+    }
+
+    public static function isClickableTarget(string $fieldId, string $label, string $surface): bool
+    {
+        if (trim($label) === '') {
+            return false;
+        }
+
+        if (self::navigableFieldKey($fieldId) !== '') {
+            return true;
+        }
+
+        return EditorCoreNavigation::isSupported($fieldId, $surface);
     }
 
     public static function fieldTriggerAttributes(string $fieldKey, string $layout = '', int $displayRow = 0): string

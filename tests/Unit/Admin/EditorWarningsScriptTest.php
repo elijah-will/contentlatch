@@ -17,6 +17,8 @@ final class EditorWarningsScriptTest extends TestCase
 
         $this->assertStringContainsString('contentguardNavigateToField', $js);
         $this->assertStringContainsString('data-contentguard-field', $js);
+        $this->assertStringContainsString('data-contentguard-core', $js);
+        $this->assertStringContainsString('featured_image', $js);
         $this->assertStringContainsString('warning.fieldKey', $js);
         $this->assertStringContainsString('warning.message', $js);
         $this->assertStringContainsString('warning.label', $js);

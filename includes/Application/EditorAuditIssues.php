@@ -101,7 +101,7 @@ final class EditorAuditIssues
             $message = 'This field is required.';
         }
 
-        $fieldKey = EditorFieldNavigation::navigableFieldKey($result->fieldId);
+        $fieldKey = EditorFieldNavigation::navigationId($result->fieldId);
         $label    = trim((string) ($result->context['field_label'] ?? ''));
 
         return EditorFieldNavigation::withEvaluationRowTargets(
@@ -129,7 +129,7 @@ final class EditorAuditIssues
 
         $allowed = array();
         foreach ($fieldKeys as $key) {
-            $safe = EditorFieldNavigation::navigableFieldKey($key);
+            $safe = EditorFieldNavigation::navigationId($key);
             if ($safe !== '') {
                 $allowed[$safe] = true;
             }
@@ -141,7 +141,7 @@ final class EditorAuditIssues
 
         $scoped = array();
         foreach ($issues as $issue) {
-            $key = EditorFieldNavigation::navigableFieldKey($issue['fieldKey'] ?? null);
+            $key = EditorFieldNavigation::navigationId($issue['fieldKey'] ?? null);
             if ($key !== '' && isset($allowed[$key])) {
                 $scoped[] = $issue;
             }
@@ -154,11 +154,11 @@ final class EditorAuditIssues
      * @param list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}> $issues
      * @return array{issues: list<array{message: string, label: string, fieldKey: string, layout?: string, affectedRows?: list<int>}>, html: string, text: string}
      */
-    public static function payload(array $issues): array
+    public static function payload(array $issues, ?string $surface = null): array
     {
         return array(
             'issues' => $issues,
-            'html'   => self::noticeHtml($issues),
+            'html'   => self::noticeHtml($issues, $surface),
             'text'   => self::noticeText($issues),
         );
     }
@@ -182,7 +182,7 @@ final class EditorAuditIssues
             array(
                 'message'  => $message,
                 'label'    => self::humanLabel((string) $rawLabel, $finding->fieldKey),
-                'fieldKey' => EditorFieldNavigation::navigableFieldKey($finding->fieldKey),
+                'fieldKey' => EditorFieldNavigation::navigationId($finding->fieldKey),
             ),
             $message
         );
@@ -191,10 +191,15 @@ final class EditorAuditIssues
     /**
      * @param array{message?: string, label?: string, fieldKey?: string} $issue
      */
-    public static function isClickable(array $issue): bool
+    public static function isClickable(array $issue, ?string $surface = null): bool
     {
-        return trim((string) ($issue['label'] ?? '')) !== ''
-            && EditorFieldNavigation::navigableFieldKey($issue['fieldKey'] ?? null) !== '';
+        $surface ??= EditorCoreNavigation::currentSurface();
+
+        return EditorFieldNavigation::isClickableTarget(
+            (string) ($issue['fieldKey'] ?? ''),
+            (string) ($issue['label'] ?? ''),
+            $surface
+        );
     }
 
     /**
@@ -231,15 +236,18 @@ final class EditorAuditIssues
     /**
      * @param list<array{message?: string, label?: string, fieldKey?: string}> $issues
      */
-    public static function noticeHtml(array $issues): string
+    public static function noticeHtml(array $issues, ?string $surface = null): string
     {
         if ($issues === array()) {
             return '';
         }
 
-        $items = array();
+        $surface = EditorCoreNavigation::normalizeSurface(
+            $surface ?? EditorCoreNavigation::currentSurface()
+        );
+        $items   = array();
         foreach ($issues as $issue) {
-            $items[] = self::issueHtml($issue);
+            $items[] = self::issueHtml($issue, $surface);
         }
 
         return EditorNoticePresentation::noticeHtml(EditorNoticePresentation::SEVERITY_BLOCKING, $items);
@@ -248,36 +256,24 @@ final class EditorAuditIssues
     /**
      * @param array{message?: string, label?: string, fieldKey?: string} $issue
      */
-    public static function issueHtml(array $issue): string
+    public static function issueHtml(array $issue, ?string $surface = null): string
     {
-        $label    = trim((string) ($issue['label'] ?? ''));
-        $message  = trim((string) ($issue['message'] ?? ''));
-        $fieldKey = EditorFieldNavigation::navigableFieldKey($issue['fieldKey'] ?? null);
-        $layout   = EditorFieldNavigation::layoutFromItem($issue);
-        $rows     = EditorFieldNavigation::affectedRowsFromItem($issue);
-        $text     = self::issueText($issue);
+        $surface ??= EditorCoreNavigation::currentSurface();
 
-        if ($fieldKey === '' || $label === '') {
-            return self::escapeHtml($text);
-        }
-
-        $primaryRow = EditorFieldNavigation::primaryDisplayRow($rows);
-        $aria       = count($rows) === 1
-            ? EditorFieldNavigation::goToLayoutRowAria($label, $primaryRow)
-            : EditorFieldNavigation::goToFieldAria($label);
-
-        return '<button type="button" class="contentguard-warning-field" '
-            . EditorFieldNavigation::fieldTriggerAttributes($fieldKey, $layout, $primaryRow)
-            . ' aria-label="' . self::escapeAttr($aria) . '">'
-            . self::escapeHtml($label)
-            . '</button> — '
-            . self::escapeHtml($message !== '' ? $message : 'This field is required.')
-            . EditorFieldNavigation::rowButtonsHtml($fieldKey, $label, $layout, $rows);
+        return EditorFieldNavigation::clickableIssueHtml(
+            (string) ($issue['fieldKey'] ?? ''),
+            (string) ($issue['label'] ?? ''),
+            (string) ($issue['message'] ?? ''),
+            'This field is required.',
+            $surface,
+            EditorFieldNavigation::layoutFromItem($issue),
+            EditorFieldNavigation::affectedRowsFromItem($issue)
+        );
     }
 
     public static function classicNoticeHtml(array $issues): string
     {
-        $inner = self::noticeHtml($issues);
+        $inner = self::noticeHtml($issues, EditorCoreNavigation::SURFACE_CLASSIC);
         if ($inner === '') {
             return '';
         }

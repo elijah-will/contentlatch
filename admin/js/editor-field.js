@@ -9,6 +9,36 @@
     return typeof fieldKey === "string" && /^field_[A-Za-z0-9_]+$/.test(fieldKey);
   }
 
+  function coreConfig() {
+    return config.core && typeof config.core === "object" ? config.core : {};
+  }
+
+  function coreSurface() {
+    var surface = coreConfig().surface;
+    if (surface === "gutenberg" || surface === "classic") {
+      return surface;
+    }
+
+    return window.wp && wp.data && wp.data.select && wp.data.select("core/editor")
+      ? "gutenberg"
+      : "classic";
+  }
+
+  function coreIdsForSurface(surface) {
+    var ids = coreConfig()[surface];
+    if (Array.isArray(ids) && ids.length) {
+      return ids;
+    }
+
+    return surface === "gutenberg"
+      ? ["title", "content", "excerpt", "featured_image"]
+      : ["title", "content", "excerpt", "featured_image", "slug", "author"];
+  }
+
+  function isSupportedCore(fieldId) {
+    return typeof fieldId === "string" && coreIdsForSurface(coreSurface()).indexOf(fieldId) !== -1;
+  }
+
   function parseResolutionId(id) {
     if (typeof id !== "string") {
       return { clone: "", key: "" };
@@ -322,9 +352,244 @@
     tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20);
   }
 
+  function firstMatch(selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+      var node = document.querySelector(selectors[i]);
+      if (node) {
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  function focusNode(node) {
+    if (!node) {
+      return false;
+    }
+
+    reveal(node, 0);
+    if (typeof node.focus === "function") {
+      try {
+        node.focus({ preventScroll: true });
+      } catch (error) {
+        node.focus();
+      }
+    }
+
+    return true;
+  }
+
+  function dispatchEditor(store) {
+    return window.wp && wp.data && wp.data.dispatch ? wp.data.dispatch(store) : null;
+  }
+
+  function selectEditor(store) {
+    return window.wp && wp.data && wp.data.select ? wp.data.select(store) : null;
+  }
+
+  function openDocumentSidebar() {
+    var editPost = dispatchEditor("core/edit-post");
+    if (editPost && typeof editPost.openGeneralSidebar === "function") {
+      editPost.openGeneralSidebar("edit-post/document");
+      return;
+    }
+
+    var editor = dispatchEditor("core/editor");
+    if (editor && typeof editor.openGeneralSidebar === "function") {
+      editor.openGeneralSidebar("edit-post/document");
+    }
+  }
+
+  function openEditorPanel(name) {
+    var select = selectEditor("core/editor") || selectEditor("core/edit-post");
+    var dispatch = dispatchEditor("core/editor") || dispatchEditor("core/edit-post");
+    if (!select || !dispatch) {
+      return true;
+    }
+
+    if (typeof select.isEditorPanelEnabled === "function" && !select.isEditorPanelEnabled(name)) {
+      return false;
+    }
+
+    if (
+      typeof select.isEditorPanelOpened === "function" &&
+      !select.isEditorPanelOpened(name) &&
+      typeof dispatch.toggleEditorPanelOpened === "function"
+    ) {
+      dispatch.toggleEditorPanelOpened(name);
+    }
+
+    return true;
+  }
+
+  function clickFirst(selectors) {
+    var node = firstMatch(selectors);
+    if (node && typeof node.click === "function") {
+      node.click();
+      return true;
+    }
+
+    return false;
+  }
+
+  function excerptControl() {
+    return firstMatch([
+      ".editor-post-excerpt textarea",
+      ".editor-post-excerpt__dropdown__content textarea",
+      ".editor-post-excerpt .components-textarea-control__input"
+    ]);
+  }
+
+  function excerptDropdownTrigger() {
+    return firstMatch([
+      ".editor-post-excerpt__dropdown__trigger",
+      "button.editor-post-excerpt__dropdown__trigger",
+      ".editor-post-excerpt__dropdown button"
+    ]);
+  }
+
+  function isExcerptDropdownOpen(trigger) {
+    if (trigger && trigger.getAttribute("aria-expanded") === "true") {
+      return true;
+    }
+
+    return !!firstMatch([
+      ".editor-post-excerpt__dropdown__content textarea",
+      ".editor-post-excerpt__dropdown__content"
+    ]);
+  }
+
+  function openExcerptDropdownIfClosed() {
+    var trigger = excerptDropdownTrigger();
+    if (!trigger || typeof trigger.click !== "function" || isExcerptDropdownOpen(trigger)) {
+      return;
+    }
+
+    trigger.click();
+  }
+
+  function navigateGutenbergExcerpt() {
+    var control = excerptControl();
+    if (control) {
+      return focusNode(control);
+    }
+
+    openDocumentSidebar();
+    openEditorPanel("post-excerpt");
+
+    control = excerptControl();
+    if (control) {
+      return focusNode(control);
+    }
+
+    openExcerptDropdownIfClosed();
+    return focusNode(excerptControl());
+  }
+
+  function navigateGutenbergCore(fieldId) {
+    if (fieldId === "title") {
+      return focusNode(firstMatch([".editor-post-title__input", "h1.editor-post-title"]));
+    }
+
+    if (fieldId === "content") {
+      return focusNode(firstMatch([
+        ".block-editor-writing-flow",
+        ".editor-visual-editor",
+        ".editor-styles-wrapper"
+      ]));
+    }
+
+    if (fieldId === "excerpt") {
+      return navigateGutenbergExcerpt();
+    }
+
+    if (fieldId === "featured_image") {
+      openDocumentSidebar();
+      openEditorPanel("featured-image");
+      return focusNode(firstMatch([
+        ".editor-post-featured-image",
+        ".editor-post-featured-image__container",
+        ".editor-post-featured-image button"
+      ]));
+    }
+
+    return false;
+  }
+
+  function navigateClassicCore(fieldId) {
+    var map = {
+      title: ["#title", 'input[name="post_title"]'],
+      content: ["#postdivrich", "#wp-content-wrap", "#content"],
+      excerpt: ["#excerpt", "#postexcerpt textarea", "#postexcerpt"],
+      featured_image: ["#postimagediv", "#set-post-thumbnail"],
+      slug: ["#new-post-slug", "#editable-post-name", "#edit-slug-box", 'input[name="post_name"]'],
+      author: ['select[name="post_author_override"]', "#post_author_override", "#authordiv"]
+    };
+    var selectors = map[fieldId];
+    if (!selectors) {
+      return false;
+    }
+
+    var node = firstMatch(selectors);
+    if (!node) {
+      return false;
+    }
+
+    if (fieldId === "slug") {
+      clickFirst(["#edit-slug-buttons .edit-slug", "button.edit-slug", "#edit-slug-box .edit-slug"]);
+      node = firstMatch(["#new-post-slug", "#editable-post-name", 'input[name="post_name"]']) || node;
+    }
+
+    return focusNode(node);
+  }
+
+  var coreNavGeneration = 0;
+
+  function tryCoreFocus(fieldId, attemptsLeft, generation) {
+    if (generation !== coreNavGeneration) {
+      return;
+    }
+
+    var found = coreSurface() === "gutenberg"
+      ? navigateGutenbergCore(fieldId)
+      : navigateClassicCore(fieldId);
+    if (found || attemptsLeft <= 0) {
+      return;
+    }
+
+    window.setTimeout(function () {
+      tryCoreFocus(fieldId, attemptsLeft - 1, generation);
+    }, 250);
+  }
+
+  function navigateToCore(fieldId) {
+    if (!isSupportedCore(fieldId)) {
+      return;
+    }
+
+    coreNavGeneration += 1;
+    tryCoreFocus(fieldId, 20, coreNavGeneration);
+  }
+
   window.contentguardNavigateToField = navigateToField;
+  window.contentguardNavigateToCore = navigateToCore;
 
   document.addEventListener("click", function (event) {
+    var coreTrigger = event.target && event.target.closest
+      ? event.target.closest("[data-contentguard-core]")
+      : null;
+    if (coreTrigger) {
+      var coreId = coreTrigger.getAttribute("data-contentguard-core") || "";
+      if (!isSupportedCore(coreId)) {
+        return;
+      }
+
+      event.preventDefault();
+      navigateToCore(coreId);
+      return;
+    }
+
     var trigger = event.target && event.target.closest
       ? event.target.closest("[data-contentguard-field]")
       : null;
@@ -347,11 +612,18 @@
 
   var autoStarted = false;
   function startFromUrl() {
-    if (autoStarted || !config.autoNavigate || !isSafeFieldKey(config.fieldKey)) {
+    if (autoStarted || !config.autoNavigate) {
       return;
     }
-    autoStarted = true;
-    navigateToField(config.fieldKey, config.layout || "", config.displayRow || 0);
+    if (isSafeFieldKey(config.fieldKey)) {
+      autoStarted = true;
+      navigateToField(config.fieldKey, config.layout || "", config.displayRow || 0);
+      return;
+    }
+    if (isSupportedCore(config.fieldKey)) {
+      autoStarted = true;
+      navigateToCore(config.fieldKey);
+    }
   }
 
   if (window.acf && typeof window.acf.addAction === "function") {

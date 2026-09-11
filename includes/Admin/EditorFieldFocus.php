@@ -1,9 +1,8 @@
 <?php
 /**
- * Scrolls the WordPress editor to an ACF field (top-level, Group, Repeater,
- * or Flexible Content child).
+ * Scrolls the WordPress editor to an ACF field or an allowlisted Core field.
  *
- * Used by Audit "Edit content" (URL query) and by clickable editor warnings.
+ * Used by Audit "Edit content" (URL query) and by clickable editor notices.
  *
  * @package ContentGuard
  */
@@ -12,6 +11,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 
@@ -69,6 +69,11 @@ final class EditorFieldFocus
             \ContentGuard\Plugin::VERSION,
             true
         );
+        $screen  = function_exists('get_current_screen') ? get_current_screen() : null;
+        $surface = is_object($screen) && !empty($screen->is_block_editor)
+            ? EditorCoreNavigation::SURFACE_GUTENBERG
+            : EditorCoreNavigation::SURFACE_CLASSIC;
+
         wp_localize_script(
             'contentguard-editor-field',
             'contentguardEditorField',
@@ -77,6 +82,10 @@ final class EditorFieldFocus
                 'layout'       => $layout,
                 'displayRow'   => $displayRow,
                 'autoNavigate' => $fieldKey !== '',
+                'core'         => array_merge(
+                    EditorCoreNavigation::clientConfig(),
+                    array('surface' => $surface)
+                ),
                 'i18n'         => array(
                     'navigated' => __('Moved to the field that needs attention.', 'contentguard'),
                 ),

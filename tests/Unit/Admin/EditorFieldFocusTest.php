@@ -41,5 +41,15 @@ final class EditorFieldFocusTest extends TestCase
         $this->assertSame('', EditorFieldFocus::autoNavigateFieldKey(array(
             'contentguard_field' => 'not-safe',
         )));
+        $this->assertSame('title', EditorFieldFocus::autoNavigateFieldKey(array(
+            'contentguard_field' => 'title',
+        )));
+        $this->assertSame('featured_image', EditorFieldFocus::autoNavigateFieldKey(array(
+            'contentguard_field' => 'featured_image',
+        )));
+
+        $php = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/EditorFieldFocus.php');
+        $this->assertStringContainsString('EditorCoreNavigation::clientConfig', $php);
+        $this->assertStringContainsString("'surface'", $php);
     }
 }

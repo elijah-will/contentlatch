@@ -102,6 +102,41 @@
     return message !== "" ? [{ message: message }] : [];
   }
 
+  function isSafeFieldKey(fieldKey) {
+    return typeof fieldKey === "string" && /^field_[A-Za-z0-9_]+$/.test(fieldKey);
+  }
+
+  function gutenbergCoreIds() {
+    var core = window.contentguardEditorField && window.contentguardEditorField.core;
+    if (core && Array.isArray(core.gutenberg)) {
+      return core.gutenberg;
+    }
+
+    return ["title", "content", "excerpt", "featured_image"];
+  }
+
+  function isSupportedCore(fieldId) {
+    return typeof fieldId === "string" && gutenbergCoreIds().indexOf(fieldId) !== -1;
+  }
+
+  function failureFieldId(failure) {
+    if (!failure || typeof failure !== "object") {
+      return "";
+    }
+
+    return asString(failure.field || failure.fieldKey);
+  }
+
+  function isClickableFailure(failure) {
+    if (!failure || typeof failure !== "object") {
+      return false;
+    }
+
+    var label = asString(failure.label);
+    var fieldId = failureFieldId(failure);
+    return label !== "" && (isSafeFieldKey(fieldId) || isSupportedCore(fieldId));
+  }
+
   function issueText(failure) {
     if (typeof failure === "string") {
       return failure;
@@ -132,6 +167,40 @@
     return message || label;
   }
 
+  function issueItemHtml(failure, line) {
+    if (!isClickableFailure(failure)) {
+      return escapeHtml(line);
+    }
+
+    var label = asString(failure.label);
+    var fieldId = failureFieldId(failure);
+    var required = (config.i18n && config.i18n.required) || "This field is required.";
+    var message = asString(failure.message);
+    if (label !== "" && message === label + " is required.") {
+      message = required;
+    } else if (message.indexOf(label + " — ") === 0) {
+      message = message.slice((label + " — ").length);
+    } else if (message.indexOf(label + " is required.") === 0) {
+      message = required;
+    }
+
+    var goTo = (config.i18n && config.i18n.goToField) || "Go to field: %s";
+    var attr = isSafeFieldKey(fieldId)
+      ? 'data-contentguard-field="' + escapeHtml(fieldId) + '"'
+      : 'data-contentguard-core="' + escapeHtml(fieldId) + '"';
+
+    return (
+      '<button type="button" class="contentguard-warning-field" ' +
+      attr +
+      ' aria-label="' +
+      escapeHtml(goTo.replace("%s", label)) +
+      '">' +
+      escapeHtml(label) +
+      "</button> — " +
+      escapeHtml(message || required)
+    );
+  }
+
   function noticeTitle() {
     return "ContentGuard · " + ((config.i18n && config.i18n.blocking) || "Blocking");
   }
@@ -156,7 +225,7 @@
       }
 
       lines.push(line);
-      items.push(escapeHtml(line));
+      items.push(issueItemHtml(failure, line));
     });
 
     if (items.length === 0) {

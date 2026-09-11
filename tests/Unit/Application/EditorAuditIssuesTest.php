@@ -9,6 +9,7 @@ namespace ContentGuard\Tests\Unit\Application;
 
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\EditorAuditIssues;
+use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Domain\ContentEvaluation;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Domain\EvaluationStatus;
@@ -121,8 +122,8 @@ final class EditorAuditIssuesTest extends TestCase
 
         $this->assertSame('', $issues[0]['fieldKey']);
         $this->assertSame('', $issues[1]['fieldKey']);
-        $this->assertFalse(EditorAuditIssues::isClickable($issues[0]));
-        $this->assertFalse(EditorAuditIssues::isClickable($issues[1]));
+        $this->assertFalse(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG));
+        $this->assertFalse(EditorAuditIssues::isClickable($issues[1], EditorCoreNavigation::SURFACE_GUTENBERG));
 
         $html = EditorAuditIssues::noticeHtml($issues);
         $this->assertStringNotContainsString('<button', $html);
@@ -346,6 +347,109 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertArrayNotHasKey('affectedRows', $repeater[0]);
         $this->assertArrayNotHasKey('layout', $repeater[0]);
         $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($repeater[0]));
+    }
+
+    public function testCoreTitleIsClickableOnGutenbergAndClassic(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array($this->coreFailure('title', 'Title'))
+            ),
+            42
+        );
+
+        $this->assertSame('title', $issues[0]['fieldKey']);
+        $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG));
+        $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_CLASSIC));
+        $this->assertStringContainsString(
+            'data-contentguard-core="title"',
+            EditorAuditIssues::issueHtml($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG)
+        );
+    }
+
+    public function testGutenbergSlugAndAuthorStayNonClickable(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array(
+                    $this->coreFailure('slug', 'Slug'),
+                    $this->coreFailure('author', 'Author'),
+                )
+            ),
+            42
+        );
+
+        $this->assertFalse(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG));
+        $this->assertFalse(EditorAuditIssues::isClickable($issues[1], EditorCoreNavigation::SURFACE_GUTENBERG));
+        $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_CLASSIC));
+        $this->assertTrue(EditorAuditIssues::isClickable($issues[1], EditorCoreNavigation::SURFACE_CLASSIC));
+        $html = EditorAuditIssues::noticeHtml($issues, EditorCoreNavigation::SURFACE_GUTENBERG);
+        $this->assertStringNotContainsString('<button', $html);
+        $this->assertStringContainsString('Slug — This field is required.', $html);
+        $this->assertStringContainsString('Author — This field is required.', $html);
+    }
+
+    public function testMixedCoreAndAcfBlockersStayIndependentlyNavigable(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array(
+                    $this->coreFailure('content', 'Content'),
+                    new EvaluationResult(
+                        EvaluationStatus::Failed,
+                        15,
+                        42,
+                        'field_description',
+                        'This field is required.',
+                        RuleSeverity::Fail,
+                        'required',
+                        array('field_label' => 'Recipe Description')
+                    ),
+                )
+            ),
+            42
+        );
+
+        $html = EditorAuditIssues::noticeHtml($issues, EditorCoreNavigation::SURFACE_GUTENBERG);
+        $this->assertStringContainsString('data-contentguard-core="content"', $html);
+        $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
+        $this->assertStringContainsString('2 blocking issues', $html);
+        $this->assertSame(
+            array($issues[0]),
+            EditorAuditIssues::scopedToFieldKeys($issues, array('content'))
+        );
+    }
+
+    public function testCoreAuditFindingsKeepNavigationIds(): void
+    {
+        $issues = EditorAuditIssues::fromFindings(
+            array($this->finding(array('fieldKey' => 'featured_image'))),
+            42,
+            array('15:featured_image' => 'Featured Image')
+        );
+
+        $this->assertSame('featured_image', $issues[0]['fieldKey']);
+        $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG));
+    }
+
+    private function coreFailure(string $fieldId, string $label): EvaluationResult
+    {
+        return new EvaluationResult(
+            EvaluationStatus::Failed,
+            15,
+            42,
+            $fieldId,
+            'This field is required.',
+            RuleSeverity::Fail,
+            'required',
+            array('field_label' => $label)
+        );
     }
 
     private function flexFailure(int $row, string $message): EvaluationResult

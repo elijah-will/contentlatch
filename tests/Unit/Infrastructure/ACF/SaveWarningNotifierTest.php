@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
 
+use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Domain\ArrayValueProvider;
@@ -247,6 +248,29 @@ final class SaveWarningNotifierTest extends TestCase
             'label'    => 'Recipe Description',
             'fieldKey' => 'field_description',
         )));
+    }
+
+    public function testClassicCoreWarningsAreClickableAndGutenbergSlugIsNot(): void
+    {
+        $items = SaveWarningNotifier::warningItems($this->evaluationFromWarnings(array(
+            $this->warningResult('title', 'Title', 'This field is required.'),
+            $this->warningResult('slug', 'Slug', 'This field is required.'),
+        )));
+
+        $this->assertSame('title', $items[0]['fieldKey']);
+        $this->assertSame('slug', $items[1]['fieldKey']);
+        $this->assertTrue(SaveWarningNotifier::isClickableWarning($items[0], EditorCoreNavigation::SURFACE_CLASSIC));
+        $this->assertTrue(SaveWarningNotifier::isClickableWarning($items[1], EditorCoreNavigation::SURFACE_CLASSIC));
+        $this->assertFalse(SaveWarningNotifier::isClickableWarning($items[1], EditorCoreNavigation::SURFACE_GUTENBERG));
+
+        $classic = SaveWarningNotifier::noticeHtml($items, EditorCoreNavigation::SURFACE_CLASSIC);
+        $this->assertStringContainsString('data-contentguard-core="title"', $classic);
+        $this->assertStringContainsString('data-contentguard-core="slug"', $classic);
+
+        $gutenberg = SaveWarningNotifier::noticeHtml($items, EditorCoreNavigation::SURFACE_GUTENBERG);
+        $this->assertStringContainsString('data-contentguard-core="title"', $gutenberg);
+        $this->assertStringNotContainsString('data-contentguard-core="slug"', $gutenberg);
+        $this->assertStringContainsString('Slug — This field is required.', $gutenberg);
     }
 
     public function testMultipleThenValidationsOnOneRuleRenderIndependentMessages(): void
