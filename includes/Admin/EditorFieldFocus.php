@@ -40,7 +40,7 @@ final class EditorFieldFocus
 
     /**
      * @param array<string, mixed> $request
-     * @param array{layout?: string, displayRow?: int} $extra Transient editor-only navigation hints.
+     * @param array{layout?: string, displayRow?: int, repeaterPath?: list<array{repeater: string, display_row: int}>} $extra Transient editor-only navigation hints.
      */
     public static function enqueueAssets(array $request = array(), array $extra = array()): void
     {
@@ -53,6 +53,7 @@ final class EditorFieldFocus
             ? (string) $extra['layout']
             : self::layoutForField($fieldKey, $request);
         $displayRow = EditorFieldNavigation::sanitizeDisplayRow($extra['displayRow'] ?? 0);
+        $repeaterPath = EditorFieldNavigation::sanitizeRepeaterPath($extra['repeaterPath'] ?? array());
 
         wp_register_style(
             'contentguard-editor-field',
@@ -81,6 +82,7 @@ final class EditorFieldFocus
                 'fieldKey'     => $fieldKey,
                 'layout'       => $layout,
                 'displayRow'   => $displayRow,
+                'repeaterPath' => $repeaterPath,
                 'autoNavigate' => $fieldKey !== '',
                 'core'         => array_merge(
                     EditorCoreNavigation::clientConfig(),

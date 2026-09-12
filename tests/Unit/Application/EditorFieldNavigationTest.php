@@ -218,4 +218,113 @@ final class EditorFieldNavigationTest extends TestCase
             array(3)
         ));
     }
+
+    public function testOneLevelRepeaterPathUsesInputNameAndLeavesUrlsUntouched(): void
+    {
+        $this->assertSame(
+            'field_65007238dd468',
+            EditorFieldNavigation::repeaterKeyFromInputName(
+                'acf[field_65007238dd468][row-1][field_65011ffeae1ce]'
+            )
+        );
+        $this->assertSame(
+            'field_65138ec34ed67',
+            EditorFieldNavigation::repeaterKeyFromInputName(
+                'acf[field_650070df8895a][row-0][field_65138ec34ed67][row-13][field_650071058895b]'
+            )
+        );
+        $this->assertSame('', EditorFieldNavigation::repeaterKeyFromInputName('acf[field_description]'));
+        $this->assertSame('', EditorFieldNavigation::repeaterKeyFromInputName('not-an-input'));
+
+        $item = EditorFieldNavigation::withEvaluationRowTargets(
+            array('fieldKey' => 'field_65011ffeae1ce'),
+            array(
+                'display_row' => 2,
+                'input_name'  => 'acf[field_65007238dd468][row-1][field_65011ffeae1ce]',
+            )
+        );
+        $this->assertSame(
+            array(
+                array(
+                    'repeater'    => 'field_65007238dd468',
+                    'display_row' => 2,
+                ),
+            ),
+            $item['repeaterPath']
+        );
+        $this->assertArrayNotHasKey('affectedRows', $item);
+        $this->assertArrayNotHasKey('layout', $item);
+
+        $attrs = EditorFieldNavigation::fieldTriggerAttributes(
+            'field_65011ffeae1ce',
+            '',
+            0,
+            $item['repeaterPath']
+        );
+        $this->assertStringContainsString('data-contentguard-field="field_65011ffeae1ce"', $attrs);
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $attrs);
+        $this->assertStringContainsString('field_65007238dd468', $attrs);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $attrs);
+        $this->assertStringNotContainsString('contentguard_row', EditorFieldNavigation::appendToEditUrl(
+            'http://example.test/wp-admin/post.php?post=42&action=edit',
+            'field_65011ffeae1ce'
+        ));
+    }
+
+    public function testNestedRepeaterPathUsesStructuredCoordinatesOnly(): void
+    {
+        $chain = array(
+            array(
+                'repeater'    => 'field_650070df8895a',
+                'key'         => 'row-0',
+                'index'       => 0,
+                'display_row' => 1,
+            ),
+            array(
+                'repeater'    => 'field_65138ec34ed67',
+                'key'         => 'row-13',
+                'index'       => 13,
+                'display_row' => 14,
+            ),
+        );
+        $item = EditorFieldNavigation::withEvaluationRowTargets(
+            array('fieldKey' => 'field_650071058895b'),
+            array('repeater_rows' => $chain)
+        );
+
+        $this->assertSame(
+            array(
+                array('repeater' => 'field_650070df8895a', 'display_row' => 1),
+                array('repeater' => 'field_65138ec34ed67', 'display_row' => 14),
+            ),
+            $item['repeaterPath']
+        );
+
+        $html = EditorFieldNavigation::clickableIssueHtml(
+            'field_650071058895b',
+            'Ingredients → Section Ingredients → Ingredient',
+            'Ingredient is required in row 1/14.',
+            'This field is required.',
+            'classic',
+            '',
+            array(),
+            $item['repeaterPath']
+        );
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('field_650070df8895a', $html);
+        $this->assertStringContainsString('field_65138ec34ed67', $html);
+        $this->assertStringContainsString('Ingredient is required in row 1/14.', $html);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+        $this->assertSame(array(), EditorFieldNavigation::sanitizeRepeaterPath(array(
+            array('repeater' => 'not-a-field', 'display_row' => 1),
+            array('repeater' => 'field_steps', 'display_row' => 14),
+        )));
+        $this->assertSame(array(), EditorFieldNavigation::sanitizeRepeaterPath(array(
+            array('repeater' => 'field_directions', 'display_row' => 0),
+        )));
+        $this->assertSame(
+            'data-contentguard-repeater-path="invalid"',
+            EditorFieldNavigation::repeaterPathAttribute(array(), true)
+        );
+    }
 }

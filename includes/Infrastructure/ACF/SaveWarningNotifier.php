@@ -436,7 +436,9 @@ final class SaveWarningNotifier
             'Content warning.',
             $surface,
             EditorFieldNavigation::layoutFromItem($warning),
-            EditorFieldNavigation::affectedRowsFromItem($warning)
+            EditorFieldNavigation::affectedRowsFromItem($warning),
+            EditorFieldNavigation::repeaterPathFromItem($warning),
+            EditorFieldNavigation::isRepeaterPathBlocked($warning)
         );
     }
 
@@ -574,6 +576,11 @@ final class SaveWarningNotifier
         $rows = EditorFieldNavigation::affectedRowsFromItem($warnings[0]);
         if (count($rows) === 1) {
             $extra['displayRow'] = $rows[0];
+        }
+
+        $path = EditorFieldNavigation::repeaterPathFromItem($warnings[0]);
+        if ($path !== array()) {
+            $extra['repeaterPath'] = $path;
         }
 
         return $extra;

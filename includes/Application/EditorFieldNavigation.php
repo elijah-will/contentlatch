@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+use ContentGuard\Application\Audit\AuditFinding;
+use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Domain\FieldRef;
 
 final class EditorFieldNavigation
@@ -272,6 +274,8 @@ final class EditorFieldNavigation
      */
     public static function withEvaluationRowTargets(array $item, array $context): array
     {
+        $item = self::withRepeaterPathFromContext($item, $context);
+
         $layout = self::layoutFromContext($context);
         $rows   = self::displayRowsFromContext($context);
         if ($layout !== '') {
@@ -296,6 +300,173 @@ final class EditorFieldNavigation
         }
 
         return $item;
+    }
+
+    /**
+     * Structured Repeater coordinates only. Snapshot text is never parsed.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    public static function withFindingRowTargets(array $item, AuditFinding $finding): array
+    {
+        $item = self::withSnapshotRowTargets($item, $finding->message);
+
+        return self::withRepeaterPathFromCells(
+            $item,
+            AuditRepeaterCoordinates::structuredCellsFromFinding($finding)
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    public static function withRepeaterPathFromContext(array $item, array $context): array
+    {
+        $chain = AuditRepeaterCoordinates::instanceChain($context);
+        if ($chain !== array()) {
+            return self::withRepeaterPathFromCells($item, array($chain));
+        }
+
+        if (self::layoutFromContext($context) !== '') {
+            return $item;
+        }
+
+        $path = self::oneLevelPathFromContext($context);
+        if ($path !== array()) {
+            $item['repeaterPath'] = $path;
+        }
+
+        return $item;
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @param list<list<array<string, mixed>>> $cells
+     * @return array<string, mixed>
+     */
+    public static function withRepeaterPathFromCells(array $item, array $cells): array
+    {
+        if ($cells === array()) {
+            return $item;
+        }
+
+        $path = self::sanitizeRepeaterPath($cells[0]);
+        if ($path !== array()) {
+            $item['repeaterPath'] = $path;
+
+            return $item;
+        }
+
+        $item['repeaterPathInvalid'] = true;
+
+        return $item;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     * @return list<array{repeater: string, display_row: int}>
+     */
+    public static function oneLevelPathFromContext(array $context): array
+    {
+        $displayRow = self::sanitizeDisplayRow($context['display_row'] ?? null);
+        if ($displayRow <= 0) {
+            return array();
+        }
+
+        $repeater = self::navigableFieldKey((string) ($context['repeater'] ?? ''));
+        if ($repeater === '') {
+            $repeater = self::repeaterKeyFromInputName((string) ($context['input_name'] ?? ''));
+        }
+        if ($repeater === '') {
+            return array();
+        }
+
+        return array(
+            array(
+                'repeater'    => $repeater,
+                'display_row' => $displayRow,
+            ),
+        );
+    }
+
+    /**
+     * Last Repeater key before a row token in an ACF input name.
+     */
+    public static function repeaterKeyFromInputName(string $inputName): string
+    {
+        $inputName = trim($inputName);
+        if ($inputName === '' || !str_starts_with($inputName, 'acf[')) {
+            return '';
+        }
+
+        if (!preg_match_all('/\[([^\]]+)\]/', $inputName, $matches)) {
+            return '';
+        }
+
+        $repeater = '';
+        $parts    = $matches[1];
+        $count    = count($parts);
+        for ($i = 0; $i < $count - 1; $i++) {
+            if (!self::isSafeFieldKey($parts[$i]) || self::isSafeFieldKey($parts[$i + 1])) {
+                continue;
+            }
+            if (self::isRepeaterRowToken($parts[$i + 1])) {
+                $repeater = $parts[$i];
+            }
+        }
+
+        return $repeater;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $chain
+     * @return list<array{repeater: string, display_row: int}>
+     */
+    public static function sanitizeRepeaterPath(mixed $chain): array
+    {
+        if (!is_array($chain) || $chain === array()) {
+            return array();
+        }
+
+        $path = array();
+        foreach ($chain as $step) {
+            if (!is_array($step)) {
+                return array();
+            }
+
+            $repeater   = self::navigableFieldKey((string) ($step['repeater'] ?? ''));
+            $displayRow = self::sanitizeDisplayRow($step['display_row'] ?? ($step['displayRow'] ?? null));
+            if ($repeater === '' || $displayRow <= 0) {
+                return array();
+            }
+
+            $path[] = array(
+                'repeater'    => $repeater,
+                'display_row' => $displayRow,
+            );
+        }
+
+        return $path;
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @return list<array{repeater: string, display_row: int}>
+     */
+    public static function repeaterPathFromItem(array $item): array
+    {
+        return self::sanitizeRepeaterPath($item['repeaterPath'] ?? array());
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     */
+    public static function isRepeaterPathBlocked(array $item): bool
+    {
+        return !empty($item['repeaterPathInvalid']);
     }
 
     /**
@@ -340,6 +511,13 @@ final class EditorFieldNavigation
             $into['affectedRows'] = $rows;
         }
 
+        if (self::repeaterPathFromItem($into) === array() && self::repeaterPathFromItem($from) !== array()) {
+            $into['repeaterPath'] = self::repeaterPathFromItem($from);
+            unset($into['repeaterPathInvalid']);
+        } elseif (self::isRepeaterPathBlocked($into) === false && self::isRepeaterPathBlocked($from)) {
+            $into['repeaterPathInvalid'] = true;
+        }
+
         return $into;
     }
 
@@ -358,6 +536,7 @@ final class EditorFieldNavigation
      * data-contentguard-core and only when the current surface supports it.
      *
      * @param list<int> $rows
+     * @param list<array{repeater?: string, display_row?: int}> $repeaterPath
      */
     public static function clickableIssueHtml(
         string $fieldId,
@@ -367,10 +546,13 @@ final class EditorFieldNavigation
         string $surface,
         string $layout = '',
         array $rows = array(),
+        array $repeaterPath = array(),
+        bool $repeaterPathBlocked = false,
     ): string {
-        $label   = trim($label);
-        $message = trim($message);
-        $text    = EditorNoticePresentation::issueText($label, $message);
+        $label        = trim($label);
+        $message      = trim($message);
+        $repeaterPath = self::sanitizeRepeaterPath($repeaterPath);
+        $text         = EditorNoticePresentation::issueText($label, $message);
         if ($text === '') {
             $text = $fallbackMessage;
         }
@@ -390,7 +572,13 @@ final class EditorFieldNavigation
             ? self::goToLayoutRowAria($label, $primaryRow)
             : self::goToFieldAria($label);
         $attrs      = $acf !== ''
-            ? self::fieldTriggerAttributes($acf, $layout, $primaryRow)
+            ? self::fieldTriggerAttributes(
+                $acf,
+                $layout,
+                $repeaterPath !== array() || $repeaterPathBlocked ? 0 : $primaryRow,
+                $repeaterPath,
+                $repeaterPathBlocked
+            )
             : EditorCoreNavigation::triggerAttributes($core);
         $suffix     = $acf !== ''
             ? self::rowButtonsHtml($acf, $label, $layout, $rows)
@@ -418,8 +606,16 @@ final class EditorFieldNavigation
         return EditorCoreNavigation::isSupported($fieldId, $surface);
     }
 
-    public static function fieldTriggerAttributes(string $fieldKey, string $layout = '', int $displayRow = 0): string
-    {
+    /**
+     * @param list<array{repeater?: string, display_row?: int}> $repeaterPath
+     */
+    public static function fieldTriggerAttributes(
+        string $fieldKey,
+        string $layout = '',
+        int $displayRow = 0,
+        array $repeaterPath = array(),
+        bool $repeaterPathBlocked = false,
+    ): string {
         $fieldKey = self::navigableFieldKey($fieldKey);
         if ($fieldKey === '') {
             return '';
@@ -435,7 +631,34 @@ final class EditorFieldNavigation
             $attrs .= ' data-contentguard-display-row="' . $displayRow . '"';
         }
 
+        $pathAttr = self::repeaterPathAttribute($repeaterPath, $repeaterPathBlocked);
+        if ($pathAttr !== '') {
+            $attrs .= ' ' . $pathAttr;
+        }
+
         return $attrs;
+    }
+
+    /**
+     * @param list<array{repeater?: string, display_row?: int}> $repeaterPath
+     */
+    public static function repeaterPathAttribute(array $repeaterPath, bool $blocked = false): string
+    {
+        if ($blocked) {
+            return 'data-contentguard-repeater-path="invalid"';
+        }
+
+        $path = self::sanitizeRepeaterPath($repeaterPath);
+        if ($path === array()) {
+            return '';
+        }
+
+        $json = json_encode($path, JSON_UNESCAPED_SLASHES);
+        if (!is_string($json) || $json === '') {
+            return 'data-contentguard-repeater-path="invalid"';
+        }
+
+        return 'data-contentguard-repeater-path="' . self::escapeAttr($json) . '"';
     }
 
     /**
@@ -461,6 +684,15 @@ final class EditorFieldNavigation
         }
 
         return ' <span class="contentguard-warning-rows">' . implode('<span aria-hidden="true"> · </span>', $buttons) . '</span>';
+    }
+
+    private static function isRepeaterRowToken(string $token): bool
+    {
+        if ($token === '' || $token === 'acfcloneindex') {
+            return false;
+        }
+
+        return (bool) preg_match('/^(row-\d+|[A-Za-z0-9_-]+)$/', $token);
     }
 
     private static function escapeHtml(string $value): string

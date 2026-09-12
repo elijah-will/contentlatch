@@ -78,19 +78,33 @@ final class AuditRepeaterCoordinates
      */
     public static function cellsFromFinding(AuditFinding $finding): array
     {
-        $rows = $finding->context['repeater_rows'] ?? null;
-        if (is_array($rows) && $rows !== array()) {
-            if (self::isCellList($rows)) {
-                return self::sanitizeCellList($rows);
-            }
-
-            $chain = self::instanceChain(array('repeater_rows' => $rows));
-            if ($chain !== array()) {
-                return array($chain);
-            }
+        $structured = self::structuredCellsFromFinding($finding);
+        if ($structured !== array()) {
+            return $structured;
         }
 
         return self::cellsFromSnapshot($finding->message);
+    }
+
+    /**
+     * Persisted nested coordinates only. Does not read snapshot text.
+     *
+     * @return list<list<array<string, mixed>>>
+     */
+    public static function structuredCellsFromFinding(AuditFinding $finding): array
+    {
+        $rows = $finding->context['repeater_rows'] ?? null;
+        if (!is_array($rows) || $rows === array()) {
+            return array();
+        }
+
+        if (self::isCellList($rows)) {
+            return self::sanitizeCellList($rows);
+        }
+
+        $chain = self::instanceChain(array('repeater_rows' => $rows));
+
+        return $chain === array() ? array() : array($chain);
     }
 
     /**

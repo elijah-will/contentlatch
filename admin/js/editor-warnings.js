@@ -35,9 +35,9 @@
     return typeof fieldId === "string" && gutenbergCoreIds().indexOf(fieldId) !== -1;
   }
 
-  function navigate(fieldKey, layout, displayRow) {
+  function navigate(fieldKey, layout, displayRow, repeaterPath) {
     if (typeof window.contentguardNavigateToField === "function") {
-      window.contentguardNavigateToField(fieldKey, layout, displayRow);
+      window.contentguardNavigateToField(fieldKey, layout, displayRow, repeaterPath);
     }
   }
 
@@ -99,7 +99,7 @@
     return isSafeFieldKey(fieldKey) || isSupportedCore(fieldKey);
   }
 
-  function fieldTriggerAttributes(fieldKey, layout, displayRow) {
+  function fieldTriggerAttributes(fieldKey, layout, displayRow, repeaterPath, pathBlocked) {
     if (isSupportedCore(fieldKey) && !isSafeFieldKey(fieldKey)) {
       return 'data-contentguard-core="' + escapeHtml(fieldKey) + '"';
     }
@@ -108,8 +108,29 @@
     if (safeLayout(layout)) {
       attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';
     }
-    if (displayRow > 0) {
+    if (displayRow > 0 && !(Array.isArray(repeaterPath) && repeaterPath.length) && !pathBlocked) {
       attrs += ' data-contentguard-display-row="' + displayRow + '"';
+    }
+    if (pathBlocked) {
+      attrs += ' data-contentguard-repeater-path="invalid"';
+    } else if (Array.isArray(repeaterPath) && repeaterPath.length) {
+      var encoded = [];
+      for (var i = 0; i < repeaterPath.length; i++) {
+        var step = repeaterPath[i] || {};
+        if (!isSafeFieldKey(asString(step.repeater))) {
+          encoded = [];
+          break;
+        }
+        var row = parseInt(step.display_row || step.displayRow, 10);
+        if (!(row > 0)) {
+          encoded = [];
+          break;
+        }
+        encoded.push('{"repeater":"' + step.repeater + '","display_row":' + row + '}');
+      }
+      if (encoded.length) {
+        attrs += ' data-contentguard-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
+      }
     }
     return attrs;
   }
@@ -141,6 +162,8 @@
     var fieldKey = asString(warning.fieldKey);
     var layout = safeLayout(asString(warning.layout));
     var rows = sanitizeDisplayRows(warning.affectedRows);
+    var repeaterPath = Array.isArray(warning.repeaterPath) ? warning.repeaterPath : [];
+    var pathBlocked = !!warning.repeaterPathInvalid;
     var primaryRow = rows.length === 1 ? rows[0] : rows[0] || 0;
     var aria = rows.length === 1
       ? "Go to " + label + ", row " + primaryRow
@@ -148,7 +171,7 @@
 
     return (
       '<button type="button" class="contentguard-warning-field" ' +
-      fieldTriggerAttributes(fieldKey, layout, primaryRow) +
+      fieldTriggerAttributes(fieldKey, layout, primaryRow, repeaterPath, pathBlocked) +
       ' aria-label="' +
       escapeHtml(aria) +
       '">' +
@@ -290,7 +313,8 @@
     navigate(
       fieldKey,
       trigger.getAttribute("data-contentguard-layout") || "",
-      trigger.getAttribute("data-contentguard-display-row") || 0
+      trigger.getAttribute("data-contentguard-display-row") || 0,
+      trigger.getAttribute("data-contentguard-repeater-path")
     );
   });
 

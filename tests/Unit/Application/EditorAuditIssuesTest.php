@@ -360,6 +360,88 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertArrayNotHasKey('layout', $nested[0]);
         $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($nested[0]));
         $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $nested[0]['message']);
+        $this->assertArrayNotHasKey('repeaterPath', $nested[0]);
+    }
+
+    public function testPersistedNestedFindingUsesStructuredCoordinatesNotSnapshotText(): void
+    {
+        $issues = EditorAuditIssues::fromFindings(
+            array($this->finding(array(
+                'fieldKey' => 'field_step_name',
+                'message'  => 'Name is required in row 1/14.',
+                'context'  => array(
+                    'repeater_rows' => array(
+                        array(
+                            array(
+                                'repeater'    => 'field_directions',
+                                'key'         => 'row-0',
+                                'index'       => 0,
+                                'display_row' => 1,
+                            ),
+                            array(
+                                'repeater'    => 'field_steps',
+                                'key'         => 'row-13',
+                                'index'       => 13,
+                                'display_row' => 14,
+                            ),
+                        ),
+                    ),
+                ),
+            ))),
+            42,
+            array('15:field_step_name' => 'Directions → Steps → Name')
+        );
+
+        $this->assertSame(
+            array(
+                array('repeater' => 'field_directions', 'display_row' => 1),
+                array('repeater' => 'field_steps', 'display_row' => 14),
+            ),
+            $issues[0]['repeaterPath']
+        );
+        $html = EditorAuditIssues::issueHtml($issues[0]);
+        $this->assertStringContainsString('Name is required in row 1/14.', $html);
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('field_directions', $html);
+        $this->assertStringContainsString('field_steps', $html);
+        $this->assertStringContainsString('14', $html);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+    }
+
+    public function testMalformedNestedCoordinatesBlockClickNavigation(): void
+    {
+        $issues = EditorAuditIssues::fromEvaluation(
+            new ContentEvaluation(
+                42,
+                \ContentGuard\Domain\ContentStatus::Failed,
+                array(
+                    new EvaluationResult(
+                        EvaluationStatus::Failed,
+                        90,
+                        42,
+                        'field_step_name',
+                        'This field is required.',
+                        RuleSeverity::Fail,
+                        'required',
+                        array(
+                            'field_label'   => 'Directions → Steps → Name',
+                            'repeater_rows' => array(
+                                array('display_row' => 1),
+                                array('display_row' => 14),
+                            ),
+                        )
+                    ),
+                )
+            ),
+            42
+        );
+
+        $this->assertTrue($issues[0]['repeaterPathInvalid']);
+        $this->assertArrayNotHasKey('repeaterPath', $issues[0]);
+        $this->assertStringContainsString(
+            'data-contentguard-repeater-path="invalid"',
+            EditorAuditIssues::issueHtml($issues[0])
+        );
     }
 
     public function testLiveNestedEvaluationKeepsPairedCoordinatesInTheNotice(): void
@@ -386,6 +468,16 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertStringContainsString('2/1', $html);
         $this->assertStringNotContainsString('data-contentguard-display-row', $html);
         $this->assertStringNotContainsString('contentguard-warning-rows', $html);
+        $this->assertSame(
+            array(
+                array('repeater' => 'field_directions', 'display_row' => 1),
+                array('repeater' => 'field_steps', 'display_row' => 1),
+            ),
+            $issues[0]['repeaterPath']
+        );
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('field_directions', $html);
+        $this->assertStringContainsString('field_steps', $html);
     }
 
     public function testLiveOneLevelRepeaterEvaluationNamesTheRowWithoutFlexNavigation(): void
@@ -408,6 +500,7 @@ final class EditorAuditIssuesTest extends TestCase
                             'display_row' => 2,
                             'row_key'     => 'row-1',
                             'row_index'   => 1,
+                            'input_name'  => 'acf[field_65007238dd468][row-1][field_65011ffeae1ce]',
                         )
                     ),
                 )
@@ -426,6 +519,23 @@ final class EditorAuditIssuesTest extends TestCase
             'data-contentguard-display-row',
             EditorAuditIssues::issueHtml($issues[0])
         );
+        $this->assertSame(
+            array(
+                array(
+                    'repeater'    => 'field_65007238dd468',
+                    'display_row' => 2,
+                ),
+            ),
+            $issues[0]['repeaterPath']
+        );
+        $this->assertStringContainsString(
+            'data-contentguard-repeater-path=',
+            EditorAuditIssues::issueHtml($issues[0])
+        );
+        $this->assertStringContainsString(
+            'field_65007238dd468',
+            EditorAuditIssues::issueHtml($issues[0])
+        );
     }
 
     public function testLiveSingleNestedEvaluationNamesTheOuterInnerRow(): void
@@ -442,6 +552,15 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertSame('Name is required in row 2/1.', $issues[0]['message']);
         $this->assertStringContainsString('2/1', EditorAuditIssues::issueHtml($issues[0]));
         $this->assertStringNotContainsString('data-contentguard-display-row', EditorAuditIssues::issueHtml($issues[0]));
+        $this->assertSame(
+            array(
+                array('repeater' => 'field_directions', 'display_row' => 2),
+                array('repeater' => 'field_steps', 'display_row' => 1),
+            ),
+            $issues[0]['repeaterPath']
+        );
+        $this->assertStringContainsString('data-contentguard-repeater-path=', EditorAuditIssues::issueHtml($issues[0]));
+        $this->assertStringNotContainsString('in row 2/1', json_encode($issues[0]['repeaterPath']) ?: '');
     }
 
     public function testCoreTitleIsClickableOnGutenbergAndClassic(): void
@@ -611,7 +730,8 @@ final class EditorAuditIssuesTest extends TestCase
             (string) ($overrides['code'] ?? 'required'),
             $overrides['severity'] ?? RuleSeverity::Fail,
             (string) ($overrides['message'] ?? 'Description is required'),
-            (string) ($overrides['createdAt'] ?? '2026-01-01 00:00:00')
+            (string) ($overrides['createdAt'] ?? '2026-01-01 00:00:00'),
+            is_array($overrides['context'] ?? null) ? $overrides['context'] : array()
         );
     }
 }

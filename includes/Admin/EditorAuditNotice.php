@@ -275,6 +275,11 @@ final class EditorAuditNotice
             $extra['displayRow'] = $rows[0];
         }
 
+        $path = EditorFieldNavigation::repeaterPathFromItem($issues[0]);
+        if ($path !== array()) {
+            $extra['repeaterPath'] = $path;
+        }
+
         return $extra;
     }
 

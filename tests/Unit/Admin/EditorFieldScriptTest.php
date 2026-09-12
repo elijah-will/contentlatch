@@ -39,6 +39,14 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('acf-flexible-content', $js);
         $this->assertStringContainsString('data-contentguard-layout', $js);
         $this->assertStringContainsString('data-contentguard-display-row', $js);
+        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
+        $this->assertStringContainsString('parseRepeaterPath', $js);
+        $this->assertStringContainsString('findFieldInRepeaterPath', $js);
+        $this->assertStringContainsString('realRepeaterRows', $js);
+        $this->assertStringContainsString('isRealRepeaterRow', $js);
+        $this->assertStringContainsString('acf-row', $js);
+        $this->assertStringContainsString('raw === "invalid"', $js);
+        $this->assertStringContainsString('if (repeaterPath === null)', $js);
         $this->assertStringContainsString('findFieldAtDisplayRow', $js);
         $this->assertStringContainsString('realChildLayouts', $js);
         $this->assertStringContainsString('isRealLayout', $js);

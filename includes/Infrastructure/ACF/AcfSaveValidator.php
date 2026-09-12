@@ -134,7 +134,7 @@ final class AcfSaveValidator
         }
 
         if ($fieldErrors !== array() && $this->isClassicEditorRequest($request)) {
-            $summary = EditorAuditIssues::noticeText(
+            $summary = EditorAuditIssues::classicValidationNotice(
                 EditorAuditIssues::fromEvaluation($evaluation, $postId)
             );
             if ($summary !== '') {

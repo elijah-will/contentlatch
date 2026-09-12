@@ -64,6 +64,128 @@
     return row > 0 ? row : 0;
   }
 
+  function parseRepeaterPath(raw) {
+    if (raw === undefined || raw === null || raw === "") {
+      return [];
+    }
+    if (raw === "invalid") {
+      return null;
+    }
+    var parsed = raw;
+    if (typeof raw === "string") {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (error) {
+        return null;
+      }
+    }
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+    if (!parsed.length) {
+      return [];
+    }
+
+    var path = [];
+    for (var i = 0; i < parsed.length; i++) {
+      var step = parsed[i] || {};
+      var repeater = step.repeater || "";
+      var displayRow = sanitizeDisplayRow(step.display_row || step.displayRow);
+      if (!isSafeFieldKey(repeater) || displayRow < 1) {
+        return null;
+      }
+      path.push({ repeater: repeater, display_row: displayRow });
+    }
+
+    return path;
+  }
+
+  function isRealRepeaterRow(node) {
+    return !!(
+      node &&
+      node.classList &&
+      node.classList.contains("acf-row") &&
+      !node.classList.contains("acf-clone") &&
+      !node.closest(".acf-clone")
+    );
+  }
+
+  function firstChildByClass(parent, className) {
+    if (!parent || !parent.children) {
+      return null;
+    }
+    for (var i = 0; i < parent.children.length; i++) {
+      if (parent.children[i].classList && parent.children[i].classList.contains(className)) {
+        return parent.children[i];
+      }
+    }
+    return null;
+  }
+
+  function realRepeaterRows(repeaterField) {
+    if (!repeaterField) {
+      return [];
+    }
+
+    var repeater = firstChildByClass(repeaterField, "acf-repeater");
+    if (!repeater) {
+      var input = firstChildByClass(repeaterField, "acf-input");
+      repeater = input ? firstChildByClass(input, "acf-repeater") : null;
+    }
+    if (!repeater) {
+      return [];
+    }
+
+    var rowParent = repeater;
+    var table = firstChildByClass(repeater, "acf-table");
+    if (!table) {
+      for (var t = 0; t < repeater.children.length; t++) {
+        if (repeater.children[t].tagName === "TABLE") {
+          table = repeater.children[t];
+          break;
+        }
+      }
+    }
+    if (table) {
+      rowParent = table.tBodies && table.tBodies[0] ? table.tBodies[0] : table;
+    }
+
+    var rows = [];
+    var children = rowParent.children || [];
+    for (var i = 0; i < children.length; i++) {
+      if (isRealRepeaterRow(children[i])) {
+        rows.push(children[i]);
+      }
+    }
+
+    return rows;
+  }
+
+  function findFieldInRepeaterPath(fieldKey, path, clone) {
+    if (!Array.isArray(path) || !path.length) {
+      return null;
+    }
+
+    var scope = document;
+    for (var i = 0; i < path.length; i++) {
+      var repeaterField = scope === document
+        ? findFieldInScope(document, path[i].repeater, "")
+        : findFieldInScope(scope, path[i].repeater, "");
+      if (!repeaterField) {
+        return null;
+      }
+
+      var rows = realRepeaterRows(repeaterField);
+      var row = rows[path[i].display_row - 1];
+      if (!row) {
+        return null;
+      }
+      scope = row;
+    }
+
+    return findFieldInScope(scope, fieldKey, clone);
+  }
+
   function isRealLayout(node) {
     return !!(
       node &&
@@ -199,7 +321,7 @@
     return findFieldInScope(row, fieldKey, clone);
   }
 
-  function findField(fieldKey, layout, displayRow) {
+  function findField(fieldKey, layout, displayRow, repeaterPath) {
     var parsed = parseResolutionId(fieldKey);
     var clone = parsed.clone;
     if (clone) {
@@ -208,6 +330,13 @@
 
     if (!isSafeFieldKey(fieldKey)) {
       return null;
+    }
+
+    if (repeaterPath === null) {
+      return null;
+    }
+    if (Array.isArray(repeaterPath) && repeaterPath.length) {
+      return findFieldInRepeaterPath(fieldKey, repeaterPath, clone);
     }
 
     displayRow = sanitizeDisplayRow(displayRow);
@@ -328,10 +457,14 @@
     }
   }
 
-  function tryFocus(fieldKey, layout, displayRow, attemptsLeft) {
-    var field = findField(fieldKey, layout, displayRow);
+  function tryFocus(fieldKey, layout, displayRow, attemptsLeft, repeaterPath) {
+    var field = findField(fieldKey, layout, displayRow, repeaterPath);
     if (field) {
-      reveal(field, displayRow);
+      var announcedRow = displayRow;
+      if (Array.isArray(repeaterPath) && repeaterPath.length) {
+        announcedRow = repeaterPath[repeaterPath.length - 1].display_row;
+      }
+      reveal(field, announcedRow);
       return;
     }
 
@@ -340,16 +473,21 @@
     }
 
     window.setTimeout(function () {
-      tryFocus(fieldKey, layout, displayRow, attemptsLeft - 1);
+      tryFocus(fieldKey, layout, displayRow, attemptsLeft - 1, repeaterPath);
     }, 250);
   }
 
-  function navigateToField(fieldKey, layout, displayRow) {
+  function navigateToField(fieldKey, layout, displayRow, repeaterPath) {
     if (!isSafeFieldKey(fieldKey)) {
       return;
     }
 
-    tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20);
+    var path = parseRepeaterPath(repeaterPath);
+    if (path === null) {
+      return;
+    }
+
+    tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20, path);
   }
 
   function firstMatch(selectors) {
@@ -606,7 +744,8 @@
     navigateToField(
       fieldKey,
       trigger.getAttribute("data-contentguard-layout") || config.layout || "",
-      trigger.getAttribute("data-contentguard-display-row") || config.displayRow || 0
+      trigger.getAttribute("data-contentguard-display-row") || config.displayRow || 0,
+      trigger.getAttribute("data-contentguard-repeater-path")
     );
   });
 
@@ -617,7 +756,12 @@
     }
     if (isSafeFieldKey(config.fieldKey)) {
       autoStarted = true;
-      navigateToField(config.fieldKey, config.layout || "", config.displayRow || 0);
+      navigateToField(
+        config.fieldKey,
+        config.layout || "",
+        config.displayRow || 0,
+        config.repeaterPath
+      );
       return;
     }
     if (isSupportedCore(config.fieldKey)) {

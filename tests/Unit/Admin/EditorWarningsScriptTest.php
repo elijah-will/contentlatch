@@ -25,8 +25,10 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('warning.text', $js);
         $this->assertStringContainsString('warning.layout', $js);
         $this->assertStringContainsString('warning.affectedRows', $js);
+        $this->assertStringContainsString('warning.repeaterPath', $js);
         $this->assertStringContainsString('data-contentguard-display-row', $js);
         $this->assertStringContainsString('data-contentguard-layout', $js);
+        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
         $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
         $this->assertStringContainsString('payload.warnings', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);

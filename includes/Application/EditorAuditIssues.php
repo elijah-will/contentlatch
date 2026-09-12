@@ -198,13 +198,13 @@ final class EditorAuditIssues
             ?? $fieldLabels[$finding->fieldKey]
             ?? '';
 
-        return EditorFieldNavigation::withSnapshotRowTargets(
+        return EditorFieldNavigation::withFindingRowTargets(
             array(
                 'message'  => $message,
                 'label'    => self::humanLabel((string) $rawLabel, $finding->fieldKey),
                 'fieldKey' => EditorFieldNavigation::navigationId($finding->fieldKey),
             ),
-            $message
+            $finding
         );
     }
 
@@ -240,6 +240,37 @@ final class EditorAuditIssues
         }
 
         return EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_BLOCKING, $lines);
+    }
+
+    /**
+     * Classic ACF global error: same wording as noticeText, with clickable
+     * inline field labels. ACF renders this inside one <p>.
+     *
+     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>, repeaterPathInvalid?: bool}> $issues
+     */
+    public static function classicValidationNotice(array $issues): string
+    {
+        if ($issues === array()) {
+            return '';
+        }
+
+        $lines = array(EditorNoticePresentation::title(EditorNoticePresentation::SEVERITY_BLOCKING));
+        $count = EditorNoticePresentation::countLabel(
+            EditorNoticePresentation::SEVERITY_BLOCKING,
+            count($issues)
+        );
+        if ($count !== '') {
+            $lines[] = $count;
+        }
+
+        foreach ($issues as $issue) {
+            $line = self::issueHtml($issue, EditorCoreNavigation::SURFACE_CLASSIC);
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -287,7 +318,9 @@ final class EditorAuditIssues
             'This field is required.',
             $surface,
             EditorFieldNavigation::layoutFromItem($issue),
-            EditorFieldNavigation::affectedRowsFromItem($issue)
+            EditorFieldNavigation::affectedRowsFromItem($issue),
+            EditorFieldNavigation::repeaterPathFromItem($issue),
+            EditorFieldNavigation::isRepeaterPathBlocked($issue)
         );
     }
 

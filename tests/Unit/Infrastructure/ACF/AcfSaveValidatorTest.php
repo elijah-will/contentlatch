@@ -41,7 +41,8 @@ final class AcfSaveValidatorTest extends TestCase
                 'message' => 'Recipe Description — This field is required.',
             ),
         ));
-        $this->assertStringContainsString('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Recipe Description</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="field_description"', $this->errors[0]['message']);
         $this->assertStringNotContainsString('contentguard_field', json_encode($this->errors) ?: '');
     }
 
@@ -634,8 +635,10 @@ final class AcfSaveValidatorTest extends TestCase
             ),
         ));
         $this->assertStringContainsString("ContentGuard · Blocking\n2 blocking issues\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('Recipe Description — This field is required.', $this->errors[0]['message']);
-        $this->assertStringContainsString('Recipe Title — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Recipe Description</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Recipe Title</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="field_description"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="field_title"', $this->errors[0]['message']);
         $this->assertArrayNotHasKey('contentguard_field', $this->publishRequest());
 
         $withoutField = $this->errors;
@@ -656,7 +659,7 @@ final class AcfSaveValidatorTest extends TestCase
         $php = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/ACF/AcfSaveValidator.php');
 
         $this->assertStringContainsString('isClassicEditorRequest', $php);
-        $this->assertStringContainsString('EditorAuditIssues::noticeText', $php);
+        $this->assertStringContainsString('EditorAuditIssues::classicValidationNotice', $php);
         $this->assertStringNotContainsString('requestedFieldKey', $php);
         $this->assertStringNotContainsString('QUERY_ARG', $php);
         $this->assertStringNotContainsString('requestedRunId', $php);

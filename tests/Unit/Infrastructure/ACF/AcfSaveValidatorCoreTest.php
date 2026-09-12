@@ -172,7 +172,7 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
         $this->assertSame('', $this->errors[0]['input']);
         $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('Ingredients — Ingredients are required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Ingredients</button> — Ingredients are required.', $this->errors[0]['message']);
         $this->assertSame(
             array(
                 'input'   => 'acf[field_ingredients]',
@@ -228,21 +228,20 @@ final class AcfSaveValidatorCoreTest extends TestCase
             )
         );
 
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="field_ingredients"', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Content</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Ingredients</button> — This field is required.', $this->errors[0]['message']);
         $this->assertSame(
             array(
-                array(
-                    'input'   => '',
-                    'message' => "ContentGuard · Blocking\n3 blocking issues\n"
-                        . "Title — This field is required.\n"
-                        . "Content — This field is required.\n"
-                        . "Ingredients — This field is required.",
-                ),
-                array(
-                    'input'   => 'acf[field_ingredients]',
-                    'message' => 'Ingredients — This field is required.',
-                ),
+                'input'   => 'acf[field_ingredients]',
+                'message' => 'Ingredients — This field is required.',
             ),
-            $this->errors
+            $this->errors[1]
         );
         $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
     }

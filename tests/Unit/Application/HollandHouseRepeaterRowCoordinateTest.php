@@ -227,6 +227,10 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         $this->assertSame('', $errors[0]['input']);
         $this->assertStringContainsString('ContentGuard · Blocking', $errors[0]['message']);
         $this->assertStringContainsString('Section Title is required in row 2.', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $errors[0]['message']);
+        $this->assertStringContainsString(HH::DIRECTIONS, $errors[0]['message']);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $errors[0]['message']);
         $this->assertSame(
             array(
                 'input'   => 'acf[' . HH::DIRECTIONS . '][row-1][' . HH::SECTION_TITLE . ']',
@@ -292,17 +296,25 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         $this->assertSame('', $errors[0]['input']);
         $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $errors[0]['message']);
         $this->assertStringContainsString(
-            'Ingredients → Ingredient Title — Ingredient Title is required in row 2.',
+            '>Ingredients → Ingredient Title</button> — Ingredient Title is required in row 2.',
             $errors[0]['message']
         );
         $this->assertStringContainsString(
-            'Directions → Section Title — Section Title is required in row 1.',
+            '>Directions → Section Title</button> — Section Title is required in row 1.',
             $errors[0]['message']
         );
         $this->assertStringContainsString(
-            'Ingredients → Section Ingredients → Ingredient — Ingredient is required in row 1/14.',
+            '>Ingredients → Section Ingredients → Ingredient</button> — Ingredient is required in row 1/14.',
             $errors[0]['message']
         );
+        $this->assertStringContainsString('data-contentguard-field="' . HH::INGREDIENT_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-field="' . HH::INGREDIENT . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-repeater-path=', $errors[0]['message']);
+        $this->assertStringContainsString(HH::INGREDIENTS, $errors[0]['message']);
+        $this->assertStringContainsString(HH::SECTION_INGREDIENTS, $errors[0]['message']);
+        $this->assertStringContainsString('&quot;display_row&quot;:14', $errors[0]['message']);
+        $this->assertStringNotContainsString('data-contentguard-display-row', $errors[0]['message']);
         $this->assertCount(4, $errors);
         $this->assertNotSame('', $errors[1]['input']);
         $this->assertNotSame('', $errors[2]['input']);
@@ -353,9 +365,13 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
 
         $this->assertSame('', $errors[0]['input']);
         $this->assertStringContainsString(
-            'Directions → Section Directions → Direction — Direction is required in row 1/14.',
+            '>Directions → Section Directions → Direction</button> — Direction is required in row 1/14.',
             $errors[0]['message']
         );
+        $this->assertStringContainsString('data-contentguard-field="' . HH::DIRECTION . '"', $errors[0]['message']);
+        $this->assertStringContainsString(HH::DIRECTIONS, $errors[0]['message']);
+        $this->assertStringContainsString(HH::SECTION_DIRECTIONS, $errors[0]['message']);
+        $this->assertStringContainsString('&quot;display_row&quot;:14', $errors[0]['message']);
         $this->assertNotSame('', $errors[1]['input']);
     }
 
