@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       ContentGuard
  * Plugin URI:        https://github.com/contentguard/contentguard
- * Description:       Content quality-control rules for Advanced Custom Fields (ACF) backed WordPress content.
- * Version:           0.1.0
+ * Description:       Define content rules for WordPress Core and ACF fields, then validate before publication.
+ * Version:           1.0.0
  * Requires at least: 6.6
  * Requires PHP:      8.1
  * Requires Plugins:  advanced-custom-fields

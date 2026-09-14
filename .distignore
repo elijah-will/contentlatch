@@ -14,3 +14,4 @@ README.md
 Thumbs.db
 node_modules
 vendor/bin
+assets/.gitkeep
