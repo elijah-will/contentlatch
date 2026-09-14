@@ -26,7 +26,7 @@ final class AuditPresentation
             return $rule->name;
         }
 
-        return 'Deleted rule';
+        return I18n::translate('Deleted rule');
     }
 
     public static function fieldLabel(?Rule $rule, string $fieldKey): string
@@ -58,40 +58,41 @@ final class AuditPresentation
 
     public static function postTitle(string $title): string
     {
-        return $title !== '' ? $title : 'Content no longer available';
+        return $title !== '' ? $title : I18n::translate('Content no longer available');
     }
 
     public static function editContentLabel(): string
     {
-        return 'Edit content';
+        return I18n::translate('Edit content');
     }
 
     public static function editContentAria(string $title): string
     {
         $name = self::postTitle($title);
 
-        return sprintf('Edit content: %s', $name);
+        /* translators: %s: Content title. */
+        return I18n::sprintf(I18n::translate('Edit content: %s'), $name);
     }
 
     public static function filteredEmptyHeading(): string
     {
-        return 'No matching findings';
+        return I18n::translate('No matching findings');
     }
 
     public static function filteredEmptyText(): string
     {
-        return 'Try changing or clearing your filters.';
+        return I18n::translate('Try changing or clearing your filters.');
     }
 
     public static function findingsHeading(): string
     {
-        return 'Issues';
+        return I18n::translate('Issues');
     }
 
     public static function findingsRangeLabel(int $paged, int $pageSize, int $total): string
     {
         if ($total <= 0 || $pageSize <= 0) {
-            return 'Showing 0 of 0 findings';
+            return I18n::translate('Showing 0 of 0 findings');
         }
 
         $page = max(1, $paged);
@@ -102,18 +103,19 @@ final class AuditPresentation
             $to   = $total;
         }
 
-        return sprintf('Showing %d–%d of %d findings', $from, $to, $total);
+        /* translators: 1: First finding number. 2: Last finding number. 3: Total findings. */
+        return I18n::sprintf(I18n::translate('Showing %1$d–%2$d of %3$d findings'), $from, $to, $total);
     }
 
     public static function paginationLabel(): string
     {
-        return 'Findings pagination';
+        return I18n::translate('Findings pagination');
     }
 
     public static function historyRangeLabel(int $paged, int $pageSize, int $total): string
     {
         if ($total <= 0 || $pageSize <= 0) {
-            return 'Showing 0 of 0 audits';
+            return I18n::translate('Showing 0 of 0 audits');
         }
 
         $page = max(1, $paged);
@@ -124,34 +126,39 @@ final class AuditPresentation
             $to   = $total;
         }
 
-        return sprintf('Showing %d–%d of %d audits', $from, $to, $total);
+        /* translators: 1: First audit number. 2: Last audit number. 3: Total audits. */
+        return I18n::sprintf(I18n::translate('Showing %1$d–%2$d of %3$d audits'), $from, $to, $total);
     }
 
     public static function historyPaginationLabel(): string
     {
-        return 'Audit history pagination';
+        return I18n::translate('Audit history pagination');
     }
 
     public static function issuesCountLabel(int $count): string
     {
-        return $count === 1 ? '1 issue' : sprintf('%d issues', $count);
+        /* translators: %d: Number of issues. */
+        return I18n::sprintf(I18n::translatePlural('%d issue', '%d issues', $count), $count);
     }
 
     public static function blockingCountLabel(int $count): string
     {
-        return $count === 1 ? '1 Blocking' : sprintf('%d Blocking', $count);
+        /* translators: %d: Number of blocking findings. */
+        return I18n::sprintf(I18n::translatePlural('%d Blocking', '%d Blocking', $count), $count);
     }
 
     public static function warningCountLabel(int $count): string
     {
-        return $count === 1 ? '1 Warning' : sprintf('%d Warning', $count);
+        /* translators: %d: Number of warning findings. */
+        return I18n::sprintf(I18n::translatePlural('%d Warning', '%d Warning', $count), $count);
     }
 
     public static function goToFieldEditAria(string $fieldLabel): string
     {
-        $field = $fieldLabel !== '' ? $fieldLabel : 'field';
+        $field = $fieldLabel !== '' ? $fieldLabel : I18n::translate('field');
 
-        return sprintf('Edit content and go to field: %s', $field);
+        /* translators: %s: Field label. */
+        return I18n::sprintf(I18n::translate('Edit content and go to field: %s'), $field);
     }
 
     public static function displayFieldLabel(string $label, string $fieldKey = ''): string
@@ -193,21 +200,26 @@ final class AuditPresentation
 
     public static function requiredFieldsSummary(int $count): string
     {
-        return $count === 1
-            ? '1 required field is missing'
-            : sprintf('%d required fields are missing', $count);
+        /* translators: %d: Number of missing required fields. */
+        return I18n::sprintf(
+            I18n::translatePlural('%d required field is missing', '%d required fields are missing', $count),
+            $count
+        );
     }
 
     public static function validationIssuesSummary(int $count): string
     {
-        return $count === 1
-            ? '1 validation issue needs attention'
-            : sprintf('%d validation issues need attention', $count);
+        /* translators: %d: Number of validation issues. */
+        return I18n::sprintf(
+            I18n::translatePlural('%d validation issue needs attention', '%d validation issues need attention', $count),
+            $count
+        );
     }
 
     public static function moreFieldsLabel(int $hidden): string
     {
-        return $hidden === 1 ? '+ 1 more' : sprintf('+ %d more', $hidden);
+        /* translators: %d: Number of additional fields. */
+        return I18n::sprintf(I18n::translatePlural('+ %d more', '+ %d more', $hidden), $hidden);
     }
 
     public static function isRequiredMessage(string $message): bool
@@ -217,140 +229,143 @@ final class AuditPresentation
 
     public static function firstRunHeading(): string
     {
-        return 'Ready to check your content';
+        return I18n::translate('Ready to check your content');
     }
 
     public static function firstRunText(): string
     {
-        return 'Run an audit to see whether your existing content follows your active rules.';
+        return I18n::translate('Run an audit to see whether your existing content follows your active rules.');
     }
 
     public static function doesNotModifyContent(): string
     {
-        return 'ContentGuard only reports issues. It does not change your content.';
+        return I18n::translate('ContentGuard only reports issues. It does not change your content.');
     }
 
     public static function firstRunOutcome(): string
     {
-        return 'When it finishes, you will see what passed and what needs attention.';
+        return I18n::translate('When it finishes, you will see what passed and what needs attention.');
     }
 
     public static function noActiveRulesHeading(): string
     {
-        return 'No active rules';
+        return I18n::translate('No active rules');
     }
 
     public static function noActiveRulesText(): string
     {
-        return 'Activate at least one rule before running an audit. Previous completed results, if any, stay available below.';
+        return I18n::translate('Activate at least one rule before running an audit. Previous completed results, if any, stay available below.');
     }
 
     public static function runningHeading(): string
     {
-        return 'Audit in progress';
+        return I18n::translate('Audit in progress');
     }
 
     public static function progressLabel(int $scanned, int $total): string
     {
         if ($total > 0) {
-            return sprintf('%d of %d content items checked', $scanned, $total);
+            /* translators: 1: Number of content items checked. 2: Total content items. */
+            return I18n::sprintf(I18n::translate('%1$d of %2$d content items checked'), $scanned, $total);
         }
 
-        return sprintf('%d content items checked', $scanned);
+        /* translators: %d: Number of content items checked. */
+        return I18n::sprintf(I18n::translate('%d content items checked'), $scanned);
     }
 
     public static function completedHeading(): string
     {
-        return 'Audit completed';
+        return I18n::translate('Audit completed');
     }
 
     public static function allClearHeading(): string
     {
-        return 'All clear';
+        return I18n::translate('All clear');
     }
 
     public static function allClearText(int $scanned): string
     {
         return $scanned > 0
-            ? 'No issues were found in this audit.'
-            : 'This audit completed with no eligible content and no issues.';
+            ? I18n::translate('No issues were found in this audit.')
+            : I18n::translate('This audit completed with no eligible content and no issues.');
     }
 
     public static function failedHeading(): string
     {
-        return 'Audit failed';
+        return I18n::translate('Audit failed');
     }
 
     public static function failedFallbackMessage(): string
     {
-        return 'The audit could not be completed. It was not used as the latest completed result.';
+        return I18n::translate('The audit could not be completed. It was not used as the latest completed result.');
     }
 
     public static function cancelledHeading(): string
     {
-        return 'Audit cancelled';
+        return I18n::translate('Audit cancelled');
     }
 
     public static function cancelledText(): string
     {
-        return 'The audit was stopped. Cancelled audits are not used as the latest completed result.';
+        return I18n::translate('The audit was stopped. Cancelled audits are not used as the latest completed result.');
     }
 
     public static function cancelConfirmText(): string
     {
-        return 'Stop this audit? It will not become the latest completed result.';
+        return I18n::translate('Stop this audit? It will not become the latest completed result.');
     }
 
     public static function historicalNotice(): string
     {
-        return 'This is not the current content health result.';
+        return I18n::translate('This is not the current content health result.');
     }
 
     public static function viewingResultsFrom(string $date): string
     {
         return $date !== ''
-            ? sprintf('Viewing results from %s', $date)
-            : 'Viewing historical audit results';
+            /* translators: %s: Formatted audit date. */
+            ? I18n::sprintf(I18n::translate('Viewing results from %s'), $date)
+            : I18n::translate('Viewing historical audit results');
     }
 
     public static function backToLatestLabel(): string
     {
-        return 'Back to latest audit';
+        return I18n::translate('Back to latest audit');
     }
 
     public static function currentAuditLabel(): string
     {
-        return 'Current';
+        return I18n::translate('Current');
     }
 
     public static function viewingAuditLabel(): string
     {
-        return 'Viewing';
+        return I18n::translate('Viewing');
     }
 
     public static function viewResultsLabel(): string
     {
-        return 'View results';
+        return I18n::translate('View results');
     }
 
     public static function historyHeading(): string
     {
-        return 'Audit History';
+        return I18n::translate('Audit History');
     }
 
     public static function showHistoryLabel(): string
     {
-        return 'Show History';
+        return I18n::translate('Show History');
     }
 
     public static function hideHistoryLabel(): string
     {
-        return 'Hide History';
+        return I18n::translate('Hide History');
     }
 
     public static function historyEmptyText(): string
     {
-        return 'No audit history yet.';
+        return I18n::translate('No audit history yet.');
     }
 
     public static function contentItemsCheckedLabel(int $scanned): string
@@ -360,22 +375,23 @@ final class AuditPresentation
 
     public static function historyContentOutcomeLabel(int $failed, int $warned): string
     {
-        return sprintf('%d need attention · %d need review', $failed, $warned);
+        /* translators: 1: Count needing attention. 2: Count needing review. */
+        return I18n::sprintf(I18n::translate('%1$d need attention · %2$d need review'), $failed, $warned);
     }
 
     public static function severityFilterLabel(): string
     {
-        return 'Severity';
+        return I18n::translate('Severity');
     }
 
     public static function ruleFilterLabel(): string
     {
-        return 'Rule';
+        return I18n::translate('Rule');
     }
 
     public static function contentTypeFilterLabel(): string
     {
-        return 'Content type';
+        return I18n::translate('Content type');
     }
 
     public static function severityLabel(RuleSeverity $severity): string

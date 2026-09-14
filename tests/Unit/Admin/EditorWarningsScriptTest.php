@@ -33,7 +33,8 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('payload.warnings', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
         $this->assertStringContainsString('contentguard-editor-warnings', $js);
-        $this->assertStringContainsString('ContentGuard · ', $js);
+        $this->assertStringContainsString('__("ContentGuard")', $js);
+        $this->assertStringContainsString('" · "', $js);
         $this->assertStringContainsString('createNotice("warning", html', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('spokenMessage', $js);

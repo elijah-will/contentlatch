@@ -50,10 +50,13 @@ final class EditorRestBlockNotice
         wp_register_script(
             'contentguard-editor-rest-blockers',
             CONTENTGUARD_URL . 'admin/js/editor-rest-blockers.js',
-            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
+            array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field'),
             \ContentGuard\Plugin::VERSION,
             true
         );
+        if (function_exists('wp_set_script_translations')) {
+            wp_set_script_translations('contentguard-editor-rest-blockers', 'contentguard', CONTENTGUARD_DIR . 'languages');
+        }
         wp_localize_script(
             'contentguard-editor-rest-blockers',
             'contentguardEditorRestBlockers',

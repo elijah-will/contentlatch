@@ -48,12 +48,16 @@ final class RuleCommandService
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
-            throw new ForbiddenRuleMutationException('You are not allowed to manage ContentGuard rules.');
+            throw new ForbiddenRuleMutationException(
+                I18n::translate('You are not allowed to manage ContentGuard rules.')
+            );
         }
 
         $verifyNonce = $this->verifyNonce;
         if (!is_callable($verifyNonce) || !$verifyNonce($nonce)) {
-            throw new ForbiddenRuleMutationException('Invalid rule management nonce.');
+            throw new ForbiddenRuleMutationException(
+                I18n::translate('Invalid rule management nonce.')
+            );
         }
     }
 }

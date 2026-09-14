@@ -23,6 +23,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "make-pot": "php bin/make-pot.php /tmp/wp-cli.phar"
     }
 }

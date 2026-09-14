@@ -102,7 +102,7 @@ final class EditorAuditIssues
     {
         $message = trim($result->message);
         if ($message === '') {
-            $message = 'This field is required.';
+            $message = I18n::translate('This field is required.');
         }
 
         $fieldKey = EditorFieldNavigation::navigationId($result->fieldId);
@@ -116,8 +116,9 @@ final class EditorAuditIssues
         } else {
             $displayRow = EditorFieldNavigation::sanitizeDisplayRow($result->context['display_row'] ?? null);
             if ($displayRow > 0 && EditorFieldNavigation::layoutFromContext($result->context) === '') {
-                $message = sprintf(
-                    '%s in row %d.',
+                /* translators: 1: Base validation message. 2: 1-based row number. */
+                $message = I18n::sprintf(
+                    I18n::translate('%1$s in row %2$d.'),
                     rtrim(self::nestedBaseMessage($result, $message), '.'),
                     $displayRow
                 );
@@ -191,7 +192,7 @@ final class EditorAuditIssues
     {
         $message = trim($finding->message);
         if ($message === '') {
-            $message = 'This field is required.';
+            $message = I18n::translate('This field is required.');
         }
 
         $rawLabel = $fieldLabels[(string) $finding->ruleId . ':' . $finding->fieldKey]
@@ -315,7 +316,7 @@ final class EditorAuditIssues
             (string) ($issue['fieldKey'] ?? ''),
             (string) ($issue['label'] ?? ''),
             (string) ($issue['message'] ?? ''),
-            'This field is required.',
+            I18n::translate('This field is required.'),
             $surface,
             EditorFieldNavigation::layoutFromItem($issue),
             EditorFieldNavigation::affectedRowsFromItem($issue),
@@ -379,7 +380,7 @@ final class EditorAuditIssues
         }
 
         $into['message'] = AuditRepeaterCoordinates::formatSnapshot(
-            $base !== '' ? $base : 'This field is required.',
+            $base !== '' ? $base : I18n::translate('This field is required.'),
             $cells
         );
 
@@ -393,11 +394,12 @@ final class EditorAuditIssues
             $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
             $label = $parts !== array() ? (string) $parts[count($parts) - 1] : '';
             if ($label !== '') {
-                return sprintf('%s is required.', $label);
+                /* translators: %s: Field label. */
+                return I18n::sprintf(I18n::translate('%s is required.'), $label);
             }
         }
 
-        return $fallback !== '' ? $fallback : 'This field is required.';
+        return $fallback !== '' ? $fallback : I18n::translate('This field is required.');
     }
 
     private static function humanLabel(string $label, string $fieldKey): string

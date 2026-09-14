@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+use ContentGuard\Application\I18n;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
@@ -237,15 +238,21 @@ final class RestSaveValidator
     {
         $message = $result->message;
         $label   = (string) ($result->context['field_label'] ?? '');
+        $stockRequired = 'This field is required.';
 
-        if ($result->code === 'required' && $message === 'This field is required.' && $label !== '') {
-            return sprintf('%s is required.', $label);
+        if ($result->code === 'required'
+            && ($message === $stockRequired || $message === I18n::translate($stockRequired))
+            && $label !== ''
+        ) {
+            return I18n::sprintf(I18n::translate('%s is required.'), $label);
         }
 
         if ($message !== '') {
             return $message;
         }
 
-        return $label !== '' ? sprintf('%s is invalid.', $label) : 'ContentGuard validation failed.';
+        return $label !== ''
+            ? I18n::sprintf(I18n::translate('%s is invalid.'), $label)
+            : I18n::translate('ContentGuard validation failed.');
     }
 }

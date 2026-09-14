@@ -117,7 +117,7 @@ final class RulesController
             self::ACTION_DELETE => $this->handleDelete($request),
             self::ACTION_STATUS => $this->handleStatus($request),
             self::ACTION_FIELDS => $this->handleFields($request),
-            default             => array('ok' => false, 'message' => 'Unknown rule action.'),
+            default             => array('ok' => false, 'message' => __('Unknown rule action.', 'contentguard')),
         };
     }
 
@@ -191,7 +191,7 @@ final class RulesController
 
         $id = isset($request['rule_id']) ? (int) $request['rule_id'] : 0;
         if ($id <= 0) {
-            return array('ok' => false, 'message' => 'Invalid rule.');
+            return array('ok' => false, 'message' => __('Invalid rule.', 'contentguard'));
         }
 
         try {
@@ -201,8 +201,8 @@ final class RulesController
         }
 
         return $deleted
-            ? array('ok' => true, 'message' => 'Rule deleted.')
-            : array('ok' => false, 'message' => 'Rule not found.');
+            ? array('ok' => true, 'message' => __('Rule deleted.', 'contentguard'))
+            : array('ok' => false, 'message' => __('Rule not found.', 'contentguard'));
     }
 
     /**
@@ -219,13 +219,13 @@ final class RulesController
         $id = isset($request['rule_id']) ? (int) $request['rule_id'] : 0;
         $existing = $id > 0 ? $this->rules->find($id) : null;
         if ($existing === null) {
-            return array('ok' => false, 'message' => 'Rule not found.');
+            return array('ok' => false, 'message' => __('Rule not found.', 'contentguard'));
         }
 
         $status = (string) ($request['status'] ?? '');
         $enum   = RuleStatus::tryFrom($status);
         if ($enum === null) {
-            return array('ok' => false, 'message' => 'Invalid rule status.');
+            return array('ok' => false, 'message' => __('Invalid rule status.', 'contentguard'));
         }
 
         $data           = $existing->toArray();
@@ -240,7 +240,9 @@ final class RulesController
         return array(
             'ok'      => true,
             'rule'    => $saved->toArray(),
-            'message' => $enum === RuleStatus::Active ? 'Rule activated.' : 'Rule deactivated.',
+            'message' => $enum === RuleStatus::Active
+                ? __('Rule activated.', 'contentguard')
+                : __('Rule deactivated.', 'contentguard'),
         );
     }
 
@@ -274,12 +276,12 @@ final class RulesController
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
-            return array('ok' => false, 'message' => 'You are not allowed to manage ContentGuard rules.');
+            return array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard'));
         }
 
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($this->nonce($request))) {
-            return array('ok' => false, 'message' => 'Invalid rule management nonce.');
+            return array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard'));
         }
 
         return null;

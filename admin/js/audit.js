@@ -4,6 +4,11 @@
     return;
   }
 
+  var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
+  function __(text) {
+    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+  }
+
   var i18n = config.i18n || {};
   var startButtons = document.querySelectorAll(".contentguard-audit-start, #contentguard-audit-start");
   var cancelButton = document.getElementById("contentguard-audit-cancel");
@@ -89,7 +94,9 @@
     var progressbar = document.getElementById("contentguard-audit-progressbar");
 
     if (status) {
-      status.textContent = run.status === "pending" ? "Pending" : "Running";
+      status.textContent = run.status === "pending"
+        ? (i18n.pending || __("Pending"))
+        : (i18n.running || __("Running"));
     }
     if (scanned) {
       scanned.textContent = String(run.posts_scanned || 0);
@@ -149,7 +156,7 @@
         return;
       }
       if (!payload || !payload.ok || !payload.run) {
-        showNotice((payload && payload.message) || i18n.batchFailed || "The audit could not continue.");
+        showNotice((payload && payload.message) || i18n.batchFailed || __("The audit could not continue."));
         window.location.reload();
         return;
       }
@@ -172,7 +179,7 @@
     }
     post(config.actions.start, {}).then(function (payload) {
       if (!payload || !payload.ok || !payload.run) {
-        showNotice((payload && payload.message) || i18n.couldNotStart || "Could not start the audit.");
+        showNotice((payload && payload.message) || i18n.couldNotStart || __("Could not start the audit."));
         setStartEnabled(true);
         return;
       }

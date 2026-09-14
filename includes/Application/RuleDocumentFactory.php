@@ -84,20 +84,20 @@ final class RuleDocumentFactory
         $id       = $input['rule_id'] ?? $input['id'] ?? '';
 
         if ($name === '') {
-            throw new InvalidRuleException('Rule name is required.');
+            throw new InvalidRuleException(I18n::translate('Rule name is required.'));
         }
 
         $allowedTypes = $this->allowedPostTypes();
         if ($postType === '' || !isset($allowedTypes[$postType])) {
-            throw new InvalidRuleException('Unsupported post type.');
+            throw new InvalidRuleException(I18n::translate('Unsupported post type.'));
         }
 
         if (!in_array($status, array('active', 'inactive'), true)) {
-            throw new InvalidRuleException('Invalid rule status.');
+            throw new InvalidRuleException(I18n::translate('Invalid rule status.'));
         }
 
         if (!in_array($severity, array('fail', 'warning'), true)) {
-            throw new InvalidRuleException('Invalid rule severity.');
+            throw new InvalidRuleException(I18n::translate('Invalid rule severity.'));
         }
 
         $fields      = $this->fieldsByKey($postType);
@@ -105,7 +105,7 @@ final class RuleDocumentFactory
         $validations = $this->mapValidations($input['validations'] ?? array(), $fields, $default);
 
         if ($conditions === array() && $validations === array()) {
-            throw new InvalidRuleException(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN);
+            throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN));
         }
 
         $document = array(
@@ -166,7 +166,7 @@ final class RuleDocumentFactory
     public function fieldsForPostType(string $postType): array
     {
         if (!isset($this->allowedPostTypes()[$postType])) {
-            throw new InvalidRuleException('Unsupported post type.');
+            throw new InvalidRuleException(I18n::translate('Unsupported post type.'));
         }
 
         return array_values($this->fieldsByKey($postType));
@@ -226,7 +226,7 @@ final class RuleDocumentFactory
     private function mapConditions(mixed $rows, array $fields): array
     {
         if (!is_array($rows)) {
-            throw new InvalidRuleException('Rule conditions must be an array.');
+            throw new InvalidRuleException(I18n::translate('Rule conditions must be an array.'));
         }
 
         $conditions = array();
@@ -234,7 +234,7 @@ final class RuleDocumentFactory
 
         foreach ($rows as $row) {
             if (!is_array($row)) {
-                throw new InvalidRuleException('Rule conditions entries must be objects.');
+                throw new InvalidRuleException(I18n::translate('Rule conditions entries must be objects.'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -244,7 +244,7 @@ final class RuleDocumentFactory
 
             $operator = (string) ($row['operator'] ?? '');
             if (!$this->operators->has($operator)) {
-                throw new InvalidRuleException(sprintf('Unknown condition operator "%s".', $operator));
+                throw new InvalidRuleException(I18n::sprintf(I18n::translate('Unknown condition operator "%s".'), $operator));
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
@@ -253,23 +253,23 @@ final class RuleDocumentFactory
             if (ConditionOperators::requiresOperand($operator)) {
                 $operand = $row['operand'] ?? '';
                 if (!is_scalar($operand) && !is_bool($operand)) {
-                    throw new InvalidRuleException('A condition value is required.');
+                    throw new InvalidRuleException(I18n::translate('A condition value is required.'));
                 }
                 $operand = self::normalizeConditionOperand($operand, $fieldType);
                 if ($operand === '') {
-                    throw new InvalidRuleException('A condition value is required.');
+                    throw new InvalidRuleException(I18n::translate('A condition value is required.'));
                 }
                 if (ConditionOperators::isNumericComparison($operator)) {
                     if (!ConditionOperators::isNumericField($fieldType)) {
-                        throw new InvalidRuleException('Numeric comparisons can only be used with number fields.');
+                        throw new InvalidRuleException(I18n::translate('Numeric comparisons can only be used with number fields.'));
                     }
                     if (Value::tryNumber($operand) === null) {
-                        throw new InvalidRuleException('A numeric condition value is required.');
+                        throw new InvalidRuleException(I18n::translate('A numeric condition value is required.'));
                     }
                 }
                 if (ConditionOperators::isStringContains($operator)) {
                     if (!ConditionOperators::isStringContentField($fieldType)) {
-                        throw new InvalidRuleException('Contains conditions can only be used with text fields.');
+                        throw new InvalidRuleException(I18n::translate('Contains conditions can only be used with text fields.'));
                     }
                 }
             } else {
@@ -297,7 +297,7 @@ final class RuleDocumentFactory
     private function mapValidations(mixed $rows, array $fields, string $defaultMessage): array
     {
         if (!is_array($rows)) {
-            throw new InvalidRuleException('Rule validations must be an array.');
+            throw new InvalidRuleException(I18n::translate('Rule validations must be an array.'));
         }
 
         $validations = array();
@@ -305,7 +305,7 @@ final class RuleDocumentFactory
 
         foreach ($rows as $row) {
             if (!is_array($row)) {
-                throw new InvalidRuleException('Rule validations entries must be objects.');
+                throw new InvalidRuleException(I18n::translate('Rule validations entries must be objects.'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -315,11 +315,11 @@ final class RuleDocumentFactory
             }
 
             if ($type === '') {
-                throw new InvalidRuleException(RuleDocumentValidator::MSG_MISSING_THEN);
+                throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_MISSING_THEN));
             }
 
             if (!$this->validators->has($type)) {
-                throw new InvalidRuleException(sprintf('Unknown validation type "%s".', $type));
+                throw new InvalidRuleException(I18n::sprintf(I18n::translate('Unknown validation type "%s".'), $type));
             }
 
             $message = trim((string) ($row['message'] ?? ''));
@@ -355,7 +355,7 @@ final class RuleDocumentFactory
         if ($type === 'min_length') {
             $min = $row['min'] ?? ($row['params']['min'] ?? null);
             if (!is_numeric($min) || (int) $min < 0) {
-                throw new InvalidRuleException('Minimum length is not configured.');
+                throw new InvalidRuleException(I18n::translate('Minimum length is not configured.'));
             }
 
             return array('min' => (int) $min);
@@ -364,7 +364,7 @@ final class RuleDocumentFactory
         if ($type === 'max_length') {
             $max = $row['max'] ?? ($row['params']['max'] ?? null);
             if (!is_numeric($max) || (int) $max < 0) {
-                throw new InvalidRuleException('Maximum length is not configured.');
+                throw new InvalidRuleException(I18n::translate('Maximum length is not configured.'));
             }
 
             return array('max' => (int) $max);
@@ -374,7 +374,7 @@ final class RuleDocumentFactory
             $raw = $row['values'] ?? ($row['params']['values'] ?? null);
             $values = $this->allowedValues($raw);
             if ($values === array()) {
-                throw new InvalidRuleException(RuleDocumentValidator::MSG_ALLOWED_VALUES);
+                throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_ALLOWED_VALUES));
             }
 
             return array('values' => $values);
@@ -421,7 +421,7 @@ final class RuleDocumentFactory
     private function fieldRef(string $key, array $fields): FieldRef
     {
         if (!isset($fields[$key])) {
-            throw new InvalidRuleException('Unsupported field.');
+            throw new InvalidRuleException(I18n::translate('Unsupported field.'));
         }
 
         $field = $fields[$key];
@@ -450,7 +450,7 @@ final class RuleDocumentFactory
         );
 
         if ($ref->resolutionId() !== $key) {
-            throw new InvalidRuleException('Unsupported field.');
+            throw new InvalidRuleException(I18n::translate('Unsupported field.'));
         }
 
         return $ref;
@@ -470,7 +470,7 @@ final class RuleDocumentFactory
         $path = array();
         foreach ($raw as $segment) {
             if (!is_string($segment)) {
-                throw new InvalidRuleException('Invalid field path.');
+                throw new InvalidRuleException(I18n::translate('Invalid field path.'));
             }
 
             $path[] = $segment;

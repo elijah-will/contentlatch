@@ -71,15 +71,17 @@ final class RuleBuilderFieldLabels
         }
 
         if (($field['container'] ?? '') === 'repeater' && !str_contains($label, '(every row)')) {
-            $label .= ' (every row)';
+            /* translators: Suffix appended to repeater field labels in the Rule Builder. */
+            $label .= ' ' . I18n::translate('(every row)');
         }
 
         if (($field['container'] ?? '') === 'flexible_content') {
             $layoutLabel = trim((string) ($field['layout_label'] ?? ''));
             if ($layoutLabel === '') {
-                $layoutLabel = (string) ($field['layout'] ?? 'layout');
+                $layoutLabel = (string) ($field['layout'] ?? I18n::translate('layout'));
             }
-            $suffix = '(every ' . $layoutLabel . ' row)';
+            /* translators: %s: Flexible Content layout label. */
+            $suffix = I18n::sprintf(I18n::translate('(every %s row)'), $layoutLabel);
             if (!str_contains($label, $suffix)) {
                 $label .= ' ' . $suffix;
             }

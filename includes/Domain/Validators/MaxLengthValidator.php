@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace ContentGuard\Domain\Validators;
 
 use ContentGuard\Domain\Contracts\ValidatorInterface;
+use ContentGuard\Domain\Text;
 use ContentGuard\Domain\ValidatorOutcome;
 use ContentGuard\Domain\Value;
 
@@ -20,7 +21,7 @@ final class MaxLengthValidator implements ValidatorInterface
         if (!array_key_exists('max', $params) || !is_numeric($params['max']) || (int) $params['max'] < 0) {
             return ValidatorOutcome::fail(
                 'invalid_params',
-                'Maximum length is not configured.',
+                Text::translate('Maximum length is not configured.'),
             );
         }
 
@@ -30,7 +31,7 @@ final class MaxLengthValidator implements ValidatorInterface
         if ($length === null) {
             return ValidatorOutcome::fail(
                 'invalid_type',
-                'This field cannot be measured as text.',
+                Text::translate('This field cannot be measured as text.'),
                 array('max' => $max),
             );
         }
@@ -38,7 +39,7 @@ final class MaxLengthValidator implements ValidatorInterface
         if ($length > $max) {
             return ValidatorOutcome::fail(
                 'max_length',
-                sprintf('This field must be at most %d characters.', $max),
+                Text::sprintf('This field must be at most %d characters.', $max),
                 array(
                     'max'    => $max,
                     'length' => $length,

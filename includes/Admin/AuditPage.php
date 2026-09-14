@@ -17,6 +17,7 @@ use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Application\Exception\AuditException;
 use ContentGuard\Application\RuleRepositoryInterface;
+use ContentGuard\Application\StatusPresentation;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
 
 final class AuditPage
@@ -69,10 +70,13 @@ final class AuditPage
         wp_register_script(
             'contentguard-audit',
             CONTENTGUARD_URL . 'admin/js/audit.js',
-            array(),
+            array('wp-i18n'),
             \ContentGuard\Plugin::VERSION,
             true
         );
+        if (function_exists('wp_set_script_translations')) {
+            wp_set_script_translations('contentguard-audit', 'contentguard', CONTENTGUARD_DIR . 'languages');
+        }
         wp_localize_script(
             'contentguard-audit',
             'contentguardAudit',
@@ -86,7 +90,8 @@ final class AuditPage
                     'status' => AuditAjaxController::ACTION_STATUS,
                 ),
                 'i18n'    => array(
-                    'running'          => AuditPresentation::runningHeading(),
+                    'pending'          => StatusPresentation::label('pending'),
+                    'running'          => StatusPresentation::label('running'),
                     'progressKnown'    => __('%1$d of %2$d content items checked', 'contentguard'),
                     'progressUnknown'  => __('%d content items checked', 'contentguard'),
                     'couldNotStart'    => __('Could not start the audit.', 'contentguard'),
@@ -133,7 +138,7 @@ final class AuditPage
 
     public static function healthHeading(bool $viewingHistory): string
     {
-        return $viewingHistory ? 'Previous audit' : AuditPresentation::completedHeading();
+        return $viewingHistory ? __('Previous audit', 'contentguard') : AuditPresentation::completedHeading();
     }
 
     public static function isFirstRun(?AuditRun $resultsRun, ?AuditRun $active): bool

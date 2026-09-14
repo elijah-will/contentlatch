@@ -4,6 +4,27 @@
     return;
   }
 
+  var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
+  function __(text) {
+    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+  }
+  function sprintf(fmt) {
+    if (i18nApi && typeof i18nApi.sprintf === "function") {
+      return i18nApi.sprintf.apply(i18nApi, arguments);
+    }
+    var args = Array.prototype.slice.call(arguments, 1);
+    var i = 0;
+    return String(fmt).replace(/%(?:(\d+)\$)?[sd]/g, function (match, num) {
+      var idx = num ? parseInt(num, 10) - 1 : i++;
+      return idx in args ? String(args[idx]) : match;
+    });
+  }
+
+  var copy = config.i18n || {};
+  function t(key, fallback) {
+    return copy[key] || __(fallback);
+  }
+
   var form = document.getElementById("contentguard-rule-form");
   if (!form) {
     return;
@@ -82,12 +103,13 @@
   }
 
   function withRowSuffix(label, field) {
-    if (field.container === "repeater" && String(label).indexOf("(every row)") === -1) {
-      label += " (every row)";
+    var everyRow = __("(every row)");
+    if (field.container === "repeater" && String(label).indexOf(everyRow) === -1) {
+      label += " " + everyRow;
     }
     if (field.container === "flexible_content") {
-      var layoutLabel = field.layout_label || field.layout || "layout";
-      var suffix = "(every " + layoutLabel + " row)";
+      var layoutLabel = field.layout_label || field.layout || __("layout");
+      var suffix = sprintf(__("(every %s row)"), layoutLabel);
       if (String(label).indexOf(suffix) === -1) {
         label += " " + suffix;
       }
@@ -104,7 +126,9 @@
     }
     if (select && select.value === key) {
       var label = selectedOptionLabel(select);
-      if (label && label !== "Choose a field" && label !== "Field") {
+      var chooseField = t("chooseField", "Choose a field");
+      var fieldWord = t("field", "Field");
+      if (label && label !== chooseField && label !== fieldWord) {
         return label;
       }
     }
@@ -126,7 +150,7 @@
     if (id) {
       select.id = id;
     }
-    select.appendChild(option("", "Choose a field", selected === ""));
+    select.appendChild(option("", t("chooseField", "Choose a field"), selected === ""));
 
     var ungrouped = [];
     var groups = {};
@@ -216,8 +240,8 @@
       if (id) {
         select.id = id;
       }
-      select.appendChild(option("1", "Yes", value === "1" || value === ""));
-      select.appendChild(option("0", "No", value === "0"));
+      select.appendChild(option("1", t("yes", "Yes"), value === "1" || value === ""));
+      select.appendChild(option("0", t("no", "No"), value === "0"));
       select.hidden = hidden;
       return select;
     }
@@ -251,7 +275,7 @@
     input.disabled = hidden;
     if (kind === "values") {
       input.type = "text";
-      input.placeholder = "value1, value2";
+      input.placeholder = __("value1, value2");
     } else {
       input.type = "number";
       input.min = "0";
@@ -347,19 +371,19 @@
     var fieldId = "contentguard-condition-field-" + index;
     var operatorId = "contentguard-condition-operator-" + index;
     var operandId = "contentguard-condition-operand-" + index;
-    controls.appendChild(srLabel("WHEN field", fieldId));
+    controls.appendChild(srLabel(t("whenField", "WHEN field"), fieldId));
     controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
-    controls.appendChild(srLabel("Operator", operatorId));
+    controls.appendChild(srLabel(t("operator", "Operator"), operatorId));
     controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId, fieldTypeFor(selected || "")));
-    controls.appendChild(srLabel("Value", operandId));
+    controls.appendChild(srLabel(t("value", "Value"), operandId));
     controls.appendChild(operandControl("conditions[" + index + "][operand]", "", fieldTypeFor(selected || ""), false, operandId));
     row.appendChild(controls);
 
     var remove = document.createElement("button");
     remove.type = "button";
     remove.className = "button contentguard-remove";
-    remove.textContent = "Remove";
-    remove.setAttribute("aria-label", "Remove condition " + (index + 1));
+    remove.textContent = t("remove", "Remove");
+    remove.setAttribute("aria-label", sprintf(t("removeCondition", "Remove condition %d"), index + 1));
     row.appendChild(remove);
 
     conditions.appendChild(row);
@@ -382,30 +406,31 @@
     controls.className = "contentguard-builder-row__controls";
     var fieldId = "contentguard-validation-field-" + index;
     var typeId = "contentguard-validation-type-" + index;
-    controls.appendChild(srLabel("THEN field", fieldId));
+    var validators = config.validators || {};
+    controls.appendChild(srLabel(t("thenField", "THEN field"), fieldId));
     controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId));
-    controls.appendChild(srLabel("Requirement", typeId));
+    controls.appendChild(srLabel(t("requirement", "Requirement"), typeId));
     controls.appendChild(validatorSelect("validations[" + index + "][type]", "required", typeId));
-    controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, "Minimum length", "characters"));
-    controls.appendChild(paramGroup("max", "validations[" + index + "][max]", "", true, "contentguard-validation-max-" + index, "Maximum length", "characters"));
-    controls.appendChild(paramGroup("values", "validations[" + index + "][values]", "", true, "contentguard-validation-values-" + index, "Allowed values", ""));
+    controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, validators.min_length || __("Minimum length"), t("characters", "characters")));
+    controls.appendChild(paramGroup("max", "validations[" + index + "][max]", "", true, "contentguard-validation-max-" + index, validators.max_length || __("Maximum length"), t("characters", "characters")));
+    controls.appendChild(paramGroup("values", "validations[" + index + "][values]", "", true, "contentguard-validation-values-" + index, validators.allowed_values || __("Allowed values"), ""));
 
     var messageId = "contentguard-validation-message-" + index;
-    controls.appendChild(srLabel("Custom message (optional)", messageId));
+    controls.appendChild(srLabel(t("customMessage", "Custom message (optional)"), messageId));
     var message = document.createElement("input");
     message.type = "text";
     message.id = messageId;
     message.className = "contentguard-validation-message";
     message.name = "validations[" + index + "][message]";
-    message.placeholder = "Custom message (optional)";
+    message.placeholder = t("customMessage", "Custom message (optional)");
     controls.appendChild(message);
     row.appendChild(controls);
 
     var remove = document.createElement("button");
     remove.type = "button";
     remove.className = "button contentguard-remove";
-    remove.textContent = "Remove";
-    remove.setAttribute("aria-label", "Remove requirement " + (index + 1));
+    remove.textContent = t("remove", "Remove");
+    remove.setAttribute("aria-label", sprintf(t("removeRequirement", "Remove requirement %d"), index + 1));
     row.appendChild(remove);
 
     validations.appendChild(row);
@@ -430,10 +455,10 @@
     }
     if (fieldType === "true_false") {
       if (operand.value === "1") {
-        return "Yes";
+        return t("yes", "Yes");
       }
       if (operand.value === "0") {
-        return "No";
+        return t("no", "No");
       }
     }
     return (operand.value || "").trim();
@@ -441,50 +466,50 @@
 
   function conditionPhrase(field, operator, value) {
     if (operator === "equals") {
-      return field + " is " + value;
+      return sprintf(__("%1$s is %2$s"), field, value);
     }
     if (operator === "not_equals") {
-      return field + " is not " + value;
+      return sprintf(__("%1$s is not %2$s"), field, value);
     }
     if (operator === "contains") {
-      return field + " contains " + value;
+      return sprintf(__("%1$s contains %2$s"), field, value);
     }
     if (operator === "does_not_contain") {
-      return field + " does not contain " + value;
+      return sprintf(__("%1$s does not contain %2$s"), field, value);
     }
     if (operator === "is_empty") {
-      return field + " is empty";
+      return sprintf(__("%s is empty"), field);
     }
     if (operator === "is_not_empty") {
-      return field + " is not empty";
+      return sprintf(__("%s is not empty"), field);
     }
     if (operator === "greater_than") {
-      return field + " is greater than " + value;
+      return sprintf(__("%1$s is greater than %2$s"), field, value);
     }
     if (operator === "greater_than_or_equal") {
-      return field + " is at least " + value;
+      return sprintf(__("%1$s is at least %2$s"), field, value);
     }
     if (operator === "less_than") {
-      return field + " is less than " + value;
+      return sprintf(__("%1$s is less than %2$s"), field, value);
     }
     if (operator === "less_than_or_equal") {
-      return field + " is at most " + value;
+      return sprintf(__("%1$s is at most %2$s"), field, value);
     }
     return field + " " + operator;
   }
 
   function validationPhrase(field, type, min, max, values) {
     if (type === "required") {
-      return field + " is required";
+      return sprintf(__("%s is required"), field);
     }
     if (type === "min_length") {
-      return field + " must be at least " + min + " characters";
+      return sprintf(__("%1$s must be at least %2$s characters"), field, min);
     }
     if (type === "max_length") {
-      return field + " must be at most " + max + " characters";
+      return sprintf(__("%1$s must be at most %2$s characters"), field, max);
     }
     if (type === "allowed_values") {
-      return field + " must be one of: " + values;
+      return sprintf(__("%1$s must be one of: %2$s"), field, values);
     }
     return field + " " + type;
   }
@@ -563,34 +588,35 @@
       thenParts.push(validationPhrase(fieldLabelFor(fieldKey, field), type.value, minValue, maxValue, valuesValue));
     });
 
+    var andJoin = __(" and ");
     if (whenIncomplete) {
-      preview.textContent = previewCopy.incompleteWhen || "Finish the WHEN condition to preview this rule.";
+      preview.textContent = previewCopy.incompleteWhen || __("Finish the WHEN condition to preview this rule.");
       return;
     }
     if (thenIncomplete) {
-      preview.textContent = previewCopy.incompleteThen || "Finish the THEN requirement to preview this rule.";
+      preview.textContent = previewCopy.incompleteThen || __("Finish the THEN requirement to preview this rule.");
       return;
     }
     if (thenParts.length === 0) {
       if (whenParts.length === 0) {
         preview.textContent = previewCopy.needWhenOrThen
           || previewCopy.needThen
-          || "Add a WHEN condition or THEN requirement to preview this rule.";
+          || __("Add a WHEN condition or THEN requirement to preview this rule.");
         return;
       }
       var severityInput = form.querySelector("[name='severity']:checked");
       var severity = severityInput ? severityInput.value : "fail";
       var consequence = severity === "warning"
-        ? (previewCopy.conditionOnlyWarning || "this rule reports a warning")
-        : (previewCopy.conditionOnlyBlocking || "this rule blocks publishing");
-      preview.textContent = "When " + whenParts.join(" and ") + ", " + consequence + ".";
+        ? (previewCopy.conditionOnlyWarning || __("this rule reports a warning"))
+        : (previewCopy.conditionOnlyBlocking || __("this rule blocks publishing"));
+      preview.textContent = sprintf(__("When %1$s, %2$s."), whenParts.join(andJoin), consequence);
       return;
     }
 
-    var thenText = thenParts.join(" and ");
+    var thenText = thenParts.join(andJoin);
     preview.textContent = whenParts.length
-      ? "When " + whenParts.join(" and ") + ", " + thenText + "."
-      : thenText + ".";
+      ? sprintf(__("When %1$s, %2$s."), whenParts.join(andJoin), thenText)
+      : sprintf(__("%s."), thenText);
   }
 
   function loadFields(type) {
@@ -698,7 +724,7 @@
     var label = document.createElement("p");
     label.className = "contentguard-notice-label";
     var strong = document.createElement("strong");
-    strong.textContent = "Warning:";
+    strong.textContent = t("warning", "Warning:");
     label.appendChild(strong);
     notice.insertBefore(label, notice.firstChild);
   }
@@ -783,7 +809,7 @@
     Object.keys(opsByField).forEach(function (key) {
       var ops = opsByField[key];
       if (ops.indexOf("is_empty") !== -1 && ops.indexOf("is_not_empty") !== -1) {
-        error = "This rule cannot be saved because a field cannot be both empty and not empty.";
+        error = t("emptyAndNotEmpty", "This rule cannot be saved because a field cannot be both empty and not empty.");
       }
     });
     if (error) {
@@ -804,28 +830,28 @@
           || (maxStarted && !maxStarted.disabled && maxStarted.value.trim() !== "")
           || (valuesStarted && !valuesStarted.disabled && valuesStarted.value.replace(/\s+/g, "") !== "");
         if (started) {
-          error = "Each requirement needs a field and a validator.";
+          error = t("missingThen", "Each requirement needs a field and a validator.");
           return true;
         }
         return false;
       }
       if (!type.value) {
-        error = "Each requirement needs a field and a validator.";
+        error = t("missingThen", "Each requirement needs a field and a validator.");
         return true;
       }
       hasThen = true;
       var key = field.value;
       var ops = opsByField[key] || [];
       if (type.value === "required" && ops.indexOf("is_empty") !== -1) {
-        error = "This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.";
+        error = t("emptyAndRequired", "This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.");
         return true;
       }
       if (type.value === "required" && ops.indexOf("is_not_empty") !== -1) {
-        error = "This rule cannot be saved because a field is already required to have a value by the WHEN condition.";
+        error = t("notEmptyAndRequired", "This rule cannot be saved because a field is already required to have a value by the WHEN condition.");
         return true;
       }
       if (type.value === "required" && ops.indexOf("equals") !== -1) {
-        error = "This rule cannot be saved because a field that must already have a specific value does not need to be required.";
+        error = t("equalsAndRequired", "This rule cannot be saved because a field that must already have a specific value does not need to be required.");
         return true;
       }
       if (type.value === "min_length") {
@@ -843,7 +869,7 @@
       if (type.value === "allowed_values") {
         var values = row.querySelector(".contentguard-values");
         if (!values || values.value.replace(/\s+/g, "") === "") {
-          error = "Enter at least one allowed value.";
+          error = t("allowedValues", "Enter at least one allowed value.");
           return true;
         }
       }
@@ -855,7 +881,7 @@
 
     Object.keys(minByField).some(function (key) {
       if (typeof maxByField[key] === "number" && minByField[key] > maxByField[key]) {
-        error = "Minimum length cannot be greater than maximum length.";
+        error = t("minGtMax", "Minimum length cannot be greater than maximum length.");
         return true;
       }
       return false;
@@ -882,6 +908,6 @@
       return true;
     });
 
-    return hasThen || hasWhen ? "" : "Add a WHEN condition or THEN requirement.";
+    return hasThen || hasWhen ? "" : t("missingWhenOrThen", "Add a WHEN condition or THEN requirement.");
   }
 })();

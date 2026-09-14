@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace ContentGuard\Domain\Validators;
 
 use ContentGuard\Domain\Contracts\ValidatorInterface;
+use ContentGuard\Domain\Text;
 use ContentGuard\Domain\ValidatorOutcome;
 use ContentGuard\Domain\Value;
 
@@ -22,7 +23,7 @@ final class RequiredValidator implements ValidatorInterface
         if (Value::isEmpty($value)) {
             return ValidatorOutcome::fail(
                 'required',
-                'This field is required.',
+                Text::translate('This field is required.'),
             );
         }
 

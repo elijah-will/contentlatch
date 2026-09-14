@@ -32,6 +32,7 @@ use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\EditorNoticePresentation;
+use ContentGuard\Application\I18n;
 use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
@@ -206,10 +207,13 @@ final class SaveWarningNotifier
         wp_register_script(
             'contentguard-editor-warnings',
             CONTENTGUARD_URL . 'admin/js/editor-warnings.js',
-            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
+            array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field'),
             \ContentGuard\Plugin::VERSION,
             true
         );
+        if (function_exists('wp_set_script_translations')) {
+            wp_set_script_translations('contentguard-editor-warnings', 'contentguard', CONTENTGUARD_DIR . 'languages');
+        }
         wp_localize_script(
             'contentguard-editor-warnings',
             'contentguardEditorWarnings',
@@ -433,7 +437,7 @@ final class SaveWarningNotifier
             (string) ($warning['fieldKey'] ?? ''),
             (string) ($warning['label'] ?? ''),
             (string) ($warning['message'] ?? ''),
-            'Content warning.',
+            I18n::translate('Content warning.'),
             $surface,
             EditorFieldNavigation::layoutFromItem($warning),
             EditorFieldNavigation::affectedRowsFromItem($warning),
@@ -544,7 +548,7 @@ final class SaveWarningNotifier
     private static function warningItem(EvaluationResult $result): array
     {
         $label   = trim((string) ($result->context['field_label'] ?? ''));
-        $message = $result->message !== '' ? $result->message : 'Content warning.';
+        $message = $result->message !== '' ? $result->message : I18n::translate('Content warning.');
 
         return EditorFieldNavigation::withEvaluationRowTargets(
             array(
@@ -666,7 +670,7 @@ final class SaveWarningNotifier
     private static function formatWarning(EvaluationResult $result): string
     {
         $label   = (string) ($result->context['field_label'] ?? '');
-        $message = $result->message !== '' ? $result->message : 'Content warning.';
+        $message = $result->message !== '' ? $result->message : I18n::translate('Content warning.');
 
         if ($label !== '' && !str_contains($message, $label)) {
             return $label . ': ' . $message;

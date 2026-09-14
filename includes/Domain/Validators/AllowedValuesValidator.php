@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace ContentGuard\Domain\Validators;
 
 use ContentGuard\Domain\Contracts\ValidatorInterface;
+use ContentGuard\Domain\Text;
 use ContentGuard\Domain\ValidatorOutcome;
 use ContentGuard\Domain\Value;
 
@@ -22,7 +23,7 @@ final class AllowedValuesValidator implements ValidatorInterface
         if (!is_array($allowed) || $allowed === array()) {
             return ValidatorOutcome::fail(
                 'invalid_params',
-                'Allowed values are not configured.',
+                Text::translate('Allowed values are not configured.'),
             );
         }
 
@@ -36,7 +37,7 @@ final class AllowedValuesValidator implements ValidatorInterface
 
             return ValidatorOutcome::fail(
                 'allowed_values',
-                'This field must be one of the allowed values.',
+                Text::translate('This field must be one of the allowed values.'),
                 array('values' => $allowed),
             );
         }
@@ -46,7 +47,7 @@ final class AllowedValuesValidator implements ValidatorInterface
         if ($comparable === null) {
             return ValidatorOutcome::fail(
                 'invalid_type',
-                'This field cannot be compared to allowed values.',
+                Text::translate('This field cannot be compared to allowed values.'),
                 array('values' => $allowed),
             );
         }

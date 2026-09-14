@@ -1,5 +1,9 @@
 (function () {
   var config = window.contentguardEditorRestBlockers || {};
+  var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
+  function __(text) {
+    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+  }
   var ERROR_CODE = config.errorCode || "contentguard_validation_failed";
   var NOTICE_ID = config.noticeId || "contentguard-audit-blockers";
   var SAVE_NOTICE_ID = config.saveNoticeId || "SAVE_POST_NOTICE_ID";
@@ -148,7 +152,7 @@
 
     var label = asString(failure.label);
     var message = asString(failure.message);
-    var required = (config.i18n && config.i18n.required) || "This field is required.";
+    var required = (config.i18n && config.i18n.required) || __("This field is required.");
 
     if (label !== "" && message === label + " is required.") {
       return label + " — " + required;
@@ -174,7 +178,7 @@
 
     var label = asString(failure.label);
     var fieldId = failureFieldId(failure);
-    var required = (config.i18n && config.i18n.required) || "This field is required.";
+    var required = (config.i18n && config.i18n.required) || __("This field is required.");
     var message = asString(failure.message);
     if (label !== "" && message === label + " is required.") {
       message = required;
@@ -184,7 +188,7 @@
       message = required;
     }
 
-    var goTo = (config.i18n && config.i18n.goToField) || "Go to field: %s";
+    var goTo = (config.i18n && config.i18n.goToField) || __("Go to field: %s");
     var attr = isSafeFieldKey(fieldId)
       ? 'data-contentguard-field="' + escapeHtml(fieldId) + '"'
       : 'data-contentguard-core="' + escapeHtml(fieldId) + '"';
@@ -202,7 +206,7 @@
   }
 
   function noticeTitle() {
-    return "ContentGuard · " + ((config.i18n && config.i18n.blocking) || "Blocking");
+    return __("ContentGuard") + " · " + ((config.i18n && config.i18n.blocking) || __("Blocking"));
   }
 
   function noticeCount(count) {
@@ -210,7 +214,7 @@
       return "";
     }
 
-    var template = (config.i18n && config.i18n.count) || "%d blocking issues";
+    var template = (config.i18n && config.i18n.count) || __("%d blocking issues");
     return template.replace("%d", String(count));
   }
 

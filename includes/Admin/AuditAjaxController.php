@@ -112,7 +112,7 @@ final class AuditAjaxController
                         : null,
                 );
             }),
-            default => array('ok' => false, 'message' => 'Unknown audit action.'),
+            default => array('ok' => false, 'message' => __('Unknown audit action.', 'contentguard')),
         };
     }
 
@@ -141,14 +141,14 @@ final class AuditAjaxController
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
-            return array('ok' => false, 'message' => 'You are not allowed to run ContentGuard audits.');
+            return array('ok' => false, 'message' => __('You are not allowed to run ContentGuard audits.', 'contentguard'));
         }
 
         $_POST = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
         $nonce = isset($_POST['_wpnonce']) ? (string) $_POST['_wpnonce'] : '';
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
-            return array('ok' => false, 'message' => 'Invalid audit nonce.');
+            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentguard'));
         }
 
         try {

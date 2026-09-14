@@ -19,7 +19,7 @@ final class FieldValuePresentation
     public static function label(mixed $value, ?string $fieldType): string
     {
         if (self::isTrueFalse($fieldType) && self::isTrueFalseBit($value)) {
-            return self::isYes($value) ? 'Yes' : 'No';
+            return self::isYes($value) ? I18n::translate('Yes') : I18n::translate('No');
         }
 
         return self::scalar($value);

@@ -5,3 +5,4 @@
 Thumbs.db
 *.log
 /node_modules/
+/languages/.soft-i18n-catalog.php

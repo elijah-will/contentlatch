@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+use ContentGuard\Application\I18n;
 use ContentGuard\Application\Integration\FieldCatalog;
 
 final class CoreFieldCatalog implements FieldCatalog
@@ -141,9 +142,9 @@ final class CoreFieldCatalog implements FieldCatalog
             $fields[] = array(
                 'key'         => $id,
                 'name'        => $definition['name'],
-                'label'       => $definition['label'],
+                'label'       => I18n::translate($definition['label']),
                 'type'        => $definition['type'],
-                'group_label' => self::GROUP_LABEL,
+                'group_label' => I18n::translate(self::GROUP_LABEL),
             );
         }
 

@@ -30,7 +30,7 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('group_label', $js);
         $this->assertStringContainsString('optgroup', $js);
         $this->assertStringContainsString('(every row)', $js);
-        $this->assertStringContainsString('(every " + layoutLabel + " row)', $js);
+        $this->assertStringContainsString('(every %s row)', $js);
         $this->assertStringContainsString('contentguard-catalog-fields', $js);
         $this->assertStringContainsString('fieldOptionId', $js);
         $this->assertStringContainsString('resolution_id', $js);

@@ -18,43 +18,43 @@ final class RuleMutationPresentation
 {
     public static function addedMessage(): string
     {
-        return 'Rule added.';
+        return I18n::translate('Rule added.');
     }
 
     public static function savedMessage(): string
     {
-        return 'Rule saved.';
+        return I18n::translate('Rule saved.');
     }
 
     public static function saveFailureMessage(Throwable $exception, bool $creating = false): string
     {
         $prefix = $creating
-            ? 'We could not add this rule. '
-            : 'We could not save this rule. ';
+            ? I18n::translate('We could not add this rule. ')
+            : I18n::translate('We could not save this rule. ');
 
         if ($exception instanceof InvalidRuleException || $exception instanceof ForbiddenRuleMutationException) {
             return $prefix . $exception->getMessage();
         }
 
         if ($exception instanceof RulePersistenceException && $exception->getMessage() === 'Rule not found.') {
-            return $prefix . 'It is no longer available. Your entered values have been preserved so you can try again.';
+            return $prefix . I18n::translate('It is no longer available. Your entered values have been preserved so you can try again.');
         }
 
-        return $prefix . 'Your entered values have been preserved so you can correct the issue and try again.';
+        return $prefix . I18n::translate('Your entered values have been preserved so you can correct the issue and try again.');
     }
 
     public static function unreadAfterSaveMessage(bool $creating): string
     {
         $prefix = $creating
-            ? 'We could not add this rule. '
-            : 'We could not save this rule. ';
+            ? I18n::translate('We could not add this rule. ')
+            : I18n::translate('We could not save this rule. ');
 
-        return $prefix . 'The rule could not be read after saving. Your entered values have been preserved so you can try again.';
+        return $prefix . I18n::translate('The rule could not be read after saving. Your entered values have been preserved so you can try again.');
     }
 
     public static function missingRuleMessage(): string
     {
-        return 'We could not open this rule. It may have been deleted or could not be read.';
+        return I18n::translate('We could not open this rule. It may have been deleted or could not be read.');
     }
 
     /**

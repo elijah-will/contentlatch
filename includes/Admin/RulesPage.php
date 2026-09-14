@@ -16,6 +16,7 @@ use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\ConditionOperators;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
+use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RulePresentation;
 use ContentGuard\Application\RulePreview;
@@ -91,10 +92,13 @@ final class RulesPage
         wp_register_script(
             'contentguard-rules',
             CONTENTGUARD_URL . 'admin/js/rules.js',
-            array(),
+            array('wp-i18n'),
             \ContentGuard\Plugin::VERSION,
             true
         );
+        if (function_exists('wp_set_script_translations')) {
+            wp_set_script_translations('contentguard-rules', 'contentguard', CONTENTGUARD_DIR . 'languages');
+        }
         wp_localize_script(
             'contentguard-rules',
             'contentguardRules',
@@ -117,6 +121,31 @@ final class RulesPage
                     'incompleteThen'         => RulePreview::incompleteThenMessage(),
                     'conditionOnlyBlocking'  => RulePreview::conditionOnlyBlockingMessage(),
                     'conditionOnlyWarning'   => RulePreview::conditionOnlyWarningMessage(),
+                ),
+                'i18n'       => array(
+                    'chooseField'       => __('Choose a field', 'contentguard'),
+                    'field'             => __('Field', 'contentguard'),
+                    'yes'               => __('Yes', 'contentguard'),
+                    'no'                => __('No', 'contentguard'),
+                    'remove'            => __('Remove', 'contentguard'),
+                    'whenField'         => __('WHEN field', 'contentguard'),
+                    'operator'          => __('Operator', 'contentguard'),
+                    'value'             => __('Value', 'contentguard'),
+                    'thenField'         => __('THEN field', 'contentguard'),
+                    'requirement'       => __('Requirement', 'contentguard'),
+                    'customMessage'     => __('Custom message (optional)', 'contentguard'),
+                    'characters'        => __('characters', 'contentguard'),
+                    'warning'           => __('Warning:', 'contentguard'),
+                    'removeCondition'   => __('Remove condition %d', 'contentguard'),
+                    'removeRequirement' => __('Remove requirement %d', 'contentguard'),
+                    'emptyAndNotEmpty'  => __(RuleDocumentValidator::MSG_EMPTY_AND_NOT_EMPTY, 'contentguard'),
+                    'missingThen'       => __(RuleDocumentValidator::MSG_MISSING_THEN, 'contentguard'),
+                    'emptyAndRequired'  => __(RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED, 'contentguard'),
+                    'notEmptyAndRequired' => __(RuleDocumentValidator::MSG_NOT_EMPTY_AND_REQUIRED, 'contentguard'),
+                    'equalsAndRequired' => __(RuleDocumentValidator::MSG_EQUALS_AND_REQUIRED, 'contentguard'),
+                    'allowedValues'     => __(RuleDocumentValidator::MSG_ALLOWED_VALUES, 'contentguard'),
+                    'minGtMax'          => __(RuleDocumentValidator::MSG_MIN_GT_MAX, 'contentguard'),
+                    'missingWhenOrThen' => __(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN, 'contentguard'),
                 ),
             )
         );
@@ -197,25 +226,25 @@ final class RulesPage
         $buckets = array(
             'active-fail' => array(
                 'id'    => 'active-blocking',
-                'title' => 'Active Blocking',
+                'title' => __('Active Blocking', 'contentguard'),
                 'open'  => true,
                 'rules' => array(),
             ),
             'active-warning' => array(
                 'id'    => 'active-warning',
-                'title' => 'Active Warning',
+                'title' => __('Active Warning', 'contentguard'),
                 'open'  => true,
                 'rules' => array(),
             ),
             'inactive-fail' => array(
                 'id'    => 'inactive-blocking',
-                'title' => 'Inactive Blocking',
+                'title' => __('Inactive Blocking', 'contentguard'),
                 'open'  => false,
                 'rules' => array(),
             ),
             'inactive-warning' => array(
                 'id'    => 'inactive-warning',
-                'title' => 'Inactive Warning',
+                'title' => __('Inactive Warning', 'contentguard'),
                 'open'  => false,
                 'rules' => array(),
             ),
@@ -287,29 +316,46 @@ final class RulesPage
 
     public static function allInactiveNotice(): string
     {
-        return 'None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content.';
+        return __(
+            'None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content.',
+            'contentguard'
+        );
     }
 
     public static function ruleImpactLabel(?AuditRun $latestComplete, Rule $rule, ?AuditRuleImpact $impact): string
     {
         if ($latestComplete === null) {
-            return 'No completed audit yet';
+            return __('No completed audit yet', 'contentguard');
         }
 
         $postCount = $impact?->postCount ?? 0;
         if ($postCount === 0) {
-            return 'No findings in latest audit';
+            return __('No findings in latest audit', 'contentguard');
         }
 
         if ($rule->severity === RuleSeverity::Warning) {
-            return $postCount === 1
-                ? '1 content item with warnings'
-                : $postCount . ' content items with warnings';
+            return sprintf(
+                /* translators: %d: number of content items */
+                _n(
+                    '%d content item with warnings',
+                    '%d content items with warnings',
+                    $postCount,
+                    'contentguard'
+                ),
+                $postCount
+            );
         }
 
-        return $postCount === 1
-            ? '1 content item failing'
-            : $postCount . ' content items failing';
+        return sprintf(
+            /* translators: %d: number of content items */
+            _n(
+                '%d content item failing',
+                '%d content items failing',
+                $postCount,
+                'contentguard'
+            ),
+            $postCount
+        );
     }
 
     /**

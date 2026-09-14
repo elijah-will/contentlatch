@@ -4,6 +4,22 @@
     return;
   }
 
+  var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
+  function __(text) {
+    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+  }
+  function sprintf(fmt) {
+    if (i18nApi && typeof i18nApi.sprintf === "function") {
+      return i18nApi.sprintf.apply(i18nApi, arguments);
+    }
+    var args = Array.prototype.slice.call(arguments, 1);
+    var i = 0;
+    return String(fmt).replace(/%(?:(\d+)\$)?[sd]/g, function (match, num) {
+      var idx = num ? parseInt(num, 10) - 1 : i++;
+      return idx in args ? String(args[idx]) : match;
+    });
+  }
+
   var NOTICE_ID = "contentguard-editor-warnings";
 
   function editorSelect() {
@@ -141,14 +157,14 @@
     }
 
     var buttons = rows.map(function (row) {
-      var aria = "Go to " + label + ", row " + row;
+      var aria = sprintf(__("Go to %1$s, row %2$d"), label, row);
       return (
         '<button type="button" class="contentguard-warning-field contentguard-warning-row" ' +
         fieldTriggerAttributes(fieldKey, layout, row) +
         ' aria-label="' +
         escapeHtml(aria) +
-        '">Row ' +
-        row +
+        '">' +
+        sprintf(__("Row %d"), row) +
         "</button>"
       );
     });
@@ -158,7 +174,7 @@
 
   function itemHtml(warning) {
     var label = asString(warning.label);
-    var message = asString(warning.message) || "Content warning.";
+    var message = asString(warning.message) || __("Content warning.");
     var fieldKey = asString(warning.fieldKey);
     var layout = safeLayout(asString(warning.layout));
     var rows = sanitizeDisplayRows(warning.affectedRows);
@@ -166,8 +182,8 @@
     var pathBlocked = !!warning.repeaterPathInvalid;
     var primaryRow = rows.length === 1 ? rows[0] : rows[0] || 0;
     var aria = rows.length === 1
-      ? "Go to " + label + ", row " + primaryRow
-      : ((config.i18n && config.i18n.goToField) || "Go to field: %s").replace("%s", label);
+      ? sprintf(__("Go to %1$s, row %2$d"), label, primaryRow)
+      : ((config.i18n && config.i18n.goToField) || __("Go to field: %s")).replace("%s", label);
 
     return (
       '<button type="button" class="contentguard-warning-field" ' +
@@ -183,7 +199,7 @@
   }
 
   function noticeTitle() {
-    return "ContentGuard · " + ((config.i18n && config.i18n.warning) || "Warning");
+    return __("ContentGuard") + " · " + ((config.i18n && config.i18n.warning) || __("Warning"));
   }
 
   function noticeCount(count) {
@@ -191,7 +207,7 @@
       return "";
     }
 
-    return count + " warnings";
+    return sprintf(__("%d warnings"), count);
   }
 
   function buildNoticeHtml(warnings) {

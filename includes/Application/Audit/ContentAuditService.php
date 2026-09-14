@@ -11,6 +11,7 @@ namespace ContentGuard\Application\Audit;
 
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\Exception\AuditException;
+use ContentGuard\Application\I18n;
 use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
@@ -99,7 +100,7 @@ final class ContentAuditService
                 return $again;
             }
 
-            throw new AuditException('Another audit start is already in progress.');
+            throw new AuditException(I18n::translate('Another audit start is already in progress.'));
         }
 
         try {
@@ -129,7 +130,7 @@ final class ContentAuditService
     {
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
-            throw new AuditException('This audit run is no longer active.');
+            throw new AuditException(I18n::translate('This audit run is no longer active.'));
         }
 
         try {
@@ -147,7 +148,7 @@ final class ContentAuditService
     {
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
-            throw new AuditException('This audit run is no longer active.');
+            throw new AuditException(I18n::translate('This audit run is no longer active.'));
         }
 
         $cancelled = $this->store->saveRun(
@@ -393,12 +394,12 @@ final class ContentAuditService
     {
         $factory = $this->providerFactory;
         if (!is_callable($factory)) {
-            throw new AuditException('Audit value provider is not configured.');
+            throw new AuditException(I18n::translate('Audit value provider is not configured.'));
         }
 
         $provider = $factory($post->id, $post->postType, $this->fieldTypesFor($post->postType));
         if (!$provider instanceof FieldValueProviderInterface) {
-            throw new AuditException('Audit value provider is invalid.');
+            throw new AuditException(I18n::translate('Audit value provider is invalid.'));
         }
 
         return $this->evaluator->evaluate($post->id, $post->postType, $provider);
@@ -515,11 +516,16 @@ final class ContentAuditService
             $row         = is_int($row) || (is_numeric($row) && (int) $row > 0) ? (int) $row : 0;
             $layoutLabel = $this->layoutLabel($first);
             if ($row > 0 && $layoutLabel !== '') {
-                return sprintf('%s in %s row %d.', rtrim($base, '.'), $layoutLabel, $row);
+                return I18n::sprintf(
+                    I18n::translate('%s in %s row %d.'),
+                    rtrim($base, '.'),
+                    $layoutLabel,
+                    $row
+                );
             }
 
             if ($row > 0) {
-                return sprintf('%s in row %d.', rtrim($base, '.'), $row);
+                return I18n::sprintf(I18n::translate('%s in row %d.'), rtrim($base, '.'), $row);
             }
 
             return $base;
@@ -540,8 +546,8 @@ final class ContentAuditService
 
         $layoutLabel = $this->layoutLabel($first);
         if ($layoutLabel !== '') {
-            return sprintf(
-                '%s in %d %s rows (rows %s).',
+            return I18n::sprintf(
+                I18n::translate('%s in %d %s rows (rows %s).'),
                 rtrim($base, '.'),
                 count($rows),
                 $layoutLabel,
@@ -549,8 +555,8 @@ final class ContentAuditService
             );
         }
 
-        return sprintf(
-            '%s in %d rows (rows %s).',
+        return I18n::sprintf(
+            I18n::translate('%s in %d rows (rows %s).'),
             rtrim($base, '.'),
             count($rows),
             implode(', ', $rows)
@@ -563,7 +569,11 @@ final class ContentAuditService
             return $result->message;
         }
 
-        if ($result->message !== '' && $result->message !== 'This field is required.') {
+        $stockRequired = 'This field is required.';
+        if ($result->message !== ''
+            && $result->message !== $stockRequired
+            && $result->message !== I18n::translate($stockRequired)
+        ) {
             return $result->message;
         }
 
@@ -572,11 +582,11 @@ final class ContentAuditService
         if ($hasRowContext && $result->code === 'required') {
             $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
             if ($label !== '') {
-                return sprintf('%s is required.', $label);
+                return I18n::sprintf(I18n::translate('%s is required.'), $label);
             }
         }
 
-        return $result->message !== '' ? $result->message : 'This field is required.';
+        return $result->message !== '' ? $result->message : I18n::translate($stockRequired);
     }
 
     private function layoutLabel(EvaluationResult $result): string
@@ -638,12 +648,12 @@ final class ContentAuditService
     private function requireRun(int $runId): AuditRun
     {
         if ($runId <= 0) {
-            throw new AuditException('Invalid audit run.');
+            throw new AuditException(I18n::translate('Invalid audit run.'));
         }
 
         $run = $this->store->findRun($runId);
         if ($run === null) {
-            throw new AuditException('Audit run not found.');
+            throw new AuditException(I18n::translate('Audit run not found.'));
         }
 
         return $run;

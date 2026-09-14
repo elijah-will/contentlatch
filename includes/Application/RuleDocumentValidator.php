@@ -44,7 +44,7 @@ final class RuleDocumentValidator
         $data = json_decode($json, true);
 
         if (!is_array($data)) {
-            throw new InvalidRuleException('Rule document must be valid JSON.');
+            throw new InvalidRuleException(I18n::translate('Rule document must be valid JSON.'));
         }
 
         return $this->validateArray($data);
@@ -56,12 +56,12 @@ final class RuleDocumentValidator
     public function validateArray(array $data): Rule
     {
         if ((int) ($data['schema_version'] ?? 0) !== Rule::SCHEMA_VERSION) {
-            throw new InvalidRuleException('Unsupported rule schema version.');
+            throw new InvalidRuleException(I18n::translate('Unsupported rule schema version.'));
         }
 
         $logic = (string) ($data['condition_logic'] ?? Rule::CONDITION_LOGIC_AND);
         if ($logic !== Rule::CONDITION_LOGIC_AND) {
-            throw new InvalidRuleException('Only AND condition logic is supported.');
+            throw new InvalidRuleException(I18n::translate('Only AND condition logic is supported.'));
         }
 
         $rule = Rule::fromArray($data);
@@ -73,44 +73,52 @@ final class RuleDocumentValidator
     public function validateRule(Rule $rule): void
     {
         if ($rule->schemaVersion !== Rule::SCHEMA_VERSION) {
-            throw new InvalidRuleException('Unsupported rule schema version.');
+            throw new InvalidRuleException(I18n::translate('Unsupported rule schema version.'));
         }
 
         if ($rule->conditionLogic !== Rule::CONDITION_LOGIC_AND) {
-            throw new InvalidRuleException('Only AND condition logic is supported.');
+            throw new InvalidRuleException(I18n::translate('Only AND condition logic is supported.'));
         }
 
         foreach ($rule->conditions as $condition) {
             if ($condition->field->key === '') {
-                throw new InvalidRuleException('Field key is required.');
+                throw new InvalidRuleException(I18n::translate('Field key is required.'));
             }
 
             if (!$this->operators->has($condition->operator)) {
                 throw new InvalidRuleException(
-                    sprintf('Unknown condition operator "%s".', $condition->operator)
+                    I18n::sprintf(
+                        /* translators: %s: operator id */
+                        I18n::translate('Unknown condition operator "%s".'),
+                        $condition->operator
+                    )
                 );
             }
         }
 
         if ($rule->conditions === array() && $rule->validations === array()) {
-            throw new InvalidRuleException(self::MSG_MISSING_WHEN_OR_THEN);
+            throw new InvalidRuleException(I18n::translate(self::MSG_MISSING_WHEN_OR_THEN));
         }
 
         foreach ($rule->validations as $validation) {
             if ($validation->field->key === '') {
-                throw new InvalidRuleException('Field key is required.');
+                throw new InvalidRuleException(I18n::translate('Field key is required.'));
             }
 
             if (!$this->validators->has($validation->type)) {
                 throw new InvalidRuleException(
-                    sprintf('Unknown validation type "%s".', $validation->type)
+                    I18n::sprintf(
+                        /* translators: %s: validation type id */
+                        I18n::translate('Unknown validation type "%s".'),
+                        $validation->type
+                    )
                 );
             }
 
             if ($validation->type === 'allowed_values') {
                 $values = $validation->params['values'] ?? array();
                 if (!is_array($values) || $values === array()) {
-                    throw new InvalidRuleException(self::MSG_ALLOWED_VALUES);
+                    throw new InvalidRuleException(I18n::translate(self::MSG_ALLOWED_VALUES));
                 }
             }
         }
@@ -127,7 +135,7 @@ final class RuleDocumentValidator
 
         foreach ($operatorsByField as $operators) {
             if (in_array('is_empty', $operators, true) && in_array('is_not_empty', $operators, true)) {
-                throw new InvalidRuleException(self::MSG_EMPTY_AND_NOT_EMPTY);
+                throw new InvalidRuleException(I18n::translate(self::MSG_EMPTY_AND_NOT_EMPTY));
             }
         }
 
@@ -140,13 +148,13 @@ final class RuleDocumentValidator
 
             if ($validation->type === 'required') {
                 if (in_array('is_empty', $fieldOps, true)) {
-                    throw new InvalidRuleException(self::MSG_EMPTY_AND_REQUIRED);
+                    throw new InvalidRuleException(I18n::translate(self::MSG_EMPTY_AND_REQUIRED));
                 }
                 if (in_array('is_not_empty', $fieldOps, true)) {
-                    throw new InvalidRuleException(self::MSG_NOT_EMPTY_AND_REQUIRED);
+                    throw new InvalidRuleException(I18n::translate(self::MSG_NOT_EMPTY_AND_REQUIRED));
                 }
                 if (in_array('equals', $fieldOps, true)) {
-                    throw new InvalidRuleException(self::MSG_EQUALS_AND_REQUIRED);
+                    throw new InvalidRuleException(I18n::translate(self::MSG_EQUALS_AND_REQUIRED));
                 }
             }
 
@@ -160,7 +168,7 @@ final class RuleDocumentValidator
 
         foreach ($minByField as $key => $min) {
             if (isset($maxByField[$key]) && $min > $maxByField[$key]) {
-                throw new InvalidRuleException(self::MSG_MIN_GT_MAX);
+                throw new InvalidRuleException(I18n::translate(self::MSG_MIN_GT_MAX));
             }
         }
     }

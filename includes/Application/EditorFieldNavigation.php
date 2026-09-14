@@ -138,20 +138,22 @@ final class EditorFieldNavigation
 
     public static function goToFieldAria(string $label): string
     {
-        $name = $label !== '' ? $label : 'field';
+        $name = $label !== '' ? $label : I18n::translate('field');
 
-        return sprintf('Go to field: %s', $name);
+        /* translators: %s: Field label. */
+        return I18n::sprintf(I18n::translate('Go to field: %s'), $name);
     }
 
     public static function goToLayoutRowAria(string $label, int $row): string
     {
-        $name = $label !== '' ? $label : 'field';
+        $name = $label !== '' ? $label : I18n::translate('field');
         $row  = self::sanitizeDisplayRow($row);
         if ($row <= 0) {
             return self::goToFieldAria($name);
         }
 
-        return sprintf('Go to %s, row %d', $name, $row);
+        /* translators: 1: Field label. 2: 1-based row number. */
+        return I18n::sprintf(I18n::translate('Go to %1$s, row %2$d'), $name, $row);
     }
 
     public static function sanitizeDisplayRow(mixed $row): int
