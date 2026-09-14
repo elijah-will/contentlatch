@@ -100,7 +100,14 @@ final class RuleDocumentFactory
             throw new InvalidRuleException('Invalid rule severity.');
         }
 
-        $fields = $this->fieldsByKey($postType);
+        $fields      = $this->fieldsByKey($postType);
+        $conditions  = $this->mapConditions($input['conditions'] ?? array(), $fields);
+        $validations = $this->mapValidations($input['validations'] ?? array(), $fields, $default);
+
+        if ($conditions === array() && $validations === array()) {
+            throw new InvalidRuleException(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN);
+        }
+
         $document = array(
             'schema_version'  => Rule::SCHEMA_VERSION,
             'id'              => $this->normalizeId($id),
@@ -109,9 +116,12 @@ final class RuleDocumentFactory
             'status'          => $status,
             'severity'        => $severity,
             'condition_logic' => Rule::CONDITION_LOGIC_AND,
-            'conditions'      => $this->mapConditions($input['conditions'] ?? array(), $fields),
-            'validations'     => $this->mapValidations($input['validations'] ?? array(), $fields, $default),
+            'conditions'      => $conditions,
+            'validations'     => $validations,
         );
+        if ($default !== '') {
+            $document['message'] = $default;
+        }
 
         return $this->validator->validateArray($document);
     }
@@ -238,12 +248,6 @@ final class RuleDocumentFactory
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
-            if ($field->isFlexibleChild()) {
-                throw new InvalidRuleException('Flexible Content fields cannot be used in WHEN conditions.');
-            }
-            if ($field->isRepeaterChild()) {
-                throw new InvalidRuleException('Repeater fields cannot be used in WHEN conditions.');
-            }
             $fieldType = (string) ($fields[$field->resolutionId()]['type'] ?? $fields[$fieldKey]['type'] ?? '');
 
             if (ConditionOperators::requiresOperand($operator)) {
@@ -261,6 +265,11 @@ final class RuleDocumentFactory
                     }
                     if (Value::tryNumber($operand) === null) {
                         throw new InvalidRuleException('A numeric condition value is required.');
+                    }
+                }
+                if (ConditionOperators::isStringContains($operator)) {
+                    if (!ConditionOperators::isStringContentField($fieldType)) {
+                        throw new InvalidRuleException('Contains conditions can only be used with text fields.');
                     }
                 }
             } else {
@@ -301,11 +310,11 @@ final class RuleDocumentFactory
 
             $fieldKey = (string) ($row['field_key'] ?? '');
             $type     = (string) ($row['type'] ?? '');
-            if ($fieldKey === '' && $type === '') {
+            if ($fieldKey === '') {
                 continue;
             }
 
-            if ($fieldKey === '' || $type === '') {
+            if ($type === '') {
                 throw new InvalidRuleException(RuleDocumentValidator::MSG_MISSING_THEN);
             }
 
@@ -332,10 +341,6 @@ final class RuleDocumentFactory
             }
             $validations[] = $item;
             ++$index;
-        }
-
-        if ($validations === array()) {
-            throw new InvalidRuleException('At least one validation is required.');
         }
 
         return $validations;

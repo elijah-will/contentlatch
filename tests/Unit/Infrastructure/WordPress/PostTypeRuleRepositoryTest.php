@@ -228,7 +228,7 @@ final class PostTypeRuleRepositoryTest extends TestCase
         $emptyKey['conditions'][0]['field']['key'] = '';
 
         $unknownOperator = RuleFactory::document();
-        $unknownOperator['conditions'][0]['operator'] = 'contains';
+        $unknownOperator['conditions'][0]['operator'] = 'starts_with';
 
         $unknownValidator = RuleFactory::document();
         $unknownValidator['validations'][0]['type'] = 'regex';
@@ -247,7 +247,7 @@ final class PostTypeRuleRepositoryTest extends TestCase
     public function testSaveRejectsUnknownOperatorBeforePersist(): void
     {
         $document = RuleFactory::document(array('id' => ''));
-        $document['conditions'][0]['operator'] = 'contains';
+        $document['conditions'][0]['operator'] = 'starts_with';
         $rule = \ContentGuard\Domain\Rule::fromArray($document);
 
         try {
@@ -306,7 +306,7 @@ final class PostTypeRuleRepositoryTest extends TestCase
                 50,
                 'Corrupt',
                 'publish',
-                '{"schema_version":1,"name":"x","post_type":"product","status":"active","severity":"fail","condition_logic":"and","conditions":[{"id":"c1","field":{"key":"field_type","name":"t","label":"T"},"operator":"contains","operand":"x"}],"validations":[]}',
+                '{"schema_version":1,"name":"x","post_type":"product","status":"active","severity":"fail","condition_logic":"and","conditions":[{"id":"c1","field":{"key":"field_type","name":"t","label":"T"},"operator":"starts_with","operand":"x"}],"validations":[]}',
                 'product'
             )
         );

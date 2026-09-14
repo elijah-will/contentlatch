@@ -69,6 +69,10 @@ final class RuleEditorState
         }
 
         $unique = array_values(array_unique($messages));
+        $message = count($unique) === 1 ? $unique[0] : '';
+        if ($message === '') {
+            $message = $rule->message;
+        }
 
         return new self(
             $rule->id,
@@ -76,7 +80,7 @@ final class RuleEditorState
             $rule->postType,
             $rule->severity->value,
             $rule->status->value,
-            count($unique) === 1 ? $unique[0] : '',
+            $message,
             $conditions,
             $validations
         );

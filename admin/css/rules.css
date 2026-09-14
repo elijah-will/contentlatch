@@ -324,3 +324,8 @@
 .contentguard-row input[type="number"] {
     min-width: 140px;
 }
+
+/* Nested ACF optgroup paths can be long; keep the builder row usable. */
+.contentguard-builder-row select.contentguard-field {
+    max-width: min(100%, 28rem);
+}

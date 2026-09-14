@@ -80,39 +80,37 @@ final class RuleDocumentCloneFactoryTest extends TestCase
         $this->assertSame('', $rule->validations[0]->field->clone);
     }
 
-    public function testRepeaterAndFlexibleCloneChildrenCannotBeWhenFields(): void
+    public function testRepeaterAndFlexibleCloneChildrenCanBeWhenFields(): void
     {
         $factory = $this->factory();
 
-        try {
-            $factory->fromAdminInput(array(
-                'name'      => 'Bad repeater when',
-                'post_type' => 'page',
-                'conditions' => array(
-                    array(
-                        'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
-                            AcfCloneFixtures::CLONE_REP,
-                            AcfCloneFixtures::TITLE
-                        ),
-                        'operator'  => 'is_empty',
+        $repeater = $factory->fromAdminInput(array(
+            'name'      => 'Repeater clone when',
+            'post_type' => 'page',
+            'conditions' => array(
+                array(
+                    'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
+                        AcfCloneFixtures::CLONE_REP,
+                        AcfCloneFixtures::TITLE
                     ),
+                    'operator'  => 'contains',
+                    'operand'   => 'chicken',
                 ),
-                'validations' => array(
-                    array(
-                        'field_key' => AcfCloneFixtures::TITLE,
-                        'type'      => 'required',
-                    ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => AcfCloneFixtures::TITLE,
+                    'type'      => 'required',
                 ),
-            ));
-            $this->fail('Expected repeater WHEN rejection');
-        } catch (InvalidRuleException $exception) {
-            $this->assertStringContainsString('Repeater fields cannot be used in WHEN', $exception->getMessage());
-        }
+            ),
+        ));
+        $this->assertSame('contains', $repeater->conditions[0]->operator);
+        $this->assertSame('chicken', $repeater->conditions[0]->operand);
+        $this->assertSame('repeater', $repeater->conditions[0]->field->container);
+        $this->assertSame(AcfCloneFixtures::CLONE_REP, $repeater->conditions[0]->field->clone);
 
-        $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('Flexible Content fields cannot be used in WHEN conditions.');
-        $factory->fromAdminInput(array(
-            'name'      => 'Bad flex when',
+        $flex = $factory->fromAdminInput(array(
+            'name'      => 'Flex clone when',
             'post_type' => 'page',
             'conditions' => array(
                 array(
@@ -130,6 +128,9 @@ final class RuleDocumentCloneFactoryTest extends TestCase
                 ),
             ),
         ));
+        $this->assertSame('is_empty', $flex->conditions[0]->operator);
+        $this->assertSame('flexible_content', $flex->conditions[0]->field->container);
+        $this->assertSame(AcfCloneFixtures::CLONE_FLEX, $flex->conditions[0]->field->clone);
     }
 
     public function testArbitraryClonePathCannotBeSupplied(): void

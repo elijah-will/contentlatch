@@ -215,6 +215,57 @@ final class ContentAuditServiceTest extends TestCase
         }
     }
 
+    public function testConditionOnlyMatchIsRecordedAsAFinding(): void
+    {
+        $this->values = array(
+            10 => array(
+                'field_description' => 'A healthy salad',
+            ),
+            20 => array(
+                'field_description' => 'A tasty salad',
+            ),
+        );
+
+        $rule = RuleFactory::rule(array(
+            'id'          => 9,
+            'postType'    => 'recipe',
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field(
+                        'field_description',
+                        'recipe_description',
+                        'Recipe Description'
+                    ),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $service = $this->service(array($rule), array(
+            array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 20, 'postType' => 'recipe', 'status' => 'publish'),
+        ));
+
+        $run = $service->processBatch($service->start(1)->id);
+        $run = $service->processBatch($run->id);
+        $run = $service->processBatch($run->id);
+
+        $this->assertSame(AuditRunStatus::Complete, $run->status);
+        $this->assertSame(1, $run->postsFailed);
+        $this->assertSame(1, $run->postsNotEvaluated);
+        $findings = $this->store->findFindings($run->id);
+        $this->assertCount(1, $findings);
+        $this->assertSame(9, $findings[0]->ruleId);
+        $this->assertSame('field_description', $findings[0]->fieldKey);
+        $this->assertSame('fail', $findings[0]->severity->value);
+        $this->assertSame('condition_matched', $findings[0]->code);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $findings[0]->message);
+        $this->assertSame('', $findings[0]->validationId);
+    }
+
     public function testDraftsAndOtherTypesAreNotScanned(): void
     {
         $scanner = new InMemoryAuditPostScanner(

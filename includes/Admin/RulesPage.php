@@ -103,11 +103,7 @@ final class RulesPage
                 'nonce'      => wp_create_nonce(RuleCommandService::NONCE_ACTION),
                 'fieldsAction' => RulesController::ACTION_FIELDS,
                 'operators'  => $this->operatorLabels('text'),
-                'operatorsByType' => array(
-                    'default' => $this->operatorLabels('text'),
-                    'number'  => $this->operatorLabels('number'),
-                    'range'   => $this->operatorLabels('range'),
-                ),
+                'operatorsByType' => $this->operatorsByType(),
                 'validators' => array(
                     'required'       => __('is required', 'contentguard'),
                     'min_length'     => __('Minimum length', 'contentguard'),
@@ -115,9 +111,12 @@ final class RulesPage
                     'allowed_values' => __('Allowed values', 'contentguard'),
                 ),
                 'preview'    => array(
-                    'needThen'        => RulePreview::needThenMessage(),
-                    'incompleteWhen'  => RulePreview::incompleteWhenMessage(),
-                    'incompleteThen'  => RulePreview::incompleteThenMessage(),
+                    'needThen'               => RulePreview::needThenMessage(),
+                    'needWhenOrThen'         => RulePreview::needWhenOrThenMessage(),
+                    'incompleteWhen'         => RulePreview::incompleteWhenMessage(),
+                    'incompleteThen'         => RulePreview::incompleteThenMessage(),
+                    'conditionOnlyBlocking'  => RulePreview::conditionOnlyBlockingMessage(),
+                    'conditionOnlyWarning'   => RulePreview::conditionOnlyWarningMessage(),
                 ),
             )
         );
@@ -411,5 +410,22 @@ final class RulesPage
         }
 
         return $labels;
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private function operatorsByType(): array
+    {
+        $map = array();
+        foreach (ConditionOperators::labelsByFieldType() as $type => $labels) {
+            $translated = array();
+            foreach ($labels as $id => $label) {
+                $translated[$id] = __($label, 'contentguard');
+            }
+            $map[$type] = $translated;
+        }
+
+        return $map;
     }
 }

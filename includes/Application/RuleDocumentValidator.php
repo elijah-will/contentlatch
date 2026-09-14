@@ -24,6 +24,7 @@ final class RuleDocumentValidator
     public const MSG_EQUALS_AND_REQUIRED = 'This rule cannot be saved because a field that must already have a specific value does not need to be required.';
     public const MSG_MIN_GT_MAX = 'Minimum length cannot be greater than maximum length.';
     public const MSG_MISSING_THEN = 'Each requirement needs a field and a validator.';
+    public const MSG_MISSING_WHEN_OR_THEN = 'Add a WHEN condition or THEN requirement.';
     public const MSG_ALLOWED_VALUES = 'Enter at least one allowed value.';
     public const MSG_EMPTY_AND_NOT_EMPTY = 'This rule cannot be saved because a field cannot be both empty and not empty.';
 
@@ -91,8 +92,8 @@ final class RuleDocumentValidator
             }
         }
 
-        if ($rule->validations === array()) {
-            throw new InvalidRuleException('At least one validation is required.');
+        if ($rule->conditions === array() && $rule->validations === array()) {
+            throw new InvalidRuleException(self::MSG_MISSING_WHEN_OR_THEN);
         }
 
         foreach ($rule->validations as $validation) {

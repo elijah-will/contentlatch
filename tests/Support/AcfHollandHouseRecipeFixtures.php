@@ -40,7 +40,13 @@ final class AcfHollandHouseRecipeFixtures
      */
     public static function recipeFields(): array
     {
-        return array(
+        return array_map(
+            static function (array $field): array {
+                $field['field_group'] = 'Recipes';
+
+                return $field;
+            },
+            array(
             array(
                 'key'        => self::INGREDIENTS,
                 'name'       => 'ingredients',
@@ -97,6 +103,7 @@ final class AcfHollandHouseRecipeFixtures
                     ),
                 ),
             ),
+            )
         );
     }
 

@@ -178,6 +178,13 @@ if (!function_exists('add_query_arg')) {
     }
 }
 
+if (!function_exists('wp_json_encode')) {
+    function wp_json_encode(mixed $data, int $options = 0, int $depth = 512): string|false
+    {
+        return json_encode($data, $options, $depth);
+    }
+}
+
 if (!function_exists('paginate_links')) {
     /**
      * @param array<string, mixed> $args

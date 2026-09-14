@@ -13,8 +13,21 @@
   var conditions = document.getElementById("contentguard-conditions");
   var validations = document.getElementById("contentguard-validations");
   var preview = document.getElementById("contentguard-rule-preview");
-  var fields = [];
+  var fields = readCatalogFields();
   var previewCopy = config.preview || {};
+
+  function readCatalogFields() {
+    var node = document.getElementById("contentguard-catalog-fields");
+    if (!node) {
+      return [];
+    }
+    try {
+      var parsed = JSON.parse(node.textContent || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
 
   function option(value, label, selected, type) {
     var node = document.createElement("option");
@@ -56,8 +69,19 @@
     return (select.options[select.selectedIndex].textContent || "").trim();
   }
 
-  function fieldDisplayLabel(field) {
-    var label = field.breadcrumb || field.label || field.name || field.key;
+  function fieldOptionLabel(field) {
+    var grouped = !!(field.group_label);
+    var label = grouped
+      ? (field.label || field.name || field.key || "")
+      : (field.breadcrumb || field.label || field.name || field.key || "");
+    return withRowSuffix(label, field);
+  }
+
+  function fieldPreviewLabel(field) {
+    return withRowSuffix(field.breadcrumb || field.label || field.name || field.key || "", field);
+  }
+
+  function withRowSuffix(label, field) {
     if (field.container === "repeater" && String(label).indexOf("(every row)") === -1) {
       label += " (every row)";
     }
@@ -71,27 +95,20 @@
     return label;
   }
 
-  function fieldsForSelect(forCondition) {
-    if (!forCondition) {
-      return fields;
-    }
-
-    return fields.filter(function (field) {
-      return field.container !== "repeater" && field.container !== "flexible_content";
-    });
-  }
-
   function fieldLabelFor(key, select) {
+    var match = fields.find(function (field) {
+      return fieldOptionId(field) === key || field.key === key;
+    });
+    if (match) {
+      return fieldPreviewLabel(match);
+    }
     if (select && select.value === key) {
       var label = selectedOptionLabel(select);
       if (label && label !== "Choose a field" && label !== "Field") {
         return label;
       }
     }
-    var match = fields.find(function (field) {
-      return fieldOptionId(field) === key || field.key === key;
-    });
-    return match ? fieldDisplayLabel(match) : key;
+    return key;
   }
 
   function srLabel(text, forId) {
@@ -102,7 +119,7 @@
     return label;
   }
 
-  function fieldSelect(name, selected, id, forCondition) {
+  function fieldSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
     select.className = "contentguard-field";
@@ -113,7 +130,7 @@
 
     var ungrouped = [];
     var groups = {};
-    fieldsForSelect(!!forCondition).forEach(function (field) {
+    fields.forEach(function (field) {
       var group = field.group_label || "";
       if (!group) {
         ungrouped.push(field);
@@ -127,7 +144,7 @@
 
     ungrouped.forEach(function (field) {
       var id = fieldOptionId(field);
-      select.appendChild(option(id, fieldDisplayLabel(field), id === selected, field.type || ""));
+      select.appendChild(option(id, fieldOptionLabel(field), id === selected, field.type || ""));
     });
 
     Object.keys(groups).forEach(function (groupLabel) {
@@ -135,7 +152,7 @@
       optgroup.label = groupLabel;
       groups[groupLabel].forEach(function (field) {
         var id = fieldOptionId(field);
-        optgroup.appendChild(option(id, fieldDisplayLabel(field), id === selected, field.type || ""));
+        optgroup.appendChild(option(id, fieldOptionLabel(field), id === selected, field.type || ""));
       });
       select.appendChild(optgroup);
     });
@@ -155,6 +172,8 @@
     return [
       "equals",
       "not_equals",
+      "contains",
+      "does_not_contain",
       "greater_than",
       "greater_than_or_equal",
       "less_than",
@@ -329,7 +348,7 @@
     var operatorId = "contentguard-condition-operator-" + index;
     var operandId = "contentguard-condition-operand-" + index;
     controls.appendChild(srLabel("WHEN field", fieldId));
-    controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId, true));
+    controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
     controls.appendChild(srLabel("Operator", operatorId));
     controls.appendChild(operatorSelect("conditions[" + index + "][operator]", "equals", operatorId, fieldTypeFor(selected || "")));
     controls.appendChild(srLabel("Value", operandId));
@@ -364,7 +383,7 @@
     var fieldId = "contentguard-validation-field-" + index;
     var typeId = "contentguard-validation-type-" + index;
     controls.appendChild(srLabel("THEN field", fieldId));
-    controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId, false));
+    controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId));
     controls.appendChild(srLabel("Requirement", typeId));
     controls.appendChild(validatorSelect("validations[" + index + "][type]", "required", typeId));
     controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, "Minimum length", "characters"));
@@ -398,9 +417,7 @@
     form.querySelectorAll(".contentguard-field").forEach(function (select) {
       var current = select.value;
       var name = select.name;
-      var row = select.closest("[data-row]");
-      var forCondition = !!(row && row.getAttribute("data-row") === "condition");
-      var replacement = fieldSelect(name, current, select.id, forCondition);
+      var replacement = fieldSelect(name, current, select.id);
       select.replaceWith(replacement);
     });
     form.querySelectorAll("[data-row='condition']").forEach(toggleCondition);
@@ -428,6 +445,12 @@
     }
     if (operator === "not_equals") {
       return field + " is not " + value;
+    }
+    if (operator === "contains") {
+      return field + " contains " + value;
+    }
+    if (operator === "does_not_contain") {
+      return field + " does not contain " + value;
     }
     if (operator === "is_empty") {
       return field + " is empty";
@@ -544,14 +567,23 @@
       preview.textContent = previewCopy.incompleteWhen || "Finish the WHEN condition to preview this rule.";
       return;
     }
-    if (thenParts.length === 0) {
-      preview.textContent = thenIncomplete
-        ? (previewCopy.incompleteThen || "Finish the THEN requirement to preview this rule.")
-        : (previewCopy.needThen || "Add a THEN requirement to preview this rule.");
-      return;
-    }
     if (thenIncomplete) {
       preview.textContent = previewCopy.incompleteThen || "Finish the THEN requirement to preview this rule.";
+      return;
+    }
+    if (thenParts.length === 0) {
+      if (whenParts.length === 0) {
+        preview.textContent = previewCopy.needWhenOrThen
+          || previewCopy.needThen
+          || "Add a WHEN condition or THEN requirement to preview this rule.";
+        return;
+      }
+      var severityInput = form.querySelector("[name='severity']:checked");
+      var severity = severityInput ? severityInput.value : "fail";
+      var consequence = severity === "warning"
+        ? (previewCopy.conditionOnlyWarning || "this rule reports a warning")
+        : (previewCopy.conditionOnlyBlocking || "this rule blocks publishing");
+      preview.textContent = "When " + whenParts.join(" and ") + ", " + consequence + ".";
       return;
     }
 
@@ -764,10 +796,20 @@
       if (!field || !type) {
         return false;
       }
-      if (!field.value && !type.value) {
+      if (!field.value) {
+        var minStarted = row.querySelector(".contentguard-min");
+        var maxStarted = row.querySelector(".contentguard-max");
+        var valuesStarted = row.querySelector(".contentguard-values");
+        var started = (minStarted && !minStarted.disabled && minStarted.value.trim() !== "")
+          || (maxStarted && !maxStarted.disabled && maxStarted.value.trim() !== "")
+          || (valuesStarted && !valuesStarted.disabled && valuesStarted.value.replace(/\s+/g, "") !== "");
+        if (started) {
+          error = "Each requirement needs a field and a validator.";
+          return true;
+        }
         return false;
       }
-      if (!field.value || !type.value) {
+      if (!type.value) {
         error = "Each requirement needs a field and a validator.";
         return true;
       }
@@ -822,6 +864,24 @@
       return error;
     }
 
-    return hasThen ? "" : "Each requirement needs a field and a validator.";
+    var hasWhen = false;
+    Array.prototype.some.call(form.querySelectorAll("[data-row='condition']"), function (row) {
+      var field = row.querySelector(".contentguard-field");
+      var operator = row.querySelector(".contentguard-operator");
+      var operand = row.querySelector(".contentguard-operand");
+      if (!field || !operator || !field.value || !operator.value) {
+        return false;
+      }
+      if (requiresOperand(operator.value)) {
+        var operandValue = operand && !operand.hidden ? (operand.value || "").trim() : "";
+        if (operandValue === "") {
+          return false;
+        }
+      }
+      hasWhen = true;
+      return true;
+    });
+
+    return hasThen || hasWhen ? "" : "Add a WHEN condition or THEN requirement.";
   }
 })();

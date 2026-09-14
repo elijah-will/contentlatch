@@ -133,6 +133,75 @@ final class RuleEngineTest extends TestCase
         $this->assertTrue($skipped->results[0]->isSkipped());
     }
 
+    public function testContainsAndDoesNotContainConditions(): void
+    {
+        $contains = RuleFactory::rule(
+            array(
+                'conditions' => array(
+                    RuleFactory::condition(
+                        array(
+                            'field'    => RuleFactory::field('field_ingredients', 'ingredients', 'Ingredients'),
+                            'operator' => 'contains',
+                            'operand'  => 'healthy',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($contains),
+                new ArrayValueProvider(array(
+                    'field_type'        => 'sauce',
+                    'field_ingredients' => 'HEALTHY ingredients',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($contains),
+                new ArrayValueProvider(array(
+                    'field_type'        => 'sauce',
+                    'field_ingredients' => 'This recipe is nutritious.',
+                ))
+            )->results[0]->isSkipped()
+        );
+
+        $missing = RuleFactory::rule(
+            array(
+                'conditions' => array(
+                    RuleFactory::condition(
+                        array(
+                            'field'    => RuleFactory::field('title', 'post_title', 'Title'),
+                            'operator' => 'does_not_contain',
+                            'operand'  => 'B&G',
+                        )
+                    ),
+                ),
+            )
+        );
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($missing),
+                new ArrayValueProvider(array(
+                    'title'             => 'Seasonings',
+                    'field_ingredients' => 'ok',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($missing),
+                new ArrayValueProvider(array(
+                    'title'             => 'B&G Foods',
+                    'field_ingredients' => 'ok',
+                ))
+            )->results[0]->isSkipped()
+        );
+    }
+
     public function testNumericGreaterThanIsMathematicalNotLexicographic(): void
     {
         $rule = RuleFactory::rule(
@@ -658,7 +727,7 @@ final class RuleEngineTest extends TestCase
         $rule = RuleFactory::rule(
             array(
                 'conditions' => array(
-                    RuleFactory::condition(array('operator' => 'contains')),
+                    RuleFactory::condition(array('operator' => 'starts_with')),
                 ),
             )
         );
@@ -695,5 +764,94 @@ final class RuleEngineTest extends TestCase
         $this->assertSame($rule->postType, $restored->postType);
         $this->assertSame($rule->conditions[0]->operator, $restored->conditions[0]->operator);
         $this->assertSame($rule->validations[0]->field->key, $restored->validations[0]->field->key);
+        $this->assertSame('', $restored->message);
+
+        $withMessage = RuleFactory::rule(array(
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+        $restoredMessage = \ContentGuard\Domain\Rule::fromArray($withMessage->toArray());
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $restoredMessage->message);
+        $this->assertSame(array(), $restoredMessage->validations);
+    }
+
+    public function testConditionOnlyMatchFailsAndNonMatchIsSkipped(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $failed = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array('content' => 'A healthy salad'))
+        );
+        $this->assertTrue($failed->isFailed());
+        $this->assertFalse($failed->isWarning());
+        $this->assertSame('condition_matched', $failed->results[0]->code);
+        $this->assertSame('content', $failed->results[0]->fieldId);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $failed->results[0]->message);
+
+        $skipped = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array('content' => 'A tasty salad'))
+        );
+        $this->assertTrue($skipped->results[0]->isSkipped());
+        $this->assertFalse($skipped->isFailed());
+        $this->assertFalse($skipped->isWarning());
+        $this->assertSame('conditions_not_met', $skipped->results[0]->code);
+    }
+
+    public function testConditionOnlyWarningDoesNotFailContent(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $evaluation = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array('content' => 'A healthy salad'))
+        );
+        $this->assertTrue($evaluation->isWarning());
+        $this->assertFalse($evaluation->isFailed());
+        $this->assertTrue($evaluation->results[0]->isWarning());
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $evaluation->results[0]->message);
+    }
+
+    public function testConditionOnlyUsesDefaultMessageWhenBlank(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+        ));
+
+        $evaluation = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array('content' => 'Healthy'))
+        );
+        $this->assertTrue($evaluation->isFailed());
+        $this->assertSame('This content matches the rule condition.', $evaluation->results[0]->message);
     }
 }

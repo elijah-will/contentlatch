@@ -80,6 +80,7 @@ final class RuleFactory
             (string) ($overrides['conditionLogic'] ?? Rule::CONDITION_LOGIC_AND),
             $overrides['updatedAt'] ?? null,
             $overrides['createdAt'] ?? null,
+            (string) ($overrides['message'] ?? ''),
         );
     }
 

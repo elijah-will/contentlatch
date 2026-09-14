@@ -25,15 +25,23 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('Warning:', $js);
         $this->assertStringContainsString('#contentguard-rule-notice', $js);
         $this->assertStringContainsString('field.breadcrumb', $js);
+        $this->assertStringContainsString('fieldOptionLabel', $js);
+        $this->assertStringContainsString('fieldPreviewLabel', $js);
         $this->assertStringContainsString('group_label', $js);
         $this->assertStringContainsString('optgroup', $js);
         $this->assertStringContainsString('(every row)', $js);
         $this->assertStringContainsString('(every " + layoutLabel + " row)', $js);
-        $this->assertStringContainsString('fieldsForSelect', $js);
-        $this->assertStringContainsString('field.container !== "repeater" && field.container !== "flexible_content"', $js);
+        $this->assertStringContainsString('contentguard-catalog-fields', $js);
         $this->assertStringContainsString('fieldOptionId', $js);
         $this->assertStringContainsString('resolution_id', $js);
         $this->assertStringContainsString('data-row', $js);
+        $this->assertStringContainsString('"contains"', $js);
+        $this->assertStringContainsString('"does_not_contain"', $js);
+        $this->assertStringContainsString('does not contain', $js);
+        $this->assertStringContainsString('this rule blocks publishing', $js);
+        $this->assertStringContainsString('this rule reports a warning', $js);
+        $this->assertStringContainsString('Add a WHEN condition or THEN requirement.', $js);
+        $this->assertStringNotContainsString('field.container !== "repeater"', $js);
         $this->assertStringNotContainsString('field_123.field_456', $js);
     }
 }

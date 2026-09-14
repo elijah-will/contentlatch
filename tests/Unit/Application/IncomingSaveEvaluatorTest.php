@@ -214,6 +214,69 @@ final class IncomingSaveEvaluatorTest extends TestCase
         $this->assertTrue($skipped->results[0]->isSkipped());
     }
 
+    public function testConditionOnlyBlockingContainsBlocksSave(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => CoreCatalogFixtures::contentRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $failing = $this->coreOnly(array($rule))->evaluate(
+            1,
+            'post',
+            array('content' => 'A healthy dinner'),
+            null
+        );
+        $passing = $this->coreOnly(array($rule))->evaluate(
+            1,
+            'post',
+            array('content' => 'A tasty dinner'),
+            null
+        );
+
+        $this->assertTrue($failing->isFailed());
+        $this->assertSame(CoreFieldCatalog::CONTENT, $failing->results[0]->fieldId);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $failing->results[0]->message);
+        $this->assertTrue($passing->results[0]->isSkipped());
+        $this->assertFalse($passing->isFailed());
+    }
+
+    public function testConditionOnlyWarningContainsDoesNotBlockSave(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => CoreCatalogFixtures::contentRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $evaluation = $this->coreOnly(array($rule))->evaluate(
+            1,
+            'post',
+            array('content' => 'A healthy dinner'),
+            null
+        );
+
+        $this->assertTrue($evaluation->isWarning());
+        $this->assertFalse($evaluation->isFailed());
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $evaluation->results[0]->message);
+    }
+
     public function testMixedCoreConditionAcfValidation(): void
     {
         $rules = array(

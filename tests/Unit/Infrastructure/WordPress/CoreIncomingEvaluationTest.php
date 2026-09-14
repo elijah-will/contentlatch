@@ -79,6 +79,103 @@ final class CoreIncomingEvaluationTest extends TestCase
         )))->isPassed());
     }
 
+    public function testIncomingTitleAndContentContainsOperators(): void
+    {
+        $avoidHealthy = $this->evaluator(array(
+            RuleFactory::rule(array(
+                'postType'   => 'post',
+                'conditions' => array(
+                    RuleFactory::condition(array(
+                        'field'    => CoreCatalogFixtures::contentRef(),
+                        'operator' => 'contains',
+                        'operand'  => 'healthy',
+                    )),
+                ),
+                'validations' => array(
+                    RuleFactory::validation(array(
+                        'field'   => CoreCatalogFixtures::titleRef(),
+                        'message' => 'Please avoid the term "healthy".',
+                    )),
+                ),
+            )),
+        ));
+
+        $this->assertTrue($avoidHealthy->evaluate(1, 'post', $this->incoming(array(
+            'content' => '<!-- wp:paragraph --><p>This is a HEALTHY recipe.</p><!-- /wp:paragraph -->',
+            'title'   => '',
+        )))->isFailed());
+        $this->assertTrue($avoidHealthy->evaluate(1, 'post', $this->incoming(array(
+            'content' => '<p>This recipe is nutritious.</p>',
+            'title'   => '',
+        )))->results[0]->isSkipped());
+
+        $needsBrand = $this->evaluator(array(
+            RuleFactory::rule(array(
+                'postType'   => 'post',
+                'conditions' => array(
+                    RuleFactory::condition(array(
+                        'field'    => CoreCatalogFixtures::titleRef(),
+                        'operator' => 'does_not_contain',
+                        'operand'  => 'B&G',
+                    )),
+                ),
+                'validations' => array(
+                    RuleFactory::validation(array(
+                        'field'   => CoreCatalogFixtures::excerptRef(),
+                        'message' => 'Title should mention B&G.',
+                    )),
+                ),
+            )),
+        ));
+
+        $this->assertTrue($needsBrand->evaluate(1, 'post', $this->incoming(array(
+            'title'   => 'Seasonings',
+            'excerpt' => '',
+        )))->isFailed());
+        $this->assertTrue($needsBrand->evaluate(1, 'post', $this->incoming(array(
+            'title'   => 'B&G Seasonings',
+            'excerpt' => '',
+        )))->results[0]->isSkipped());
+        $this->assertTrue($needsBrand->evaluate(1, 'post', $this->incoming(array(
+            'title'   => 'Seasonings',
+            'excerpt' => 'A short blurb',
+        )))->isPassed());
+    }
+
+    public function testFactoryPersistsCoreContentContainsWhen(): void
+    {
+        $factory = RuleDocumentFactory::v1(
+            static fn (): array => array('post' => 'Post'),
+            CoreCatalogFixtures::integration()
+        );
+
+        $rule = $factory->fromAdminInput(array(
+            'name'             => 'Avoid healthy',
+            'target_post_type' => 'post',
+            'conditions'       => array(
+                array(
+                    'field_key' => CoreFieldCatalog::CONTENT,
+                    'operator'  => 'contains',
+                    'operand'   => 'healthy',
+                    'type'      => 'number',
+                    'label'     => 'Forged',
+                ),
+            ),
+            'validations'      => array(
+                array(
+                    'field_key' => CoreFieldCatalog::TITLE,
+                    'type'      => 'required',
+                    'message'   => 'Please avoid the term "healthy".',
+                ),
+            ),
+        ));
+
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('healthy', $rule->conditions[0]->operand);
+        $this->assertSame(CoreFieldCatalog::CONTENT, $rule->conditions[0]->field->key);
+        $this->assertSame('Content', $rule->conditions[0]->field->label);
+    }
+
     public function testIncomingContentRequiredAndCondition(): void
     {
         $required = $this->evaluator(array(

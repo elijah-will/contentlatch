@@ -69,6 +69,8 @@ final class RulePresentation
         return match ($condition->operator) {
             'equals'                => $field . ' equals ' . $operand,
             'not_equals'            => $field . ' does not equal ' . $operand,
+            'contains'              => $field . ' contains ' . $operand,
+            'does_not_contain'      => $field . ' does not contain ' . $operand,
             'greater_than'          => $field . ' is greater than ' . $operand,
             'greater_than_or_equal' => $field . ' is at least ' . $operand,
             'less_than'             => $field . ' is less than ' . $operand,

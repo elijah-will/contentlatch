@@ -109,6 +109,26 @@ final class Value
     }
 
     /**
+     * Case-insensitive literal substring match.
+     * Empty values and empty search text never match.
+     */
+    public static function contains(mixed $value, mixed $needle): bool
+    {
+        if (self::isEmpty($value)) {
+            return false;
+        }
+
+        $haystack = self::toComparableString($value);
+        $search   = self::toComparableString($needle);
+
+        if ($haystack === null || $search === null || $search === '') {
+            return false;
+        }
+
+        return mb_stripos($haystack, $search, 0, 'UTF-8') !== false;
+    }
+
+    /**
      * Character length for string-like values.
      * Empty values have length 0. Non-scalars return null.
      */

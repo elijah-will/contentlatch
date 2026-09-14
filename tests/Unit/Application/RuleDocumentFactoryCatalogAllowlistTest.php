@@ -156,26 +156,36 @@ final class RuleDocumentFactoryCatalogAllowlistTest extends TestCase
             'post_type'   => 'page',
             'validations' => array(
                 array(
-                    'field_key' => FakeIntegration::TITLE,
-                    'type'      => 'required',
-                    'path'      => array('field_forged', 'test_title'),
-                    'container' => FieldRef::CONTAINER_GROUP,
-                    'layout'    => 'hero',
-                    'clone'     => 'field_clone_forged',
-                    'key'       => 'field_stolen',
+                    'field_key'   => FakeIntegration::TITLE,
+                    'type'        => 'required',
+                    'path'        => array('field_forged', 'test_title'),
+                    'container'   => FieldRef::CONTAINER_GROUP,
+                    'layout'      => 'hero',
+                    'clone'       => 'field_clone_forged',
+                    'key'         => 'field_stolen',
                     'integration' => 'acf',
+                    'label'       => 'Forged Label',
+                    'breadcrumb'  => 'Forged → Breadcrumb',
+                    'group_label' => 'Forged Group',
+                    'field_group' => 'Forged Field Group',
+                    'type_label'  => 'Forged Type',
                 ),
             ),
         ));
 
         $field = $rule->validations[0]->field;
         $this->assertSame(FakeIntegration::TITLE, $field->key);
+        $this->assertSame(FakeIntegration::TITLE, $field->name);
+        $this->assertNotSame('Forged Label', $field->label);
         $this->assertSame(array(), $field->path);
         $this->assertSame('', $field->container);
         $this->assertSame('', $field->layout);
         $this->assertSame('', $field->clone);
         $this->assertArrayNotHasKey('integration', $field->toArray());
         $this->assertArrayNotHasKey('path', $field->toArray());
+        $this->assertArrayNotHasKey('breadcrumb', $field->toArray());
+        $this->assertArrayNotHasKey('group_label', $field->toArray());
+        $this->assertArrayNotHasKey('field_group', $field->toArray());
 
         $clone = $factory->fromAdminInput(array(
             'name'        => 'Forged clone metadata',
@@ -194,6 +204,58 @@ final class RuleDocumentFactoryCatalogAllowlistTest extends TestCase
         ));
         $this->assertEquals(AcfCloneFixtures::cloneATitleRef(), $clone->validations[0]->field);
         $this->assertArrayNotHasKey('integration', $clone->validations[0]->field->toArray());
+    }
+
+    public function testSubmittedTypeCannotEnableContainsOnNumberFields(): void
+    {
+        $factory = $this->compositeFactory();
+
+        try {
+            $factory->fromAdminInput(array(
+                'name'       => 'Forged contains on number',
+                'post_type'  => 'page',
+                'conditions' => array(
+                    array(
+                        'field_key' => FakeIntegration::NUMBER,
+                        'operator'  => 'contains',
+                        'operand'   => 'healthy',
+                        'type'      => 'text',
+                        'label'     => 'Forged Text',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => FakeIntegration::TITLE,
+                        'type'      => 'required',
+                    ),
+                ),
+            ));
+            $this->fail('Expected contains-on-number rejection');
+        } catch (InvalidRuleException $exception) {
+            $this->assertSame('Contains conditions can only be used with text fields.', $exception->getMessage());
+        }
+
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Contains on text',
+            'post_type'  => 'page',
+            'conditions' => array(
+                array(
+                    'field_key' => FakeIntegration::TITLE,
+                    'operator'  => 'contains',
+                    'operand'   => 'healthy',
+                    'type'      => 'number',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => FakeIntegration::TITLE,
+                    'type'      => 'required',
+                    'message'   => 'Please avoid the term "healthy".',
+                ),
+            ),
+        ));
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame(FakeIntegration::TITLE, $rule->conditions[0]->field->key);
     }
 
     public function testFakeRuleDocumentSavesLoadsAndEvaluates(): void
@@ -476,7 +538,7 @@ final class RuleDocumentFactoryCatalogAllowlistTest extends TestCase
                 'conditions' => array(
                     array(
                         'field_key' => FakeIntegration::TITLE,
-                        'operator'  => 'contains',
+                        'operator'  => 'starts_with',
                         'operand'   => 'x',
                     ),
                 ),
@@ -489,7 +551,7 @@ final class RuleDocumentFactoryCatalogAllowlistTest extends TestCase
             ));
             $this->fail('Expected unknown operator rejection');
         } catch (InvalidRuleException $exception) {
-            $this->assertStringContainsString('contains', $exception->getMessage());
+            $this->assertStringContainsString('starts_with', $exception->getMessage());
         }
 
         try {

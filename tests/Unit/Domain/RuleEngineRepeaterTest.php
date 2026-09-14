@@ -282,6 +282,148 @@ final class RuleEngineRepeaterTest extends TestCase
         $this->assertArrayNotHasKey('display_row', $fail->results[0]->context);
     }
 
+    public function testWhenContainsMatchesAnyRepeaterRow(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions' => array(
+                RuleFactory::condition(array(
+                    'field'    => AcfRepeaterFixtures::ingredientRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'chicken',
+                )),
+            ),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => RuleFactory::field('title', 'post_title', 'Title'),
+                )),
+            ),
+        ));
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    AcfRepeaterFixtures::INGREDIENT => array(
+                        new FieldInstance('Salt', $this->row(0)),
+                        new FieldInstance('Chicken stock', $this->row(1)),
+                    ),
+                    'title' => 'Recipe',
+                ))
+            )->isPassed()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    AcfRepeaterFixtures::INGREDIENT => array(
+                        new FieldInstance('Salt', $this->row(0)),
+                        new FieldInstance('Pepper', $this->row(1)),
+                    ),
+                    'title' => 'Recipe',
+                ))
+            )->results[0]->isSkipped()
+        );
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    AcfRepeaterFixtures::INGREDIENT => array(),
+                    'title' => 'Recipe',
+                ))
+            )->results[0]->isSkipped()
+        );
+    }
+
+    public function testConditionOnlyWhenContainsMatchesAnyRepeaterRow(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => AcfRepeaterFixtures::ingredientRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'chicken',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Do not use chicken in this repeater.',
+        ));
+
+        $matched = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array(
+                AcfRepeaterFixtures::INGREDIENT => array(
+                    new FieldInstance('Salt', $this->row(0)),
+                    new FieldInstance('Chicken stock', $this->row(1)),
+                ),
+            ))
+        );
+        $this->assertTrue($matched->isFailed());
+        $this->assertSame('condition_matched', $matched->results[0]->code);
+        $this->assertSame(AcfRepeaterFixtures::INGREDIENT, $matched->results[0]->fieldId);
+        $this->assertSame(1, $matched->results[0]->context['row_index']);
+        $this->assertSame('Do not use chicken in this repeater.', $matched->results[0]->message);
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    AcfRepeaterFixtures::INGREDIENT => array(
+                        new FieldInstance('Salt', $this->row(0)),
+                        new FieldInstance('Pepper', $this->row(1)),
+                    ),
+                ))
+            )->results[0]->isSkipped()
+        );
+    }
+
+    public function testConditionOnlyNestedRepeaterWhenStillMatchesAnyRow(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => AcfNestedRepeaterFixtures::stepNameRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'chicken',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Avoid chicken in nested steps.',
+        ));
+
+        $matched = $this->engine->evaluate(
+            array($rule),
+            new ArrayValueProvider(array(
+                AcfNestedRepeaterFixtures::STEP_NAME => array(
+                    new FieldInstance('Cut vegetables', array('repeater_rows' => array(
+                        array('display_row' => 1),
+                        array('display_row' => 1),
+                    ))),
+                    new FieldInstance('Add chicken', array('repeater_rows' => array(
+                        array('display_row' => 1),
+                        array('display_row' => 2),
+                    ))),
+                ),
+            ))
+        );
+        $this->assertTrue($matched->isFailed());
+        $this->assertSame(AcfNestedRepeaterFixtures::STEP_NAME, $matched->results[0]->fieldId);
+        $this->assertSame(2, $matched->results[0]->context['repeater_rows'][1]['display_row']);
+
+        $this->assertTrue(
+            $this->engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    AcfNestedRepeaterFixtures::STEP_NAME => array(
+                        new FieldInstance('Cut vegetables', array('repeater_rows' => array(
+                            array('display_row' => 1),
+                            array('display_row' => 1),
+                        ))),
+                    ),
+                ))
+            )->results[0]->isSkipped()
+        );
+    }
+
     /**
      * @param array<string, mixed> $overrides
      */

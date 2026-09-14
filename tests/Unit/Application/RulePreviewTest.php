@@ -55,7 +55,7 @@ final class RulePreviewTest extends TestCase
     public function testIncompleteStates(): void
     {
         $this->assertSame(
-            RulePreview::needThenMessage(),
+            RulePreview::needWhenOrThenMessage(),
             RulePreview::fromEditor(array(), array(), $this->fieldMeta())
         );
         $this->assertSame(
@@ -174,6 +174,86 @@ final class RulePreviewTest extends TestCase
         );
     }
 
+    public function testContainsPreviewUsesContainsLanguage(): void
+    {
+        $this->assertSame(
+            'When Content contains healthy, Title is required.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'content',
+                        'operator'  => 'contains',
+                        'operand'   => 'healthy',
+                    ),
+                ),
+                array(
+                    array(
+                        'field_key' => 'title',
+                        'type'      => 'required',
+                    ),
+                ),
+                $this->fieldMeta()
+            )
+        );
+        $this->assertSame(
+            'When Title does not contain B&G, Title is required.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'title',
+                        'operator'  => 'does_not_contain',
+                        'operand'   => 'B&G',
+                    ),
+                ),
+                array(
+                    array(
+                        'field_key' => 'title',
+                        'type'      => 'required',
+                    ),
+                ),
+                $this->fieldMeta()
+            )
+        );
+    }
+
+    public function testConditionOnlyPreviewUsesTheMatchingCondition(): void
+    {
+        $this->assertSame(
+            'When Content contains healthy, this rule blocks publishing.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'content',
+                        'operator'  => 'contains',
+                        'operand'   => 'healthy',
+                    ),
+                ),
+                array(
+                    array(
+                        'field_key' => '',
+                        'type'      => 'required',
+                    ),
+                ),
+                $this->fieldMeta()
+            )
+        );
+        $this->assertSame(
+            'When Content contains healthy, this rule reports a warning.',
+            RulePreview::fromEditor(
+                array(
+                    array(
+                        'field_key' => 'content',
+                        'operator'  => 'contains',
+                        'operand'   => 'healthy',
+                    ),
+                ),
+                array(),
+                $this->fieldMeta(),
+                'warning'
+            )
+        );
+    }
+
     /**
      * @return array<string, array{label: string, type: string}>
      */
@@ -185,6 +265,8 @@ final class RulePreviewTest extends TestCase
             'field_cook_time'     => array('label' => 'Cook Time', 'type' => 'number'),
             'field_total_time'    => array('label' => 'Total Time', 'type' => 'number'),
             'field_ingredients'   => array('label' => 'Ingredients', 'type' => 'textarea'),
+            'content'             => array('label' => 'Content', 'type' => 'wysiwyg'),
+            'title'               => array('label' => 'Title', 'type' => 'text'),
         );
     }
 }

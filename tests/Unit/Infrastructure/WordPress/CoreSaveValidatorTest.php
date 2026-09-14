@@ -450,6 +450,71 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertNull($messages);
     }
 
+    public function testConditionOnlyBlockingRuleBlocksClassicPublishAndUpdate(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => CoreCatalogFixtures::contentRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $this->assertSame(
+            array('Content — Please avoid the term "healthy" in recipe content.'),
+            $this->validator(array($rule))->validate($this->publishRequest(array(
+                'content' => 'A healthy dinner',
+            )))
+        );
+        $this->assertSame(
+            array('Content — Please avoid the term "healthy" in recipe content.'),
+            $this->validator(array($rule))->validate(array(
+                'action'               => 'editpost',
+                'post_ID'              => 42,
+                'post_type'            => 'post',
+                'post_status'          => 'publish',
+                'original_post_status' => 'publish',
+                'save'                 => 'Update',
+                'post_title'           => 'Existing',
+                'content'              => 'A healthy dinner',
+                'post_author'          => 1,
+            ))
+        );
+        $this->assertNull(
+            $this->validator(array($rule))->validate($this->publishRequest(array(
+                'content' => 'A tasty dinner',
+            )))
+        );
+    }
+
+    public function testConditionOnlyWarningRuleDoesNotBlockClassicEditpost(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => CoreCatalogFixtures::contentRef(),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $this->assertNull(
+            $this->validator(array($rule))->validate($this->publishRequest(array(
+                'content' => 'A healthy dinner',
+            )))
+        );
+    }
+
     public function testRegisterHooksClassicLoadActionsAndDoesNotPersist(): void
     {
         $src = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/WordPress/CoreSaveValidator.php');

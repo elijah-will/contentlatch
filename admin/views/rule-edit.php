@@ -17,6 +17,7 @@ use ContentGuard\Admin\RulesController;
 use ContentGuard\Admin\RulesPage;
 use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\ConditionOperators;
+use ContentGuard\Application\RuleBuilderFieldLabels;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RulePreview;
 use ContentGuard\Domain\RuleSeverity;
@@ -30,43 +31,18 @@ $listUrl     = admin_url('admin.php?page=' . RulesPage::SLUG);
 $fieldKeys   = array();
 $fieldTypes  = array();
 $fieldMeta   = array();
-$fieldOptionLabel = static function (array $field): string {
-    $breadcrumb = trim((string) ($field['breadcrumb'] ?? ''));
-    $label      = $breadcrumb !== '' ? $breadcrumb : (string) ($field['label'] ?? '');
-    if ($label === '') {
-        $label = (string) ($field['name'] ?? $field['key'] ?? '');
-    }
-
-    if (($field['container'] ?? '') === 'repeater' && !str_contains($label, '(every row)')) {
-        $label .= ' (every row)';
-    }
-
-    if (($field['container'] ?? '') === 'flexible_content') {
-        $layoutLabel = trim((string) ($field['layout_label'] ?? ''));
-        if ($layoutLabel === '') {
-            $layoutLabel = (string) ($field['layout'] ?? 'layout');
-        }
-        $suffix = '(every ' . $layoutLabel . ' row)';
-        if (!str_contains($label, $suffix)) {
-            $label .= ' ' . $suffix;
-        }
-    }
-
-    return $label;
-};
 
 foreach ($fields as $field) {
     $key = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
-    $label = $fieldOptionLabel($field);
     $type = (string) ($field['type'] ?? '');
     $fieldKeys[$key] = true;
     $fieldTypes[$key] = $type;
     $fieldMeta[$key] = array(
-        'label' => $label,
+        'label' => RuleBuilderFieldLabels::previewLabel($field),
         'type'  => $type,
     );
 }
-$preview = RulePreview::fromEditor($conditions, $validations, $fieldMeta);
+$preview = RulePreview::fromEditor($conditions, $validations, $fieldMeta, $editor->severity);
 
 $validators = array(
     'required'       => __('is required', 'contentguard'),
@@ -94,20 +70,13 @@ if (!$isNew) {
  * @param array<int, array<string, mixed>> $fields
  * @param array<string, true> $fieldKeys
  */
-$conditionFields = array();
-foreach ($fields as $field) {
-    if (($field['container'] ?? '') !== 'repeater' && ($field['container'] ?? '') !== 'flexible_content') {
-        $conditionFields[] = $field;
-    }
-}
-
-$renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected) use ($fieldOptionLabel): void {
+$renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected): void {
     echo '<option value="">' . esc_html__('Choose a field', 'contentguard') . '</option>';
 
     $ungrouped = array();
     $groups    = array();
     foreach ($fields as $field) {
-        $group = (string) ($field['group_label'] ?? '');
+        $group = RuleBuilderFieldLabels::groupLabel($field);
         if ($group === '') {
             $ungrouped[] = $field;
         } else {
@@ -115,10 +84,10 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         }
     }
 
-    $renderOption = static function (array $field, string $selected) use ($fieldOptionLabel): void {
+    $renderOption = static function (array $field, string $selected): void {
         $key   = (string) ($field['resolution_id'] ?? $field['key'] ?? '');
         $type  = (string) ($field['type'] ?? '');
-        $label = $fieldOptionLabel($field);
+        $label = RuleBuilderFieldLabels::optionLabel($field);
         echo '<option value="' . esc_attr($key) . '" data-type="' . esc_attr($type) . '" ' . selected($selected, $key, false) . '>'
             . esc_html($label)
             . '</option>';
@@ -142,6 +111,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
 };
 ?>
 <div class="wrap contentguard" id="contentguard-rule-editor">
+    <script type="application/json" id="contentguard-catalog-fields"><?php echo wp_json_encode(array_values($fields)); ?></script>
     <?php
     AdminView::partial(
         'page-header',
@@ -227,7 +197,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
             <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Repeater and Flexible Content children can be used in THEN and apply to every matching row. They cannot be used in WHEN. Top-level Clone fields can be used in WHEN.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Repeater and Flexible Content fields can be used in WHEN and THEN. WHEN applies when any matching row meets the condition. THEN requirements apply to every matching row.', 'contentguard'); ?></p>
             <div id="contentguard-conditions" class="contentguard-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php
@@ -247,7 +217,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                         <div class="contentguard-builder-row__controls">
                             <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('WHEN field', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($fieldId); ?>" name="conditions[<?php echo (int) $index; ?>][field_key]" class="contentguard-field">
-                                <?php $renderFieldOptions($conditionFields, $fieldKeys, $condition['field_key']); ?>
+                                <?php $renderFieldOptions($fields, $fieldKeys, $condition['field_key']); ?>
                             </select>
                             <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentguard-operator">
@@ -278,7 +248,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
 
         <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-then-heading">
             <h2 class="contentguard-builder-section__title" id="contentguard-then-heading"><?php echo esc_html__('THEN', 'contentguard'); ?></h2>
-            <p class="description"><?php echo esc_html__('Choose what must be true. Minimum length and maximum length count characters, not words.', 'contentguard'); ?></p>
+            <p class="description"><?php echo esc_html__('Optional. Leave the field unselected if matching the WHEN condition itself should fail the rule. Minimum length and maximum length count characters, not words.', 'contentguard'); ?></p>
             <div id="contentguard-validations" class="contentguard-rows">
                 <?php if ($validations === array()) : ?>
                     <?php $validations = array(array('id' => '', 'field_key' => '', 'type' => 'required', 'min' => '', 'max' => '', 'values' => '', 'message' => '')); ?>
@@ -376,7 +346,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             <div class="contentguard-builder-field">
                 <label for="contentguard-rule-message"><?php echo esc_html__('Custom failure message', 'contentguard'); ?></label>
                 <input type="text" class="regular-text" id="contentguard-rule-message" name="message" value="<?php echo esc_attr($editor->message); ?>">
-                <p class="description"><?php echo esc_html__('Used for validations that do not have their own message. Optional — leave blank to use the default message.', 'contentguard'); ?></p>
+                <p class="description"><?php echo esc_html__('Used when this rule fails, including when a WHEN condition matches without a THEN requirement. Optional — leave blank to use the default message.', 'contentguard'); ?></p>
             </div>
         </section>
 

@@ -43,6 +43,8 @@ final class OperatorRegistry
         $registry = new self();
         $registry->register('equals', new EqualsOperator());
         $registry->register('not_equals', new NotEqualsOperator());
+        $registry->register('contains', new ContainsOperator());
+        $registry->register('does_not_contain', new DoesNotContainOperator());
         $registry->register('greater_than', new NumericCompareOperator('>'));
         $registry->register('greater_than_or_equal', new NumericCompareOperator('>='));
         $registry->register('less_than', new NumericCompareOperator('<'));

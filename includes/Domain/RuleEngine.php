@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace ContentGuard\Domain;
 
 use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
+use ContentGuard\Domain\Contracts\OperatorInterface;
 use ContentGuard\Domain\Operators\OperatorRegistry;
 use ContentGuard\Domain\Validators\ValidatorRegistry;
 
@@ -70,17 +71,21 @@ final class RuleEngine
         }
 
         if ($rule->validations === array()) {
-            return array(
-                new EvaluationResult(
-                    EvaluationStatus::Passed,
-                    $rule->id,
-                    $postId,
-                    null,
-                    'Rule applied with no validations.',
-                    $rule->severity,
-                    'no_validations',
-                ),
-            );
+            if ($rule->conditions === array()) {
+                return array(
+                    new EvaluationResult(
+                        EvaluationStatus::Passed,
+                        $rule->id,
+                        $postId,
+                        null,
+                        'Rule applied with no validations.',
+                        $rule->severity,
+                        'no_validations',
+                    ),
+                );
+            }
+
+            return array($this->evaluateConditionOnly($rule, $provider, $postId));
         }
 
         $results = array();
@@ -98,14 +103,88 @@ final class RuleEngine
     {
         foreach ($rule->conditions as $condition) {
             $operator = $this->operators->get($condition->operator);
-            $value    = $this->read($provider, $condition->field->resolutionId());
-
-            if (!$operator->matches($value, $condition->operand)) {
+            if (!$this->conditionMatches($operator, $condition, $provider)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private function conditionMatches(
+        OperatorInterface $operator,
+        Condition $condition,
+        FieldValueProviderInterface $provider,
+    ): bool {
+        $instances = $provider->instances($condition->field->resolutionId());
+        if ($instances === array()) {
+            return $operator->matches(null, $condition->operand);
+        }
+
+        foreach ($instances as $instance) {
+            if (!$instance instanceof FieldInstance) {
+                continue;
+            }
+
+            if ($operator->matches($instance->value, $condition->operand)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function evaluateConditionOnly(
+        Rule $rule,
+        FieldValueProviderInterface $provider,
+        ?int $postId,
+    ): EvaluationResult {
+        $condition = $rule->conditions[0];
+        $field     = $condition->field;
+        $context   = array(
+            'field_name'  => $field->name,
+            'field_label' => $field->label,
+        );
+
+        foreach ($rule->conditions as $candidate) {
+            $operator = $this->operators->get($candidate->operator);
+            foreach ($provider->instances($candidate->field->resolutionId()) as $instance) {
+                if (!$instance instanceof FieldInstance) {
+                    continue;
+                }
+
+                if ($operator->matches($instance->value, $candidate->operand)) {
+                    $field   = $candidate->field;
+                    $context = array_merge($instance->context, array(
+                        'field_name'  => $field->name,
+                        'field_label' => $field->label,
+                    ));
+                    break 2;
+                }
+            }
+        }
+
+        $status = $rule->severity === RuleSeverity::Warning
+            ? EvaluationStatus::Warning
+            : EvaluationStatus::Failed;
+
+        return new EvaluationResult(
+            $status,
+            $rule->id,
+            $postId,
+            $field->resolutionId(),
+            $this->conditionMatchedMessage($rule),
+            $rule->severity,
+            'condition_matched',
+            $context,
+        );
+    }
+
+    private function conditionMatchedMessage(Rule $rule): string
+    {
+        return $rule->message !== ''
+            ? $rule->message
+            : 'This content matches the rule condition.';
     }
 
     /**

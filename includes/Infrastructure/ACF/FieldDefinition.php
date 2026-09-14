@@ -38,6 +38,7 @@ final class FieldDefinition
         public readonly string $cloneLabel = '',
         public readonly string $cloneDisplay = '',
         public readonly array $repeaterChain = array(),
+        public readonly string $fieldGroup = '',
     ) {
     }
 
@@ -111,11 +112,16 @@ final class FieldDefinition
     {
         $parts = preg_split('/\s*→\s*/u', $this->breadcrumb()) ?: array();
         $parts = array_values(array_filter(array_map('trim', $parts), static fn (string $part): bool => $part !== ''));
-        if (count($parts) < 2) {
-            return '';
+        $parents = count($parts) >= 2
+            ? implode(' → ', array_slice($parts, 0, -1))
+            : '';
+
+        $fieldGroup = trim($this->fieldGroup);
+        if ($fieldGroup !== '') {
+            return $parents !== '' ? $fieldGroup . ' → ' . $parents : $fieldGroup;
         }
 
-        return implode(' → ', array_slice($parts, 0, -1));
+        return $parents;
     }
 
     public function toFieldRef(): FieldRef
@@ -150,11 +156,19 @@ final class FieldDefinition
         }
 
         if ($this->path !== array()) {
-            $data['path']        = $this->path;
-            $data['container']   = $this->container;
-            $data['breadcrumb']  = $this->breadcrumb();
-            $data['group_label'] = $this->groupLabel();
-            $data['path_names']  = $this->pathNames;
+            $data['path']       = $this->path;
+            $data['container']  = $this->container;
+            $data['breadcrumb'] = $this->breadcrumb();
+            $data['path_names'] = $this->pathNames;
+        }
+
+        $groupLabel = $this->groupLabel();
+        if ($groupLabel !== '') {
+            $data['group_label'] = $groupLabel;
+        }
+
+        if ($this->fieldGroup !== '') {
+            $data['field_group'] = $this->fieldGroup;
         }
 
         if ($this->container === FieldRef::CONTAINER_REPEATER) {

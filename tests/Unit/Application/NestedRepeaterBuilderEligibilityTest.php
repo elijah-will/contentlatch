@@ -50,23 +50,33 @@ final class NestedRepeaterBuilderEligibilityTest extends TestCase
         $byKey  = $this->byKey($fields);
 
         $this->assertSame('Directions → Section Title', $byKey[HH::SECTION_TITLE]['breadcrumb']);
-        $this->assertSame('Directions', $byKey[HH::SECTION_TITLE]['group_label']);
+        $this->assertSame('Recipes → Directions', $byKey[HH::SECTION_TITLE]['group_label']);
+        $this->assertSame('Recipes', $byKey[HH::SECTION_TITLE]['field_group']);
         $this->assertSame(array(HH::DIRECTIONS, HH::SECTION_TITLE), $byKey[HH::SECTION_TITLE]['path']);
 
         $this->assertSame(
             'Directions → Section Directions → Direction',
             $byKey[HH::DIRECTION]['breadcrumb']
         );
-        $this->assertSame('Directions → Section Directions', $byKey[HH::DIRECTION]['group_label']);
+        $this->assertSame(
+            'Recipes → Directions → Section Directions',
+            $byKey[HH::DIRECTION]['group_label']
+        );
+        $this->assertSame('Recipes', $byKey[HH::DIRECTION]['field_group']);
         $this->assertSame(
             array(HH::DIRECTIONS, HH::SECTION_DIRECTIONS, HH::DIRECTION),
             $byKey[HH::DIRECTION]['path']
         );
 
         $this->assertSame('Ingredients → Ingredient Title', $byKey[HH::INGREDIENT_TITLE]['breadcrumb']);
+        $this->assertSame('Recipes → Ingredients', $byKey[HH::INGREDIENT_TITLE]['group_label']);
         $this->assertSame(
             'Ingredients → Section Ingredients → Ingredient',
             $byKey[HH::INGREDIENT]['breadcrumb']
+        );
+        $this->assertSame(
+            'Recipes → Ingredients → Section Ingredients',
+            $byKey[HH::INGREDIENT]['group_label']
         );
 
         $this->assertArrayNotHasKey(HH::FIELD_GROUP, $byKey);
@@ -165,22 +175,21 @@ final class NestedRepeaterBuilderEligibilityTest extends TestCase
         $this->assertSame('', $field->clone);
     }
 
-    public function testTwoLevelRepeaterCannotBeAWhenCondition(): void
+    public function testTwoLevelRepeaterCanBeAWhenContainsCondition(): void
     {
         $factory = RuleDocumentFactory::v1(
             static fn (): array => array('recipes' => 'Recipes'),
             new AcfIntegration(HH::catalog())
         );
 
-        $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('Repeater fields cannot be used in WHEN conditions.');
-        $factory->fromAdminInput(array(
-            'name'       => 'Bad when',
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Flag chicken ingredients',
             'post_type'  => 'recipes',
             'conditions' => array(
                 array(
-                    'field_key' => HH::DIRECTION,
-                    'operator'  => 'is_empty',
+                    'field_key' => HH::INGREDIENT_TITLE,
+                    'operator'  => 'contains',
+                    'operand'   => 'chicken',
                 ),
             ),
             'validations' => array(
@@ -190,6 +199,73 @@ final class NestedRepeaterBuilderEligibilityTest extends TestCase
                 ),
             ),
         ));
+
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('chicken', $rule->conditions[0]->operand);
+        $this->assertSame(HH::INGREDIENT_TITLE, $rule->conditions[0]->field->key);
+        $this->assertSame('repeater', $rule->conditions[0]->field->container);
+
+        $nested = $factory->fromAdminInput(array(
+            'name'       => 'Flag nested chicken',
+            'post_type'  => 'recipes',
+            'conditions' => array(
+                array(
+                    'field_key' => HH::INGREDIENT,
+                    'operator'  => 'contains',
+                    'operand'   => 'chicken',
+                    'type'      => 'number',
+                    'label'     => 'Forged',
+                    'breadcrumb'=> 'Forged → Path',
+                    'integration' => 'core',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => HH::SECTION_TITLE,
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+        $this->assertSame('contains', $nested->conditions[0]->operator);
+        $this->assertSame('chicken', $nested->conditions[0]->operand);
+        $this->assertSame(HH::INGREDIENT, $nested->conditions[0]->field->key);
+        $this->assertSame('Ingredients → Section Ingredients → Ingredient', $nested->conditions[0]->field->label);
+    }
+
+    public function testTwoLevelRepeaterConditionOnlyContainsPersists(): void
+    {
+        $factory = RuleDocumentFactory::v1(
+            static fn (): array => array('recipes' => 'Recipes'),
+            new AcfIntegration(HH::catalog())
+        );
+
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Flag nested chicken without THEN',
+            'post_type'  => 'recipes',
+            'message'    => 'Avoid chicken in nested ingredients.',
+            'conditions' => array(
+                array(
+                    'field_key' => HH::INGREDIENT,
+                    'operator'  => 'contains',
+                    'operand'   => 'chicken',
+                    'label'     => 'Forged',
+                    'breadcrumb'=> 'Forged → Path',
+                    'integration' => 'core',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => '',
+                    'type'      => 'required',
+                ),
+            ),
+        ));
+
+        $this->assertSame(array(), $rule->validations);
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame(HH::INGREDIENT, $rule->conditions[0]->field->key);
+        $this->assertSame('Avoid chicken in nested ingredients.', $rule->message);
+        $this->assertSame(1, $rule->schemaVersion);
     }
 
     /**

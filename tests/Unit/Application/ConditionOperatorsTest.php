@@ -40,4 +40,31 @@ final class ConditionOperatorsTest extends TestCase
             $this->assertSame('is', $labels['equals']);
         }
     }
+
+    public function testStringContentFieldsReceiveContainsOperators(): void
+    {
+        foreach (array('', 'text', 'textarea', 'email', 'url', 'password', 'wysiwyg', 'select', 'radio', 'button_group') as $type) {
+            $labels = ConditionOperators::labelsForFieldType($type);
+            $this->assertSame(
+                array('equals', 'not_equals', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty'),
+                array_keys($labels),
+                $type === '' ? 'empty' : $type
+            );
+            $this->assertSame('contains', $labels['contains']);
+            $this->assertSame('does not contain', $labels['does_not_contain']);
+        }
+        $this->assertSame(
+            array('equals', 'not_equals', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty'),
+            array_keys(ConditionOperators::labelsByFieldType()['default'])
+        );
+    }
+
+    public function testNonStringFieldsDoNotReceiveContainsOperators(): void
+    {
+        foreach (array('true_false', 'number', 'range', 'date_picker', 'date_time_picker', 'color_picker') as $type) {
+            $labels = ConditionOperators::labelsForFieldType($type);
+            $this->assertArrayNotHasKey('contains', $labels, $type);
+            $this->assertArrayNotHasKey('does_not_contain', $labels, $type);
+        }
+    }
 }

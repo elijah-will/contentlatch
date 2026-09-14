@@ -64,6 +64,19 @@ final class ValueTest extends TestCase
         $this->assertFalse(Value::equals(array('a'), array('a')));
     }
 
+    public function testContainsIsCaseInsensitiveLiteralSubstring(): void
+    {
+        $this->assertTrue(Value::contains('This is a healthy recipe.', 'healthy'));
+        $this->assertTrue(Value::contains('HEALTHY ingredients', 'healthy'));
+        $this->assertFalse(Value::contains('This recipe is nutritious.', 'healthy'));
+        $this->assertTrue(Value::contains('healthy', 'health'));
+        $this->assertFalse(Value::contains('', 'healthy'));
+        $this->assertFalse(Value::contains(null, 'healthy'));
+        $this->assertFalse(Value::contains('healthy', ''));
+        $this->assertFalse(Value::contains(array('healthy'), 'healthy'));
+        $this->assertTrue(Value::contains('B&G Foods', 'B&G'));
+    }
+
     /**
      * @dataProvider tryNumberProvider
      */

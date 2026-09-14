@@ -114,6 +114,29 @@ final class RuleEditorStateTest extends TestCase
         $this->assertSame('Need more text.', $state->message);
     }
 
+    public function testFromRuleUsesRuleMessageWhenThereAreNoValidations(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'name'        => 'Avoid healthy',
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+
+        $state = RuleEditorState::fromRule($rule);
+
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $state->message);
+        $this->assertSame(array(), $state->validations);
+        $this->assertSame('contains', $state->conditions[0]['operator']);
+        $this->assertSame('healthy', $state->conditions[0]['operand']);
+    }
+
     public function testSnapshotOmitsNonceAndUnknownKeys(): void
     {
         $snapshot = RuleEditorState::snapshot(array(

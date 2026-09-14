@@ -62,7 +62,8 @@ final class AcfFieldCatalog
         $definitions = array();
 
         foreach ($this->loadRaw($postType) as $field) {
-            foreach ($this->collect($field, array(), array(), array()) as $definition) {
+            $fieldGroup = $this->fieldGroupTitle($field);
+            foreach ($this->collect($field, array(), array(), array(), '', '', '', '', '', '', '', '', array(), $fieldGroup) as $definition) {
                 $definitions[] = $definition;
             }
         }
@@ -147,6 +148,7 @@ final class AcfFieldCatalog
      * @param list<string>         $ancestorKeys
      * @param list<string>         $ancestorNames
      * @param list<string>         $ancestorLabels
+     * @param list<string>         $repeaterChain
      * @return list<FieldDefinition>
      */
     private function collect(
@@ -163,6 +165,7 @@ final class AcfFieldCatalog
         string $cloneLabel = '',
         string $cloneDisplay = '',
         array $repeaterChain = array(),
+        string $fieldGroup = '',
     ): array {
         $key  = (string) ($field['key'] ?? '');
         $type = (string) ($field['type'] ?? '');
@@ -187,7 +190,8 @@ final class AcfFieldCatalog
                 $layout,
                 $layoutKey,
                 $layoutLabel,
-                $chain
+                $chain,
+                $fieldGroup
             );
         }
 
@@ -200,7 +204,7 @@ final class AcfFieldCatalog
                 return array();
             }
 
-            return $this->collectFlexibleLayouts($field);
+            return $this->collectFlexibleLayouts($field, $fieldGroup);
         }
 
         if ($type === 'group') {
@@ -221,7 +225,8 @@ final class AcfFieldCatalog
                 $cloneKey,
                 $cloneLabel,
                 $cloneDisplay,
-                $chain
+                $chain,
+                $fieldGroup
             );
         }
 
@@ -245,7 +250,8 @@ final class AcfFieldCatalog
                 '',
                 '',
                 '',
-                $nextChain
+                $nextChain,
+                $fieldGroup
             );
         }
 
@@ -266,7 +272,8 @@ final class AcfFieldCatalog
             $cloneKey,
             $cloneLabel,
             $cloneDisplay,
-            $chain
+            $chain,
+            $fieldGroup
         );
 
         return $definition !== null ? array($definition) : array();
@@ -293,6 +300,7 @@ final class AcfFieldCatalog
         string $cloneLabel = '',
         string $cloneDisplay = '',
         array $repeaterChain = array(),
+        string $fieldGroup = '',
     ): array {
         $name  = (string) ($field['name'] ?? '');
         $label = (string) ($field['label'] ?? '');
@@ -320,7 +328,8 @@ final class AcfFieldCatalog
                 $cloneKey,
                 $cloneLabel,
                 $cloneDisplay,
-                $repeaterChain
+                $repeaterChain,
+                $fieldGroup
             ) as $definition) {
                 $collected[] = $definition;
             }
@@ -346,7 +355,8 @@ final class AcfFieldCatalog
         string $layout,
         string $layoutKey,
         string $layoutLabel,
-        array $repeaterChain = array()
+        array $repeaterChain = array(),
+        string $fieldGroup = '',
     ): array {
         $key = (string) ($field['key'] ?? '');
         if ($key === '' || !str_starts_with($key, 'field_')) {
@@ -391,7 +401,8 @@ final class AcfFieldCatalog
                 $key,
                 $label,
                 $display,
-                $repeaterChain
+                $repeaterChain,
+                $fieldGroup
             ) as $definition) {
                 $collected[] = $definition;
             }
@@ -404,7 +415,7 @@ final class AcfFieldCatalog
      * @param array<string, mixed> $field
      * @return list<FieldDefinition>
      */
-    private function collectFlexibleLayouts(array $field): array
+    private function collectFlexibleLayouts(array $field, string $fieldGroup = ''): array
     {
         $key  = (string) ($field['key'] ?? '');
         $name = (string) ($field['name'] ?? '');
@@ -445,7 +456,12 @@ final class AcfFieldCatalog
                     $key,
                     $layoutName,
                     $layoutKey,
-                    $layoutLabel
+                    $layoutLabel,
+                    '',
+                    '',
+                    '',
+                    array(),
+                    $fieldGroup
                 ) as $definition) {
                     $collected[] = $definition;
                 }
@@ -475,6 +491,7 @@ final class AcfFieldCatalog
         string $cloneLabel = '',
         string $cloneDisplay = '',
         array $repeaterChain = array(),
+        string $fieldGroup = '',
     ): ?FieldDefinition {
         $postedKey = (string) ($field['key'] ?? '');
         $type      = (string) ($field['type'] ?? '');
@@ -537,7 +554,8 @@ final class AcfFieldCatalog
             $cloneKey,
             $cloneLabel,
             $cloneDisplay,
-            $this->resolvedRepeaterChain($repeaterKey, $repeaterChain)
+            $this->resolvedRepeaterChain($repeaterKey, $repeaterChain),
+            $fieldGroup
         );
     }
 
@@ -648,17 +666,33 @@ final class AcfFieldCatalog
         $fields = array();
 
         foreach ($groups as $group) {
+            if (!is_array($group)) {
+                continue;
+            }
+
+            $groupTitle  = trim((string) ($group['title'] ?? ''));
             $groupFields = acf_get_fields($group);
             if (!is_array($groupFields)) {
                 continue;
             }
 
             foreach ($this->onlyMaps($groupFields) as $field) {
+                if ($groupTitle !== '') {
+                    $field['field_group'] = $groupTitle;
+                }
                 $fields[] = $field;
             }
         }
 
         return $this->rehydrateSeamlessClones($fields);
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     */
+    private function fieldGroupTitle(array $field): string
+    {
+        return trim((string) ($field['field_group'] ?? ''));
     }
 
     /**

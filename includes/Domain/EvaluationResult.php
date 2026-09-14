@@ -1,6 +1,7 @@
 <?php
 /**
- * Structured result for one skipped rule or one validation.
+ * Structured result for one skipped rule, one validation, or one
+ * condition-only match.
  *
  * @package ContentGuard
  */

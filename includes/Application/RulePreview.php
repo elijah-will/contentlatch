@@ -16,6 +16,11 @@ final class RulePreview
         return 'Add a THEN requirement to preview this rule.';
     }
 
+    public static function needWhenOrThenMessage(): string
+    {
+        return 'Add a WHEN condition or THEN requirement to preview this rule.';
+    }
+
     public static function incompleteWhenMessage(): string
     {
         return 'Finish the WHEN condition to preview this rule.';
@@ -26,24 +31,46 @@ final class RulePreview
         return 'Finish the THEN requirement to preview this rule.';
     }
 
+    public static function conditionOnlyBlockingMessage(): string
+    {
+        return 'this rule blocks publishing';
+    }
+
+    public static function conditionOnlyWarningMessage(): string
+    {
+        return 'this rule reports a warning';
+    }
+
     /**
      * @param list<array{field_key?: string, operator?: string, operand?: string}> $conditions
      * @param list<array{field_key?: string, type?: string, min?: string, max?: string, values?: string}> $validations
      * @param array<string, array{label?: string, type?: string}> $fieldMeta
      */
-    public static function fromEditor(array $conditions, array $validations, array $fieldMeta = array()): string
-    {
+    public static function fromEditor(
+        array $conditions,
+        array $validations,
+        array $fieldMeta = array(),
+        string $severity = 'fail',
+    ): string {
         $when = self::whenState($conditions, $fieldMeta);
         $then = self::thenState($validations, $fieldMeta);
 
         if ($when['state'] === 'incomplete') {
             return self::incompleteWhenMessage();
         }
-        if ($then['state'] === 'empty') {
-            return self::needThenMessage();
-        }
         if ($then['state'] === 'incomplete') {
             return self::incompleteThenMessage();
+        }
+        if ($then['state'] === 'empty') {
+            if ($when['text'] === '') {
+                return self::needWhenOrThenMessage();
+            }
+
+            $consequence = $severity === 'warning'
+                ? self::conditionOnlyWarningMessage()
+                : self::conditionOnlyBlockingMessage();
+
+            return 'When ' . $when['text'] . ', ' . $consequence . '.';
         }
 
         if ($when['text'] === '') {
@@ -170,6 +197,8 @@ final class RulePreview
         return match ($operator) {
             'equals'                => $field . ' is ' . $value,
             'not_equals'            => $field . ' is not ' . $value,
+            'contains'              => $field . ' contains ' . $value,
+            'does_not_contain'      => $field . ' does not contain ' . $value,
             'greater_than'          => $field . ' is greater than ' . $value,
             'greater_than_or_equal' => $field . ' is at least ' . $value,
             'less_than'             => $field . ' is less than ' . $value,

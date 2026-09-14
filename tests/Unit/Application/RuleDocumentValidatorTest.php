@@ -40,13 +40,13 @@ final class RuleDocumentValidatorTest extends TestCase
     public function testUnknownOperatorIsRejectedAtThePersistenceBoundary(): void
     {
         $document = RuleFactory::document();
-        $document['conditions'][0]['operator'] = 'contains';
+        $document['conditions'][0]['operator'] = 'starts_with';
 
         try {
             $this->validator->validateArray($document);
             $this->fail('Expected InvalidRuleException');
         } catch (InvalidRuleException $exception) {
-            $this->assertStringContainsString('contains', $exception->getMessage());
+            $this->assertStringContainsString('starts_with', $exception->getMessage());
         }
 
         $engineRule = Rule::fromArray($document);
@@ -184,6 +184,39 @@ final class RuleDocumentValidatorTest extends TestCase
         $rule = $this->validator->validateArray(RuleFactory::document());
         $this->assertSame(1, $rule->schemaVersion);
         $this->assertSame('equals', $rule->conditions[0]->operator);
+        $this->assertArrayNotHasKey('message', RuleFactory::document());
+    }
+
+    public function testConditionOnlyDocumentIsValid(): void
+    {
+        $document = RuleFactory::document(array(
+            'validations' => array(),
+            'message'     => 'Please avoid the term "healthy" in recipe content.',
+        ));
+        $document['conditions'][0]['operator'] = 'contains';
+        $document['conditions'][0]['operand'] = 'healthy';
+        $document['conditions'][0]['field'] = RuleFactory::field(
+            'field_ingredients',
+            'ingredients',
+            'Ingredients'
+        )->toArray();
+
+        $rule = $this->validator->validateArray($document);
+        $this->assertSame(array(), $rule->validations);
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $rule->message);
+        $this->assertSame(1, $rule->schemaVersion);
+    }
+
+    public function testEmptyConditionsAndValidationsAreRejected(): void
+    {
+        $document = RuleFactory::document();
+        $document['conditions'] = array();
+        $document['validations'] = array();
+
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN);
+        $this->validator->validateArray($document);
     }
 
     public function testNumericOperatorsAreAcceptedWithoutSchemaChange(): void

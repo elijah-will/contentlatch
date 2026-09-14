@@ -35,11 +35,14 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('>THEN<', $html);
         $this->assertStringContainsString('Rule behavior', $html);
         $this->assertStringContainsString('Rule preview', $html);
-        $this->assertStringContainsString(RulePreview::needThenMessage(), $html);
+        $this->assertStringContainsString(RulePreview::needWhenOrThenMessage(), $html);
+        $this->assertStringContainsString('Leave the field unselected if matching the WHEN condition itself should fail the rule.', $html);
+        $this->assertStringContainsString('including when a WHEN condition matches without a THEN requirement', $html);
         $this->assertStringContainsString('Prevents publishing when the rule fails.', $html);
         $this->assertStringContainsString('Reports an issue but does not prevent publishing.', $html);
         $this->assertStringContainsString('Enforced and included in audits.', $html);
         $this->assertStringContainsString('Not enforced and not included in audits.', $html);
+        $this->assertStringContainsString('id="contentguard-catalog-fields"', $html);
         $this->assertStringContainsString('Save Rule', $html);
         $this->assertStringContainsString('admin.php?page=contentguard', $html);
         $this->assertStringNotContainsString('Add another rule', $html);
@@ -53,11 +56,48 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('class="contentguard-notice-label"', $html);
         $this->assertStringContainsString('class="contentguard-notice-message"', $html);
         $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
-        $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
-        $this->assertStringContainsString('They cannot be used in WHEN', $html);
-        $this->assertStringContainsString('Top-level Clone fields can be used in WHEN.', $html);
+        $this->assertStringContainsString('Repeater and Flexible Content fields can be used in WHEN and THEN', $html);
+        $this->assertStringContainsString('WHEN applies when any matching row meets the condition', $html);
+        $this->assertStringNotContainsString('They cannot be used in WHEN', $html);
         $this->assertStringNotContainsString('Clone fields are not supported yet.', $html);
         $this->assertStringNotContainsString('Flexible Content and Clone fields are not supported yet.', $html);
+    }
+
+    public function testConditionOnlyRulePreviewExplainsTheMatchingCondition(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Avoid healthy',
+                'target_post_type' => 'post',
+                'message'          => 'Please avoid the term "healthy" in recipe content.',
+                'severity'         => 'fail',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'content',
+                        'operator'  => 'contains',
+                        'operand'   => 'healthy',
+                    ),
+                ),
+                'validations' => array(
+                    array(
+                        'field_key' => '',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array(
+                    'key'   => 'content',
+                    'name'  => 'post_content',
+                    'label' => 'Content',
+                    'type'  => 'wysiwyg',
+                ),
+            )
+        );
+
+        $this->assertStringContainsString('When Content contains healthy, this rule blocks publishing.', $html);
+        $this->assertStringContainsString('Please avoid the term &quot;healthy&quot; in recipe content.', $html);
+        $this->assertStringContainsString('Leave the field unselected if matching the WHEN condition itself should fail the rule.', $html);
     }
 
     public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
@@ -110,10 +150,16 @@ final class RuleEditorViewTest extends TestCase
             )
         );
 
-        $this->assertStringContainsString('Product Details → Ingredients', $html);
-        $this->assertStringContainsString('Product Details → Nutrition → Calories', $html);
         $this->assertStringContainsString('<optgroup label="Product Details">', $html);
         $this->assertStringContainsString('<optgroup label="Product Details → Nutrition">', $html);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Product Details">[\s\S]*?>Ingredients<\/option>/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Product Details → Nutrition">[\s\S]*?>Calories<\/option>/',
+            $html
+        );
         $this->assertStringContainsString('When Product Type is sauce, Product Details → Ingredients is required.', $html);
         $this->assertStringNotContainsString('field_product_details.field_ingredients', $html);
         $this->assertStringNotContainsString('>field_ingredients<', $html);
@@ -176,13 +222,16 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('value="field_ingredients"', $html);
         $this->assertStringContainsString('>Ingredients<', $html);
         $this->assertStringContainsString('<optgroup label="Details">', $html);
-        $this->assertStringContainsString('Details → Nested', $html);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Details">[\s\S]*?>Nested<\/option>/',
+            $html
+        );
         $this->assertStringNotContainsString('>title<', $html);
         $this->assertStringNotContainsString('core:title', $html);
         $this->assertStringNotContainsString('wp:title', $html);
         $this->assertStringContainsString('selected', $html);
         $this->assertStringNotContainsString('>field_calories<', $html);
-        $this->assertStringContainsString('Repeater and Flexible Content children can be used in THEN', $html);
+        $this->assertStringContainsString('Repeater and Flexible Content fields can be used in WHEN and THEN', $html);
     }
 
     public function testRepeaterChildAppearsInThenWithEveryRowAndNotInWhen(): void
@@ -225,17 +274,18 @@ final class RuleEditorViewTest extends TestCase
             )
         );
 
+        $this->assertStringContainsString('Product Size (every row)', $html);
         $this->assertStringContainsString('Product Information → Item Size → Product Size (every row)', $html);
         $this->assertStringContainsString('<optgroup label="Product Information → Item Size">', $html);
         $this->assertMatchesRegularExpression(
-            '/name="validations\[0\]\[field_key\]"[\s\S]*Product Information → Item Size → Product Size \(every row\)/',
+            '/name="validations\[0\]\[field_key\]"[\s\S]*Product Size \(every row\)/',
             $html
         );
         if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
             $this->fail('WHEN field select missing');
         }
-        $this->assertStringNotContainsString('field_product_size', $match[1]);
-        $this->assertStringNotContainsString('(every row)', $match[1]);
+        $this->assertStringContainsString('field_product_size', $match[1]);
+        $this->assertStringContainsString('Product Size (every row)', $match[1]);
         $this->assertStringContainsString('field_type', $match[1]);
     }
 
@@ -260,6 +310,35 @@ final class RuleEditorViewTest extends TestCase
             )),
             array(
                 array(
+                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+                    'name'        => 'ingredient_title',
+                    'label'       => 'Ingredient Title',
+                    'type'        => 'text',
+                    'path'        => array(
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+                    ),
+                    'container'   => 'repeater',
+                    'breadcrumb'  => 'Ingredients → Ingredient Title',
+                    'group_label' => 'Recipes → Ingredients',
+                    'field_group' => 'Recipes',
+                ),
+                array(
+                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+                    'name'        => 'ingredient',
+                    'label'       => 'Ingredient',
+                    'type'        => 'text',
+                    'path'        => array(
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_INGREDIENTS,
+                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+                    ),
+                    'container'   => 'repeater',
+                    'breadcrumb'  => 'Ingredients → Section Ingredients → Ingredient',
+                    'group_label' => 'Recipes → Ingredients → Section Ingredients',
+                    'field_group' => 'Recipes',
+                ),
+                array(
                     'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
                     'name'        => 'section_title',
                     'label'       => 'Section Title',
@@ -270,7 +349,8 @@ final class RuleEditorViewTest extends TestCase
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Directions → Section Title',
-                    'group_label' => 'Directions',
+                    'group_label' => 'Recipes → Directions',
+                    'field_group' => 'Recipes',
                 ),
                 array(
                     'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
@@ -284,26 +364,57 @@ final class RuleEditorViewTest extends TestCase
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Directions → Section Directions → Direction',
-                    'group_label' => 'Directions → Section Directions',
+                    'group_label' => 'Recipes → Directions → Section Directions',
+                    'field_group' => 'Recipes',
                 ),
             )
         );
 
-        $this->assertStringContainsString('Directions → Section Title (every row)', $html);
+        $this->assertStringContainsString('<optgroup label="Recipes → Ingredients">', $html);
+        $this->assertStringContainsString('<optgroup label="Recipes → Ingredients → Section Ingredients">', $html);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Recipes → Ingredients">[\s\S]*?>Ingredient Title \(every row\)<\/option>/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Recipes → Ingredients → Section Ingredients">[\s\S]*?>Ingredient \(every row\)<\/option>/',
+            $html
+        );
+        $this->assertStringContainsString('<optgroup label="Recipes → Directions">', $html);
+        $this->assertStringContainsString('<optgroup label="Recipes → Directions → Section Directions">', $html);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Recipes → Directions">[\s\S]*?>Section Title \(every row\)<\/option>/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Recipes → Directions → Section Directions">[\s\S]*?>Direction \(every row\)<\/option>/',
+            $html
+        );
         $this->assertStringContainsString('Directions → Section Directions → Direction (every row)', $html);
-        $this->assertStringContainsString('<optgroup label="Directions">', $html);
-        $this->assertStringContainsString('<optgroup label="Directions → Section Directions">', $html);
         if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
             $this->fail('WHEN field select missing');
         }
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
             $match[1]
         );
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
             $match[1]
         );
+        $this->assertStringContainsString(
+            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+            $match[1]
+        );
+        $this->assertStringContainsString(
+            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+            $match[1]
+        );
+        if (preg_match('/name="conditions\[0\]\[operator\]"[^>]*>([\s\S]*?)<\/select>/', $html, $ops) !== 1) {
+            $this->fail('WHEN operator select missing');
+        }
+        $this->assertStringContainsString('value="contains"', $ops[1]);
+        $this->assertStringContainsString('value="does_not_contain"', $ops[1]);
     }
 
     public function testFlexibleChildAppearsInThenWithEveryLayoutRowAndNotInWhen(): void
@@ -350,15 +461,16 @@ final class RuleEditorViewTest extends TestCase
             )
         );
 
+        $this->assertStringContainsString('Title (every Hero row)', $html);
         $this->assertStringContainsString('Modules → Hero → Title (every Hero row)', $html);
         $this->assertStringContainsString('<optgroup label="Modules → Hero">', $html);
-        $this->assertStringNotContainsString('field_660d684429de1', $html);
+        $this->assertStringNotContainsString('value="field_660d684429de1"', $html);
         $this->assertStringNotContainsString('layout_66e48d4511343', $html);
         if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
             $this->fail('WHEN field select missing');
         }
-        $this->assertStringNotContainsString(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $match[1]);
-        $this->assertStringNotContainsString('(every Hero row)', $match[1]);
+        $this->assertStringContainsString(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $match[1]);
+        $this->assertStringContainsString('Title (every Hero row)', $match[1]);
     }
 
     public function testEditRuleLoadsQuotedWhenThenAndAddAnotherRule(): void
@@ -603,7 +715,49 @@ final class RuleEditorViewTest extends TestCase
         }
         $this->assertStringNotContainsString('greater_than', $match[1]);
         $this->assertStringContainsString('value="equals"', $match[1]);
+        $this->assertStringContainsString('value="contains"', $match[1]);
+        $this->assertStringContainsString('value="does_not_contain"', $match[1]);
         $this->assertStringContainsString('value="is_empty"', $match[1]);
+        if (preg_match('/name="conditions\[0\]\[operator\]"[^>]*>([\s\S]*?)<\/select>/', $html, $numberMatch) !== 1) {
+            $this->fail('Number field operator select missing');
+        }
+        $this->assertStringNotContainsString('value="contains"', $numberMatch[1]);
+        $this->assertStringNotContainsString('does_not_contain', $numberMatch[1]);
+    }
+
+    public function testTrueFalseFieldsDoNotOfferContainsOperators(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromSubmitted(array(
+                'name'             => 'Show New Tag',
+                'target_post_type' => 'product',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'field_show_new_tag',
+                        'operator'  => 'equals',
+                        'operand'   => '1',
+                    ),
+                ),
+                'validations'      => array(
+                    array(
+                        'field_key' => 'field_page_id',
+                        'type'      => 'required',
+                    ),
+                ),
+            )),
+            array(
+                array('key' => 'field_show_new_tag', 'name' => 'show_new_tag', 'label' => 'Show New Tag', 'type' => 'true_false'),
+                array('key' => 'field_page_id', 'name' => 'page_id', 'label' => 'Page ID', 'type' => 'text'),
+            )
+        );
+
+        if (preg_match('/name="conditions\[0\]\[operator\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
+            $this->fail('True/false operator select missing');
+        }
+        $this->assertStringContainsString('value="equals"', $match[1]);
+        $this->assertStringContainsString('value="is_empty"', $match[1]);
+        $this->assertStringNotContainsString('value="contains"', $match[1]);
+        $this->assertStringNotContainsString('does_not_contain', $match[1]);
     }
 
     public function testCloneFieldsAreSelectableAndDistinguishableAndRespectWhenRules(): void
@@ -691,17 +845,29 @@ final class RuleEditorViewTest extends TestCase
         );
         $this->assertStringContainsString('value="field_clone_a_field_title"', $html);
         $this->assertStringContainsString('value="field_clone_b_field_title"', $html);
+        $this->assertStringContainsString('<optgroup label="Shared Content">', $html);
+        $this->assertStringContainsString('<optgroup label="Hero Clone">', $html);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Shared Content">[\s\S]*?>Title<\/option>/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Hero Clone">[\s\S]*?>Title<\/option>/',
+            $html
+        );
         $this->assertStringContainsString('Shared Content → Title', $html);
-        $this->assertStringContainsString('Hero Clone → Title', $html);
-        $this->assertStringNotContainsString('field_clone_a"', $html);
+        $this->assertStringNotContainsString('value="field_clone_a"', $html);
 
         if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
             $this->fail('WHEN field select missing');
         }
         $this->assertStringContainsString('field_clone_a_field_title', $match[1]);
         $this->assertStringContainsString('field_clone_b_field_title', $match[1]);
-        $this->assertStringNotContainsString('field_clone_rep_field_title', $match[1]);
-        $this->assertStringContainsString('Shared Content → Title', $match[1]);
+        $this->assertStringContainsString('field_clone_rep_field_title', $match[1]);
+        $this->assertMatchesRegularExpression(
+            '/<optgroup label="Shared Content">[\s\S]*?>Title<\/option>/',
+            $match[1]
+        );
     }
 
     /**

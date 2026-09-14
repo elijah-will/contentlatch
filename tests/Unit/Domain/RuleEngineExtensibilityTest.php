@@ -23,11 +23,11 @@ final class RuleEngineExtensibilityTest extends TestCase
     {
         $operators = OperatorRegistry::v1();
         $operators->register(
-            'contains',
+            'ends_with',
             new class implements OperatorInterface {
                 public function matches(mixed $value, mixed $operand): bool
                 {
-                    return is_string($value) && is_string($operand) && str_contains($value, $operand);
+                    return is_string($value) && is_string($operand) && str_ends_with($value, $operand);
                 }
             }
         );
@@ -38,8 +38,8 @@ final class RuleEngineExtensibilityTest extends TestCase
                 'conditions' => array(
                     RuleFactory::condition(
                         array(
-                            'operator' => 'contains',
-                            'operand'  => 'sau',
+                            'operator' => 'ends_with',
+                            'operand'  => 'uce',
                             'field'    => RuleFactory::field('field_type', 'product_type', 'Product Type'),
                         )
                     ),

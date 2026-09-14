@@ -32,6 +32,7 @@ final class Rule
         public readonly string $conditionLogic = self::CONDITION_LOGIC_AND,
         public readonly ?string $updatedAt = null,
         public readonly ?string $createdAt = null,
+        public readonly string $message = '',
     ) {
         if ($this->name === '') {
             throw new InvalidRuleException('Rule name is required.');
@@ -63,7 +64,7 @@ final class Rule
      */
     public function toArray(): array
     {
-        return array(
+        $data = array(
             'schema_version'  => $this->schemaVersion,
             'id'              => $this->id,
             'name'            => $this->name,
@@ -82,6 +83,12 @@ final class Rule
             'updated_at'      => $this->updatedAt,
             'created_at'      => $this->createdAt,
         );
+
+        if ($this->message !== '') {
+            $data['message'] = $this->message;
+        }
+
+        return $data;
     }
 
     /**
@@ -129,6 +136,7 @@ final class Rule
             (string) ($data['condition_logic'] ?? self::CONDITION_LOGIC_AND),
             isset($data['updated_at']) ? (string) $data['updated_at'] : null,
             isset($data['created_at']) ? (string) $data['created_at'] : null,
+            (string) ($data['message'] ?? ''),
         );
     }
 

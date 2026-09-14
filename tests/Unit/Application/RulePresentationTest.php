@@ -99,4 +99,29 @@ final class RulePresentationTest extends TestCase
             RulePresentation::conditionsSummary($rule, array('field_cook_time' => 'number'))
         );
     }
+
+    public function testContainsConditionSummaryUsesLiteralLanguage(): void
+    {
+        $contains = RuleFactory::rule(array(
+            'conditions' => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+        ));
+        $this->assertSame('Content contains healthy', RulePresentation::conditionsSummary($contains));
+
+        $missing = RuleFactory::rule(array(
+            'conditions' => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('title', 'post_title', 'Title'),
+                    'operator' => 'does_not_contain',
+                    'operand'  => 'B&G',
+                )),
+            ),
+        ));
+        $this->assertSame('Title does not contain B&G', RulePresentation::conditionsSummary($missing));
+    }
 }

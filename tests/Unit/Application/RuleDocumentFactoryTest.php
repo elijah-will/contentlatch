@@ -44,6 +44,7 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->assertSame('min_length', $rule->validations[1]->type);
         $this->assertSame(3, $rule->validations[1]->params['min']);
         $this->assertSame('Ingredients are required for sauce products.', $rule->validations[0]->message);
+        $this->assertSame('Ingredients are required for sauce products.', $rule->message);
     }
 
     public function testWarningAlwaysAppliesRule(): void
@@ -132,9 +133,9 @@ final class RuleDocumentFactoryTest extends TestCase
     public function testInvalidOperatorIsRejected(): void
     {
         $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('contains');
+        $this->expectExceptionMessage('starts_with');
         $input = $this->validInput();
-        $input['conditions'][0]['operator'] = 'contains';
+        $input['conditions'][0]['operator'] = 'starts_with';
         $this->factory->fromAdminInput($input);
     }
 
@@ -165,12 +166,75 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->factory->fromAdminInput($input);
     }
 
-    public function testMissingValidationIsRejected(): void
+    public function testConditionOnlyBlockingRulePersists(): void
+    {
+        $input = $this->validInput();
+        $input['name'] = 'Avoid healthy';
+        $input['message'] = 'Please avoid the term "healthy" in recipe content.';
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'operator'  => 'contains',
+                'operand'   => 'healthy',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => '',
+                'type'      => 'required',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+
+        $this->assertSame(array(), $rule->validations);
+        $this->assertCount(1, $rule->conditions);
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('healthy', $rule->conditions[0]->operand);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $rule->message);
+        $this->assertSame(RuleSeverity::Fail, $rule->severity);
+        $this->assertSame('None', RulePresentation::validationsSummary($rule));
+        $this->assertSame(1, $rule->schemaVersion);
+
+        $loaded = RuleDocumentValidator::v1()->validateArray($rule->toArray());
+        $this->assertSame($rule->message, $loaded->message);
+        $this->assertSame(array(), $loaded->validations);
+    }
+
+    public function testConditionOnlyWarningRulePersists(): void
+    {
+        $input = $this->validInput();
+        $input['name'] = 'Warn on healthy';
+        $input['severity'] = 'warning';
+        $input['message'] = 'Please avoid the term "healthy" in recipe content.';
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'operator'  => 'contains',
+                'operand'   => 'healthy',
+            ),
+        );
+        $input['validations'] = array();
+
+        $rule = $this->factory->fromAdminInput($input);
+
+        $this->assertSame(RuleSeverity::Warning, $rule->severity);
+        $this->assertSame(array(), $rule->validations);
+        $this->assertSame('Please avoid the term "healthy" in recipe content.', $rule->message);
+    }
+
+    public function testCompletelyEmptyRuleIsRejected(): void
     {
         $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('At least one validation is required.');
+        $this->expectExceptionMessage(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN);
         $input = $this->validInput();
-        $input['validations'] = array();
+        $input['conditions'] = array();
+        $input['validations'] = array(
+            array(
+                'field_key' => '',
+                'type'      => 'required',
+            ),
+        );
         $this->factory->fromAdminInput($input);
     }
 
@@ -461,8 +525,8 @@ final class RuleDocumentFactoryTest extends TestCase
         $input = $this->validInput();
         $input['validations'] = array(
             array(
-                'field_key' => '',
-                'type'      => 'required',
+                'field_key' => 'field_ingredients',
+                'type'      => '',
             ),
         );
 
@@ -590,6 +654,101 @@ final class RuleDocumentFactoryTest extends TestCase
         $rule = $this->factory->fromAdminInput($input);
         $this->assertSame('not_equals', $rule->conditions[0]->operator);
         $this->assertSame('dip', $rule->conditions[0]->operand);
+    }
+
+    public function testContainsConditionPersistsAndEvaluatesThroughRuleEngine(): void
+    {
+        $input = $this->validInput();
+        $input['name'] = 'Avoid healthy';
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_ingredients',
+                'operator'  => 'contains',
+                'operand'   => 'healthy',
+            ),
+        );
+        $input['validations'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'type'      => 'required',
+                'message'   => 'Please avoid the term "healthy".',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('healthy', $rule->conditions[0]->operand);
+        $this->assertSame('field_ingredients', $rule->conditions[0]->field->key);
+
+        $engine = RuleEngine::v1();
+        $this->assertTrue(
+            $engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_ingredients' => 'This is a HEALTHY recipe.',
+                    'field_page_id'     => '',
+                ))
+            )->isFailed()
+        );
+        $this->assertTrue(
+            $engine->evaluate(
+                array($rule),
+                new ArrayValueProvider(array(
+                    'field_ingredients' => 'This recipe is nutritious.',
+                    'field_page_id'     => '',
+                ))
+            )->isNotEvaluated()
+        );
+    }
+
+    public function testDoesNotContainConditionPersists(): void
+    {
+        $input = $this->validInput();
+        $input['conditions'] = array(
+            array(
+                'field_key' => 'field_page_id',
+                'operator'  => 'does_not_contain',
+                'operand'   => 'B&G',
+            ),
+        );
+
+        $rule = $this->factory->fromAdminInput($input);
+        $this->assertSame('does_not_contain', $rule->conditions[0]->operator);
+        $this->assertSame('B&G', $rule->conditions[0]->operand);
+    }
+
+    public function testEmptyContainsValueIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('A condition value is required.');
+        $input = $this->validInput();
+        $input['conditions'][0]['field_key'] = 'field_ingredients';
+        $input['conditions'][0]['operator'] = 'contains';
+        $input['conditions'][0]['operand'] = '';
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testContainsOnNumberFieldIsRejected(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Contains conditions can only be used with text fields.');
+        $input = $this->validInput();
+        $input['conditions'][0]['field_key'] = 'field_cook_time';
+        $input['conditions'][0]['operator'] = 'contains';
+        $input['conditions'][0]['operand'] = '30';
+        $this->factory->fromAdminInput($input);
+    }
+
+    public function testContainsOnTrueFalseFieldIsRejectedEvenWithForgedType(): void
+    {
+        $this->expectException(InvalidRuleException::class);
+        $this->expectExceptionMessage('Contains conditions can only be used with text fields.');
+        $input = $this->validInput();
+        $input['conditions'][0]['field_key'] = 'field_show_new_tag';
+        $input['conditions'][0]['operator'] = 'contains';
+        $input['conditions'][0]['operand'] = 'Yes';
+        $input['conditions'][0]['type'] = 'text';
+        $this->factory->fromAdminInput($input);
     }
 
     public function testEmptyOperatorDoesNotNeedAValue(): void
@@ -794,13 +953,11 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->assertArrayNotHasKey('layout', RuleFactory::validation()->field->toArray());
     }
 
-    public function testFlexibleChildCannotBeUsedAsWhenCondition(): void
+    public function testFlexibleChildCanBeUsedAsWhenCondition(): void
     {
         $factory = $this->flexibleFactory();
-        $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('Flexible Content fields cannot be used in WHEN conditions.');
-        $factory->fromAdminInput(array(
-            'name'       => 'Bad when',
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Hero title when',
             'post_type'  => 'page',
             'validations' => array(
                 array(
@@ -811,19 +968,23 @@ final class RuleDocumentFactoryTest extends TestCase
             'conditions' => array(
                 array(
                     'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
-                    'operator'  => 'is_empty',
+                    'operator'  => 'contains',
+                    'operand'   => 'healthy',
                 ),
             ),
         ));
+
+        $this->assertSame('contains', $rule->conditions[0]->operator);
+        $this->assertSame('healthy', $rule->conditions[0]->operand);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $rule->conditions[0]->field->key);
+        $this->assertSame('flexible_content', $rule->conditions[0]->field->container);
     }
 
-    public function testRepeaterChildCannotBeUsedAsWhenCondition(): void
+    public function testRepeaterChildCanBeUsedAsWhenCondition(): void
     {
         $factory = $this->repeaterFactory();
-        $this->expectException(InvalidRuleException::class);
-        $this->expectExceptionMessage('Repeater fields cannot be used in WHEN conditions.');
-        $factory->fromAdminInput(array(
-            'name'       => 'Bad when',
+        $rule = $factory->fromAdminInput(array(
+            'name'       => 'Size when',
             'post_type'  => 'product',
             'validations' => array(
                 array(
@@ -839,6 +1000,11 @@ final class RuleDocumentFactoryTest extends TestCase
                 ),
             ),
         ));
+
+        $this->assertSame('equals', $rule->conditions[0]->operator);
+        $this->assertSame('8oz', $rule->conditions[0]->operand);
+        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $rule->conditions[0]->field->key);
+        $this->assertSame('repeater', $rule->conditions[0]->field->container);
     }
 
     /**
