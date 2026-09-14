@@ -20,6 +20,7 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 
 final class RulesController
@@ -70,23 +71,30 @@ final class RulesController
 
     public function save(): void
     {
-        $payload = $this->handleSave($_POST);
-        $this->respondAdmin($payload, $this->redirectAfterSave($_POST, $payload));
+        $request = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
+        $payload = $this->handleSave($request);
+        $this->respondAdmin($payload, $this->redirectAfterSave($request, $payload));
     }
 
     public function delete(): void
     {
-        $this->respondAdmin($this->handleDelete($_REQUEST), admin_url('admin.php?page=' . RulesPage::SLUG));
+        $this->respondAdmin(
+            $this->handleDelete(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
+            admin_url('admin.php?page=' . RulesPage::SLUG)
+        );
     }
 
     public function status(): void
     {
-        $this->respondAdmin($this->handleStatus($_REQUEST), admin_url('admin.php?page=' . RulesPage::SLUG));
+        $this->respondAdmin(
+            $this->handleStatus(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
+            admin_url('admin.php?page=' . RulesPage::SLUG)
+        );
     }
 
     public function fields(): void
     {
-        $payload = $this->handleFields($_POST);
+        $payload = $this->handleFields(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
         if (!function_exists('wp_send_json')) {
             return;
         }

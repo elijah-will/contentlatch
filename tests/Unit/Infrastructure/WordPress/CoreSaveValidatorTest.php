@@ -12,6 +12,7 @@ use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreSaveValidator;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use ContentGuard\Tests\Support\IncomingSaveFixtures;
 use ContentGuard\Tests\Support\RuleFactory;
@@ -512,6 +513,27 @@ final class CoreSaveValidatorTest extends TestCase
             $this->validator(array($rule))->validate($this->publishRequest(array(
                 'content' => 'A healthy dinner',
             )))
+        );
+    }
+
+    public function testSlashedClassicTitleDoesNotInflateMaxLength(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'postType'    => 'post',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'  => CoreCatalogFixtures::titleRef(),
+                    'type'   => 'max_length',
+                    'params' => array('max' => 10),
+                )),
+            ),
+        ));
+
+        $request = $this->publishRequest(array('post_title' => "O'Brien's"));
+        $this->assertNull($this->validator(array($rule))->validate($request));
+        $this->assertNull(
+            $this->validator(array($rule))->validate(HttpRequest::unslash(wp_slash($request)))
         );
     }
 

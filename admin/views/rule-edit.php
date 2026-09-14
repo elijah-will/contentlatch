@@ -111,7 +111,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
 };
 ?>
 <div class="wrap contentguard" id="contentguard-rule-editor">
-    <script type="application/json" id="contentguard-catalog-fields"><?php echo wp_json_encode(array_values($fields)); ?></script>
+    <script type="application/json" id="contentguard-catalog-fields"><?php echo wp_json_encode(array_values($fields), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
     <?php
     AdminView::partial(
         'page-header',

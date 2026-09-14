@@ -24,6 +24,7 @@ use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\CoreIncomingPayload;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use Throwable;
 
 final class AcfSaveValidator
@@ -61,9 +62,9 @@ final class AcfSaveValidator
 
     public function onValidateSavePost(): void
     {
-        $request = $_POST;
-        $payload = is_array($request) ? ($request['acf'] ?? null) : null;
-        $this->validate(is_array($request) ? $request : array(), $payload);
+        $request = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
+        $payload = $request['acf'] ?? null;
+        $this->validate($request, $payload);
     }
 
     /**

@@ -22,7 +22,12 @@ final class RuleDocumentCodecTest extends TestCase
         $json = $this->showNewTagJson('1');
         $this->assertTrue(RuleDocumentCodec::isDocument($json));
         $this->assertSame('1', json_decode($json, true)['conditions'][0]['operand']);
-        $this->assertSame($json, RuleDocumentCodec::forPostContent($json));
+        $forContent = RuleDocumentCodec::forPostContent($json);
+        if (function_exists('wp_slash')) {
+            $this->assertSame(wp_slash($json), $forContent);
+        } else {
+            $this->assertSame($json, $forContent);
+        }
 
         $slashed = addslashes($json);
         $this->assertSame($json, RuleDocumentCodec::recover(stripslashes($slashed)));

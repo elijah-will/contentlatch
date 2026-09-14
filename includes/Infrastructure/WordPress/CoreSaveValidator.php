@@ -45,7 +45,7 @@ final class CoreSaveValidator
     public function onLoadPost(): void
     {
         try {
-            $messages = $this->validate(is_array($_POST) ? $_POST : array());
+            $messages = $this->validate(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
             if ($messages === null) {
                 return;
             }

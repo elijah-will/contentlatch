@@ -327,4 +327,29 @@ final class EditorFieldNavigationTest extends TestCase
             EditorFieldNavigation::repeaterPathAttribute(array(), true)
         );
     }
+
+    public function testClickableIssueHtmlKeepsQuotesAndEscapesXss(): void
+    {
+        $quoted = EditorFieldNavigation::clickableIssueHtml(
+            'field_content',
+            'Content',
+            'Can\'t contain the word "chicken" in row 1/5.',
+            'This field is required.',
+            'classic'
+        );
+        $this->assertStringContainsString('Can&#039;t contain the word &quot;chicken&quot; in row 1/5.', $quoted);
+        $this->assertStringNotContainsString('\\\'', $quoted);
+        $this->assertStringNotContainsString('\\"', $quoted);
+
+        $xss = EditorFieldNavigation::clickableIssueHtml(
+            'field_content',
+            'Content',
+            'Avoid <script>alert(1)</script> & more',
+            'This field is required.',
+            'classic'
+        );
+        $this->assertStringContainsString('Avoid &lt;script&gt;alert(1)&lt;/script&gt; &amp; more', $xss);
+        $this->assertStringNotContainsString('<script>', $xss);
+        $this->assertStringContainsString('data-contentguard-field="field_content"', $xss);
+    }
 }

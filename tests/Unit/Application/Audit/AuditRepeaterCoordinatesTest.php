@@ -92,6 +92,13 @@ final class AuditRepeaterCoordinatesTest extends TestCase
             AuditRepeaterCoordinates::pairsFromFinding($this->finding($message))
         );
         $this->assertSame(
+            'Can\'t contain the word "chicken" in row 1/5.',
+            AuditRepeaterCoordinates::formatSnapshot(
+                'Can\'t contain the word "chicken"',
+                array(AuditRepeaterCoordinates::instanceChain($this->chain(1, 5)))
+            )
+        );
+        $this->assertSame(
             array(),
             AuditRepeaterCoordinates::cellsFromSnapshot('Ingredient is required in 3 rows (rows 1, 3, 5).')
         );

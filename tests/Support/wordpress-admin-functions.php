@@ -15,6 +15,36 @@ if (!defined('CONTENTGUARD_DIR')) {
     define('CONTENTGUARD_DIR', dirname(__DIR__, 2) . '/');
 }
 
+if (!function_exists('wp_slash')) {
+    /**
+     * @param mixed $value
+     * @return mixed
+     */
+    function wp_slash(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map('wp_slash', $value);
+        }
+
+        return is_string($value) ? addslashes($value) : $value;
+    }
+}
+
+if (!function_exists('wp_unslash')) {
+    /**
+     * @param mixed $value
+     * @return mixed
+     */
+    function wp_unslash(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            return array_map('wp_unslash', $value);
+        }
+
+        return is_string($value) ? stripslashes($value) : $value;
+    }
+}
+
 if (!function_exists('__')) {
     function __(string $text, string $domain = 'default'): string
     {

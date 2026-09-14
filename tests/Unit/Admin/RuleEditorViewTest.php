@@ -100,6 +100,24 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('Leave the field unselected if matching the WHEN condition itself should fail the rule.', $html);
     }
 
+    public function testCatalogJsonDoesNotBreakOutOfTheScriptTag(): void
+    {
+        $html = $this->renderEditor(
+            RuleEditorState::fromRule(null),
+            array(
+                array(
+                    'key'   => 'field_title',
+                    'name'  => 'title',
+                    'label' => '</script><img src=x onerror=alert(1)>',
+                    'type'  => 'text',
+                ),
+            )
+        );
+
+        $this->assertStringNotContainsString('</script><img', $html);
+        $this->assertStringContainsString('\u003C/script\u003E', $html);
+    }
+
     public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
     {
         $html = $this->renderEditor(

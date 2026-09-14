@@ -12,12 +12,15 @@ use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Admin\RulesController;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 use ContentGuard\Infrastructure\WordPress\RuleDocumentCodec;
 use ContentGuard\Infrastructure\WordPress\RulePostType;
 use ContentGuard\Tests\Support\RuleFactory;
 use ContentGuard\Tests\Support\WordPressLikeRulePostStore;
 use PHPUnit\Framework\TestCase;
+
+require_once dirname(__DIR__, 3) . '/Support/wordpress-admin-functions.php';
 
 final class RuleDocumentSlashPersistenceTest extends TestCase
 {
@@ -169,7 +172,35 @@ final class RuleDocumentSlashPersistenceTest extends TestCase
             'backslash'       => array('C:\\Temp\\New'),
             'newline and tab' => array("Show\nNew\tTag"),
             'unicode'         => array('Mostrar «Nuevo» タグ 🆕'),
+            'quoted chicken'  => array('Can\'t contain the word "chicken" in row 1/5.'),
+            'html looking'    => array('Avoid <script>alert(1)</script> & more'),
         );
+    }
+
+    public function testSlashedAdminPostCustomMessagePersistsWithoutBackslashArtifacts(): void
+    {
+        $request = $this->quotedShowNewTagRequest();
+        $request['message'] = 'Can\'t contain the word "chicken" in row 1/5.';
+        $request['name'] = 'Avoid <script>alert(1)</script> & more';
+        $slashed = wp_slash($request);
+
+        $this->assertSame('Can\\\'t contain the word \\"chicken\\" in row 1/5.', $slashed['message']);
+
+        $store = new WordPressLikeRulePostStore();
+        $repository = new PostTypeRuleRepository($store, RuleDocumentValidator::v1());
+        $created = $this->controller($repository)->dispatch(
+            RulesController::ACTION_SAVE,
+            HttpRequest::unslash($slashed)
+        );
+
+        $this->assertTrue($created['ok']);
+        $loaded = $repository->find(1);
+        $this->assertNotNull($loaded);
+        $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $loaded->message);
+        $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $loaded->validations[0]->message);
+        $this->assertSame('Avoid <script>alert(1)</script> & more', $loaded->name);
+        $this->assertStringNotContainsString('\\"', $loaded->message);
+        $this->assertStringNotContainsString('\\\'', $loaded->message);
     }
 
     public function testLegacyBrokenMetaFallsBackToValidPostContentAndHealsMeta(): void

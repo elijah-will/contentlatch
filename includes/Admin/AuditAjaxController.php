@@ -12,6 +12,7 @@ namespace ContentGuard\Admin;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\Exception\AuditException;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 
 final class AuditAjaxController
 {
@@ -143,6 +144,7 @@ final class AuditAjaxController
             return array('ok' => false, 'message' => 'You are not allowed to run ContentGuard audits.');
         }
 
+        $_POST = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
         $nonce = isset($_POST['_wpnonce']) ? (string) $_POST['_wpnonce'] : '';
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {

@@ -126,4 +126,31 @@ final class EditorNoticePresentationTest extends TestCase
             'Content — This field is required.',
         )));
     }
+
+    public function testCustomMessagesKeepQuotesAndAreEscapedAgainstXss(): void
+    {
+        $message = 'Can\'t contain the word "chicken" in row 1/5.';
+        $line    = EditorNoticePresentation::issueLine('Content', $message);
+        $html    = EditorNoticePresentation::noticeHtml(
+            EditorNoticePresentation::SEVERITY_BLOCKING,
+            array(htmlspecialchars($line, ENT_QUOTES, 'UTF-8'))
+        );
+
+        $this->assertSame(
+            'Content — Can\'t contain the word "chicken" in row 1/5.',
+            $line
+        );
+        $this->assertStringContainsString('Can&#039;t contain the word &quot;chicken&quot; in row 1/5.', $html);
+        $this->assertStringNotContainsString('\\\'', $html);
+        $this->assertStringNotContainsString('\\"', $html);
+
+        $scriptLine = EditorNoticePresentation::issueLine('Content', 'Avoid <script>alert(1)</script> & more');
+        $script     = EditorNoticePresentation::noticeHtml(
+            EditorNoticePresentation::SEVERITY_WARNING,
+            array(htmlspecialchars($scriptLine, ENT_QUOTES, 'UTF-8'))
+        );
+        $this->assertSame('Content — Avoid <script>alert(1)</script> & more', $scriptLine);
+        $this->assertStringContainsString('Avoid &lt;script&gt;alert(1)&lt;/script&gt; &amp; more', $script);
+        $this->assertStringNotContainsString('<script>', $script);
+    }
 }
