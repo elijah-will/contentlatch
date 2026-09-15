@@ -122,16 +122,30 @@
     return null;
   }
 
+  function firstRepeaterContainer(repeaterField) {
+    if (!repeaterField || !repeaterField.querySelectorAll) {
+      return null;
+    }
+
+    var nodes = repeaterField.querySelectorAll(".acf-repeater");
+    for (var n = 0; n < nodes.length; n++) {
+      if (nodes[n].closest(".acf-clone")) {
+        continue;
+      }
+      if (nodes[n].closest(".acf-field") === repeaterField) {
+        return nodes[n];
+      }
+    }
+
+    return null;
+  }
+
   function realRepeaterRows(repeaterField) {
     if (!repeaterField) {
       return [];
     }
 
-    var repeater = firstChildByClass(repeaterField, "acf-repeater");
-    if (!repeater) {
-      var input = firstChildByClass(repeaterField, "acf-input");
-      repeater = input ? firstChildByClass(input, "acf-repeater") : null;
-    }
+    var repeater = firstRepeaterContainer(repeaterField);
     if (!repeater) {
       return [];
     }
@@ -148,6 +162,11 @@
     }
     if (table) {
       rowParent = table.tBodies && table.tBodies[0] ? table.tBodies[0] : table;
+    } else {
+      rowParent =
+        firstChildByClass(repeater, "values") ||
+        firstChildByClass(repeater, "acf-repeater-values") ||
+        repeater;
     }
 
     var rows = [];

@@ -775,7 +775,7 @@ final class RuleEngineTest extends TestCase
         $this->assertSame(array(), $restoredMessage->validations);
     }
 
-    public function testConditionOnlyMatchFailsAndNonMatchIsSkipped(): void
+    public function testConditionOnlyMatchFailsAndNonMatchIsPassed(): void
     {
         $rule = RuleFactory::rule(array(
             'conditions'  => array(
@@ -799,14 +799,15 @@ final class RuleEngineTest extends TestCase
         $this->assertSame('content', $failed->results[0]->fieldId);
         $this->assertSame('Please avoid the term "healthy" in recipe content.', $failed->results[0]->message);
 
-        $skipped = $this->engine->evaluate(
+        $passed = $this->engine->evaluate(
             array($rule),
             new ArrayValueProvider(array('content' => 'A tasty salad'))
         );
-        $this->assertTrue($skipped->results[0]->isSkipped());
-        $this->assertFalse($skipped->isFailed());
-        $this->assertFalse($skipped->isWarning());
-        $this->assertSame('conditions_not_met', $skipped->results[0]->code);
+        $this->assertTrue($passed->results[0]->isPassed());
+        $this->assertTrue($passed->isPassed());
+        $this->assertFalse($passed->isFailed());
+        $this->assertFalse($passed->isWarning());
+        $this->assertSame('conditions_not_met', $passed->results[0]->code);
     }
 
     public function testConditionOnlyWarningDoesNotFailContent(): void

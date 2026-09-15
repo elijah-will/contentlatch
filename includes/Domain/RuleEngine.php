@@ -57,9 +57,16 @@ final class RuleEngine
         ?int $postId = null,
     ): array {
         if (!$this->conditionsMatch($rule, $provider)) {
+            // Condition-only rules have no THEN to satisfy. A non-matching WHEN
+            // means the governance condition did not fire, so the content passes.
+            // WHEN+THEN rules still skip: the validations did not apply.
+            $status = ($rule->validations === array() && $rule->conditions !== array())
+                ? EvaluationStatus::Passed
+                : EvaluationStatus::Skipped;
+
             return array(
                 new EvaluationResult(
-                    EvaluationStatus::Skipped,
+                    $status,
                     $rule->id,
                     $postId,
                     null,

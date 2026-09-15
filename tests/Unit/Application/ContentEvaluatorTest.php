@@ -112,6 +112,30 @@ final class ContentEvaluatorTest extends TestCase
         $this->assertFalse($evaluation->isPassed());
     }
 
+    public function testConditionOnlyNonMatchIsPassed(): void
+    {
+        $rule = RuleFactory::rule(array(
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field('content', 'post_content', 'Content'),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+        ));
+
+        $evaluation = $this->evaluator(array($rule))->evaluate(
+            3,
+            'product',
+            new ArrayValueProvider(array('content' => 'A tasty salad'))
+        );
+
+        $this->assertTrue($evaluation->isPassed());
+        $this->assertFalse($evaluation->isNotEvaluated());
+        $this->assertSame('conditions_not_met', $evaluation->results[0]->code);
+    }
+
     public function testFailedActiveRule(): void
     {
         $evaluation = $this->evaluator(array(RuleFactory::rule()))->evaluate(

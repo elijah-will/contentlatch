@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\I18n;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Domain\EvaluationResult;
@@ -212,12 +213,15 @@ final class RestSaveValidator
         foreach ($failures as $result) {
             $message = $this->errorMessage($result);
             $messages[] = $message;
-            $items[]    = array(
-                'message' => $message,
-                'field'   => $result->fieldId,
-                'code'    => $result->code,
-                'rule_id' => $result->ruleId,
-                'label'   => (string) ($result->context['field_label'] ?? ''),
+            $items[]    = EditorFieldNavigation::withEvaluationRowTargets(
+                array(
+                    'message' => $message,
+                    'field'   => $result->fieldId,
+                    'code'    => $result->code,
+                    'rule_id' => $result->ruleId,
+                    'label'   => (string) ($result->context['field_label'] ?? ''),
+                ),
+                $result->context
             );
         }
 

@@ -86,8 +86,8 @@ final class EditorNoticePresentation
 
     /**
      * Blocking copy for surfaces that can only deliver one text node
-     * (Classic ACF global errors). A single issue stays one line. Multiple
-     * issues reuse the shared ContentGuard · Blocking hierarchy.
+     * (Classic ACF global errors). Always includes ContentGuard · Blocking
+     * so a single Core/condition-only issue matches Gutenberg identity.
      *
      * @param list<string> $itemText
      */
@@ -103,10 +103,6 @@ final class EditorNoticePresentation
 
         if ($lines === array()) {
             return '';
-        }
-
-        if (count($lines) === 1) {
-            return $lines[0];
         }
 
         return self::noticeText(self::SEVERITY_BLOCKING, $lines);

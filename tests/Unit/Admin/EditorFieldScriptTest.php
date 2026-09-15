@@ -43,6 +43,8 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('parseRepeaterPath', $js);
         $this->assertStringContainsString('findFieldInRepeaterPath', $js);
         $this->assertStringContainsString('realRepeaterRows', $js);
+        $this->assertStringContainsString('firstRepeaterContainer', $js);
+        $this->assertStringContainsString('acf-repeater-values', $js);
         $this->assertStringContainsString('isRealRepeaterRow', $js);
         $this->assertStringContainsString('acf-row', $js);
         $this->assertStringContainsString('raw === "invalid"', $js);

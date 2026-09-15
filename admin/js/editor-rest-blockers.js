@@ -141,6 +141,46 @@
     return label !== "" && (isSafeFieldKey(fieldId) || isSupportedCore(fieldId));
   }
 
+  function safeLayout(layout) {
+    return typeof layout === "string" && /^[A-Za-z0-9_-]+$/.test(layout) ? layout : "";
+  }
+
+  function fieldTriggerAttributes(fieldKey, layout, displayRow, repeaterPath, pathBlocked) {
+    if (isSupportedCore(fieldKey) && !isSafeFieldKey(fieldKey)) {
+      return 'data-contentguard-core="' + escapeHtml(fieldKey) + '"';
+    }
+
+    var attrs = 'data-contentguard-field="' + escapeHtml(fieldKey) + '"';
+    if (safeLayout(layout)) {
+      attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';
+    }
+    if (displayRow > 0 && !(Array.isArray(repeaterPath) && repeaterPath.length) && !pathBlocked) {
+      attrs += ' data-contentguard-display-row="' + displayRow + '"';
+    }
+    if (pathBlocked) {
+      attrs += ' data-contentguard-repeater-path="invalid"';
+    } else if (Array.isArray(repeaterPath) && repeaterPath.length) {
+      var encoded = [];
+      for (var i = 0; i < repeaterPath.length; i++) {
+        var step = repeaterPath[i] || {};
+        if (!isSafeFieldKey(asString(step.repeater))) {
+          encoded = [];
+          break;
+        }
+        var row = parseInt(step.display_row || step.displayRow, 10);
+        if (!(row > 0)) {
+          encoded = [];
+          break;
+        }
+        encoded.push('{"repeater":"' + step.repeater + '","display_row":' + row + '}');
+      }
+      if (encoded.length) {
+        attrs += ' data-contentguard-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
+      }
+    }
+    return attrs;
+  }
+
   function issueText(failure) {
     if (typeof failure === "string") {
       return failure;
@@ -189,9 +229,14 @@
     }
 
     var goTo = (config.i18n && config.i18n.goToField) || __("Go to field: %s");
-    var attr = isSafeFieldKey(fieldId)
-      ? 'data-contentguard-field="' + escapeHtml(fieldId) + '"'
-      : 'data-contentguard-core="' + escapeHtml(fieldId) + '"';
+    var layout = safeLayout(asString(failure.layout));
+    var repeaterPath = Array.isArray(failure.repeaterPath) ? failure.repeaterPath : [];
+    var pathBlocked = !!failure.repeaterPathInvalid;
+    var displayRow = 0;
+    if (Array.isArray(failure.affectedRows) && failure.affectedRows.length === 1) {
+      displayRow = parseInt(failure.affectedRows[0], 10) || 0;
+    }
+    var attr = fieldTriggerAttributes(fieldId, layout, displayRow, repeaterPath, pathBlocked);
 
     return (
       '<button type="button" class="contentguard-warning-field" ' +

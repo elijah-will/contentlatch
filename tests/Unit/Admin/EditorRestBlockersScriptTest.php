@@ -27,6 +27,9 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringContainsString('html += "<li>" + item + "</li>";', $js);
         $this->assertStringContainsString('data-contentguard-core', $js);
         $this->assertStringContainsString('data-contentguard-field', $js);
+        $this->assertStringContainsString('failure.repeaterPath', $js);
+        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
+        $this->assertStringContainsString('data-contentguard-layout', $js);
         $this->assertStringContainsString('contentguard-warning-field', $js);
         $this->assertStringContainsString('isClickableFailure', $js);
         $this->assertStringContainsString('featured_image', $js);

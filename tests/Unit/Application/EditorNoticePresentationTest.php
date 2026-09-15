@@ -100,10 +100,10 @@ final class EditorNoticePresentationTest extends TestCase
         );
     }
 
-    public function testBlockingNoticeTextKeepsASingleIssueOnOneLine(): void
+    public function testBlockingNoticeTextIncludesTitleForASingleIssue(): void
     {
         $this->assertSame(
-            'Title — This field is required.',
+            "ContentGuard · Blocking\nTitle — This field is required.",
             EditorNoticePresentation::blockingNoticeText(array('Title — This field is required.'))
         );
     }

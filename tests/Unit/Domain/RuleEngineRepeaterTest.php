@@ -372,7 +372,7 @@ final class RuleEngineRepeaterTest extends TestCase
                         new FieldInstance('Pepper', $this->row(1)),
                     ),
                 ))
-            )->results[0]->isSkipped()
+            )->results[0]->isPassed()
         );
     }
 
@@ -420,7 +420,7 @@ final class RuleEngineRepeaterTest extends TestCase
                         ))),
                     ),
                 ))
-            )->results[0]->isSkipped()
+            )->results[0]->isPassed()
         );
     }
 

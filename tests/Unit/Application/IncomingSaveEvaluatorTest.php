@@ -245,7 +245,8 @@ final class IncomingSaveEvaluatorTest extends TestCase
         $this->assertTrue($failing->isFailed());
         $this->assertSame(CoreFieldCatalog::CONTENT, $failing->results[0]->fieldId);
         $this->assertSame('Please avoid the term "healthy" in recipe content.', $failing->results[0]->message);
-        $this->assertTrue($passing->results[0]->isSkipped());
+        $this->assertTrue($passing->results[0]->isPassed());
+        $this->assertTrue($passing->isPassed());
         $this->assertFalse($passing->isFailed());
     }
 

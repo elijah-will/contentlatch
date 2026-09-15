@@ -32,15 +32,11 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array('post_title' => '')
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => '',
-                    'message' => 'Title — This field is required.',
-                ),
-            ),
-            $this->errors
-        );
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertCount(1, $this->errors);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
     }
 
     public function testClassicValidTitleOnPublishDoesNotError(): void
@@ -134,15 +130,11 @@ final class AcfSaveValidatorCoreTest extends TestCase
             array('post_title' => '')
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => '',
-                    'message' => 'Title — This field is required.',
-                ),
-            ),
-            $this->errors
-        );
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertCount(1, $this->errors);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Title</button> — Title is required.', $this->errors[0]['message']);
     }
 
     public function testClassicMixedCoreConditionAcfValidationBlocks(): void
@@ -198,19 +190,46 @@ final class AcfSaveValidatorCoreTest extends TestCase
             )
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => '',
-                    'message' => "ContentGuard · Blocking\n3 blocking issues\n"
-                        . "Title — This field is required.\n"
-                        . "Content — This field is required.\n"
-                        . "Featured Image — This field is required.",
-                ),
-            ),
-            $this->errors
-        );
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertCount(1, $this->errors);
+        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="featured_image"', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Content</button> — This field is required.', $this->errors[0]['message']);
+        $this->assertStringContainsString('>Featured Image</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
+    }
+
+    public function testClassicConditionOnlyBlockingUsesContentGuardTitle(): void
+    {
+        $this->validate(
+            array(
+                RuleFactory::rule(array(
+                    'postType'    => 'post',
+                    'conditions'  => array(
+                        RuleFactory::condition(array(
+                            'field'    => CoreCatalogFixtures::contentRef(),
+                            'operator' => 'contains',
+                            'operand'  => 'healthy',
+                        )),
+                    ),
+                    'validations' => array(),
+                )),
+            ),
+            array(),
+            array('content' => 'A healthy salad')
+        );
+
+        $this->assertSame('', $this->errors[0]['input']);
+        $this->assertCount(1, $this->errors);
+        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
+        $this->assertStringContainsString(
+            '>Content</button> — This content matches the rule condition.',
+            $this->errors[0]['message']
+        );
     }
 
     public function testClassicMixedCoreAndAcfBlockersKeepFieldErrorsSeparate(): void

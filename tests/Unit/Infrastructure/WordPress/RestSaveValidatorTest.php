@@ -13,6 +13,8 @@ use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
 use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
+use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentGuard\Tests\Support\AcfRepeaterFixtures;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use ContentGuard\Tests\Support\IncomingSaveFixtures;
 use ContentGuard\Tests\Support\RuleFactory;
@@ -503,6 +505,106 @@ final class RestSaveValidatorTest extends TestCase
         $this->assertInstanceOf(\stdClass::class, $passing);
     }
 
+    public function testRepeaterFailureIncludesStructuredRepeaterPath(): void
+    {
+        $result = $this->recipeValidator(array(
+            RuleFactory::rule(array(
+                'postType'    => 'recipe',
+                'conditions'  => array(),
+                'validations' => array(
+                    RuleFactory::validation(array(
+                        'field'      => AcfRepeaterFixtures::ingredientRef(),
+                        'type'       => 'required',
+                        'quantifier' => 'every',
+                    )),
+                ),
+            )),
+        ))->validate(
+            $this->prepared(array(
+                'post_type'  => 'recipe',
+                'post_title' => 'Recipe',
+            )),
+            array(
+                'status' => 'publish',
+                'acf'    => array(
+                    AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                        'row-0' => array(AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                        'row-1' => array(AcfRepeaterFixtures::INGREDIENT => 'Pepper'),
+                        'row-2' => array(AcfRepeaterFixtures::INGREDIENT => ''),
+                    ),
+                ),
+            )
+        );
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame(400, $result->get_error_data()['status']);
+        $this->assertSame(RestSaveValidator::ERROR_CODE, $result->get_error_code());
+        $failure = $result->get_error_data()['failures'][0];
+        $this->assertSame(AcfRepeaterFixtures::INGREDIENT, $failure['field']);
+        $this->assertSame(
+            array(
+                array(
+                    'repeater'    => AcfRepeaterFixtures::INGREDIENT_LIST,
+                    'display_row' => 3,
+                ),
+            ),
+            $failure['repeaterPath']
+        );
+    }
+
+    public function testNestedRepeaterFailureIncludesOuterThenInnerPath(): void
+    {
+        $result = $this->nestedRecipeValidator(array(
+            RuleFactory::rule(array(
+                'postType'    => 'recipe',
+                'conditions'  => array(),
+                'validations' => array(
+                    RuleFactory::validation(array(
+                        'field'      => AcfNestedRepeaterFixtures::stepNameRef(),
+                        'type'       => 'required',
+                        'quantifier' => 'every',
+                    )),
+                ),
+            )),
+        ))->validate(
+            $this->prepared(array(
+                'post_type'  => 'recipe',
+                'post_title' => 'Recipe',
+            )),
+            array(
+                'status' => 'publish',
+                'acf'    => array(
+                    AcfNestedRepeaterFixtures::DIRECTIONS => array(
+                        'row-0' => array(
+                            AcfNestedRepeaterFixtures::STEPS => array(
+                                'row-0' => array(AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
+                                'row-1' => array(AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        );
+
+        $this->assertInstanceOf(WP_Error::class, $result);
+        $this->assertSame(400, $result->get_error_data()['status']);
+        $failure = $result->get_error_data()['failures'][0];
+        $this->assertSame(AcfNestedRepeaterFixtures::STEP_NAME, $failure['field']);
+        $this->assertSame(
+            array(
+                array(
+                    'repeater'    => AcfNestedRepeaterFixtures::DIRECTIONS,
+                    'display_row' => 1,
+                ),
+                array(
+                    'repeater'    => AcfNestedRepeaterFixtures::STEPS,
+                    'display_row' => 2,
+                ),
+            ),
+            $failure['repeaterPath']
+        );
+    }
+
     public function testMultipleFailuresAreAggregatedWithoutUsing403(): void
     {
         $result = $this->validator(array(
@@ -709,6 +811,40 @@ final class RestSaveValidatorTest extends TestCase
                 $repository,
                 $this->productAcfCatalog(),
                 CoreCatalogFixtures::integration(CoreCatalogFixtures::fullPost('product'))
+            ),
+            new IntendedPostStatusResolver()
+        );
+    }
+
+    /**
+     * @param array<int, mixed> $rules
+     */
+    private function recipeValidator(array $rules): RestSaveValidator
+    {
+        $repository = new InMemoryRuleRepository($rules);
+
+        return new RestSaveValidator(
+            IncomingSaveFixtures::evaluator(
+                $repository,
+                AcfRepeaterFixtures::recipeCatalog(),
+                CoreCatalogFixtures::integration(CoreCatalogFixtures::fullPost('recipe'))
+            ),
+            new IntendedPostStatusResolver()
+        );
+    }
+
+    /**
+     * @param array<int, mixed> $rules
+     */
+    private function nestedRecipeValidator(array $rules): RestSaveValidator
+    {
+        $repository = new InMemoryRuleRepository($rules);
+
+        return new RestSaveValidator(
+            IncomingSaveFixtures::evaluator(
+                $repository,
+                AcfNestedRepeaterFixtures::recipeCatalog(),
+                CoreCatalogFixtures::integration(CoreCatalogFixtures::fullPost('recipe'))
             ),
             new IntendedPostStatusResolver()
         );

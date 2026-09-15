@@ -254,8 +254,15 @@ final class ContentAuditServiceTest extends TestCase
         $run = $service->processBatch($run->id);
 
         $this->assertSame(AuditRunStatus::Complete, $run->status);
+        $this->assertSame(2, $run->postsScanned);
         $this->assertSame(1, $run->postsFailed);
-        $this->assertSame(1, $run->postsNotEvaluated);
+        $this->assertSame(1, $run->postsPassed);
+        $this->assertSame(0, $run->postsWarned);
+        $this->assertSame(0, $run->postsNotEvaluated);
+        $this->assertSame(
+            $run->postsPassed + $run->postsFailed + $run->postsWarned,
+            $run->postsScanned
+        );
         $findings = $this->store->findFindings($run->id);
         $this->assertCount(1, $findings);
         $this->assertSame(9, $findings[0]->ruleId);
@@ -264,6 +271,92 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame('condition_matched', $findings[0]->code);
         $this->assertSame('Please avoid the term "healthy" in recipe content.', $findings[0]->message);
         $this->assertSame('', $findings[0]->validationId);
+    }
+
+    public function testConditionOnlyMixedPostsReconcileCheckedAndStatusCounts(): void
+    {
+        $this->values = array(
+            10 => array('field_description' => 'A healthy salad'),
+            20 => array('field_description' => 'A tasty salad'),
+            30 => array('field_description' => 'Stay healthy'),
+            40 => array('field_description' => 'healthy snacks'),
+        );
+
+        $blocking = RuleFactory::rule(array(
+            'id'          => 11,
+            'postType'    => 'recipe',
+            'severity'    => RuleSeverity::Fail,
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field(
+                        'field_description',
+                        'recipe_description',
+                        'Recipe Description'
+                    ),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+        ));
+
+        $service = $this->service(array($blocking), array(
+            array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 20, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 30, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 40, 'postType' => 'recipe', 'status' => 'publish'),
+        ));
+        $run = $this->drain($service);
+
+        $this->assertSame(AuditRunStatus::Complete, $run->status);
+        $this->assertSame(4, $run->postsScanned);
+        $this->assertSame(1, $run->postsPassed);
+        $this->assertSame(3, $run->postsFailed);
+        $this->assertSame(0, $run->postsWarned);
+        $this->assertSame(0, $run->postsNotEvaluated);
+        $this->assertSame(
+            $run->postsPassed + $run->postsFailed + $run->postsWarned,
+            $run->postsScanned
+        );
+        $this->assertCount(3, $this->store->findFindings($run->id));
+
+        $warning = RuleFactory::rule(array(
+            'id'          => 12,
+            'postType'    => 'recipe',
+            'severity'    => RuleSeverity::Warning,
+            'conditions'  => array(
+                RuleFactory::condition(array(
+                    'field'    => RuleFactory::field(
+                        'field_description',
+                        'recipe_description',
+                        'Recipe Description'
+                    ),
+                    'operator' => 'contains',
+                    'operand'  => 'healthy',
+                )),
+            ),
+            'validations' => array(),
+        ));
+
+        $this->store = new InMemoryAuditStore();
+        $this->lock  = new InMemoryAuditLock();
+        $warned = $this->drain($this->service(array($warning), array(
+            array('id' => 10, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 20, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 30, 'postType' => 'recipe', 'status' => 'publish'),
+            array('id' => 40, 'postType' => 'recipe', 'status' => 'publish'),
+        )));
+
+        $this->assertSame(4, $warned->postsScanned);
+        $this->assertSame(1, $warned->postsPassed);
+        $this->assertSame(0, $warned->postsFailed);
+        $this->assertSame(3, $warned->postsWarned);
+        $this->assertSame(0, $warned->postsNotEvaluated);
+        $this->assertSame(
+            $warned->postsPassed + $warned->postsFailed + $warned->postsWarned,
+            $warned->postsScanned
+        );
+        $this->assertCount(3, $this->store->findFindings($warned->id));
     }
 
     public function testDraftsAndOtherTypesAreNotScanned(): void
@@ -1370,6 +1463,16 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertTrue($evaluation->isPassed());
         $this->assertNull($service->evaluateStoredPost(0, 'recipe'));
         $this->assertNull($service->evaluateStoredPost(10, ''));
+    }
+
+    private function drain(ContentAuditService $service): \ContentGuard\Application\Audit\AuditRun
+    {
+        $run = $service->start(1);
+        do {
+            $run = $service->processBatch($run->id);
+        } while ($run->status === AuditRunStatus::Running);
+
+        return $run;
     }
 
     /**
