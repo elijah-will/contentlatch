@@ -13,6 +13,7 @@ README.md
 .DS_Store
 Thumbs.db
 node_modules
-vendor/bin
+vendor
+languages/.soft-i18n-catalog.php
 assets/.gitkeep
 bin

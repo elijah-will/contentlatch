@@ -13,6 +13,6 @@ final class Deactivator
 {
     public static function deactivate(): void
     {
-        // Intentionally empty in Phase 0. Data is retained on deactivation.
+        // Data is retained on deactivation. Uninstall removes stored plugin data.
     }
 }

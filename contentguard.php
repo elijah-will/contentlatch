@@ -1,12 +1,10 @@
 <?php
 /**
  * Plugin Name:       ContentGuard
- * Plugin URI:        https://github.com/contentguard/contentguard
  * Description:       Define content rules for WordPress Core and ACF fields, then validate before publication.
  * Version:           1.0.0
  * Requires at least: 6.6
  * Requires PHP:      8.1
- * Requires Plugins:  advanced-custom-fields
  * Author:            ContentGuard
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html

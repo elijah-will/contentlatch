@@ -22,11 +22,6 @@ msgstr ""
 msgid "ContentGuard"
 msgstr ""
 
-#. Plugin URI of the plugin
-#: contentguard.php
-msgid "https://github.com/contentguard/contentguard"
-msgstr ""
-
 #. Description of the plugin
 #: contentguard.php
 msgid "Define content rules for WordPress Core and ACF fields, then validate before publication."
