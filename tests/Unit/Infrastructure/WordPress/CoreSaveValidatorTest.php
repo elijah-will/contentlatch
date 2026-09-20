@@ -537,6 +537,111 @@ final class CoreSaveValidatorTest extends TestCase
         );
     }
 
+    public function testUserWhoCannotEditPostDoesNotEvaluateOrBlock(): void
+    {
+        $checkedPostId = 0;
+        $nonceChecked  = false;
+        $validator     = $this->validator(
+            array($this->required(CoreCatalogFixtures::titleRef())),
+            null,
+            null,
+            'post',
+            null,
+            static function (int $postId) use (&$checkedPostId): bool {
+                $checkedPostId = $postId;
+
+                return false;
+            },
+            static function (string $nonce, string $action) use (&$nonceChecked): bool {
+                $nonceChecked = true;
+
+                return $nonce === 'valid-classic-nonce' && $action === 'update-post_42';
+            }
+        );
+
+        $request = $this->publishRequest(array(
+            'post_title' => '',
+            '_wpnonce'   => 'valid-classic-nonce',
+        ));
+
+        $this->assertNull($validator->validate($request));
+        $this->assertSame(42, $checkedPostId);
+        $this->assertFalse($nonceChecked);
+
+        $_POST = $request;
+        $validator->onLoadPost();
+        $this->assertSame(array(), $this->deaths);
+    }
+
+    public function testInvalidOrMissingClassicUpdateNonceDoesNotEvaluateOrBlock(): void
+    {
+        $seenActions = array();
+        $validator   = $this->validator(
+            array($this->required(CoreCatalogFixtures::titleRef())),
+            null,
+            null,
+            'post',
+            null,
+            static fn (int $postId): bool => $postId === 42,
+            static function (string $nonce, string $action) use (&$seenActions): bool {
+                $seenActions[] = array($nonce, $action);
+
+                return $nonce === 'valid-classic-nonce' && $action === 'update-post_42';
+            }
+        );
+
+        $missing = $this->publishRequest(array('post_title' => ''));
+        $invalid = $this->publishRequest(array(
+            'post_title' => '',
+            '_wpnonce'   => 'forged-nonce',
+        ));
+
+        $this->assertNull($validator->validate($missing));
+        $this->assertNull($validator->validate($invalid));
+        $this->assertSame(
+            array(
+                array('', 'update-post_42'),
+                array('forged-nonce', 'update-post_42'),
+            ),
+            $seenActions
+        );
+
+        $_POST = $invalid;
+        $validator->onLoadPost();
+        $this->assertSame(array(), $this->deaths);
+    }
+
+    public function testAuthorizedClassicSaveWithValidUpdateNonceStillBlocks(): void
+    {
+        $seenAction = '';
+        $validator  = $this->validator(
+            array($this->required(CoreCatalogFixtures::titleRef())),
+            null,
+            null,
+            'post',
+            null,
+            static fn (int $postId): bool => $postId === 42,
+            static function (string $nonce, string $action) use (&$seenAction): bool {
+                $seenAction = $action;
+
+                return $nonce === 'valid-classic-nonce' && $action === 'update-post_42';
+            }
+        );
+
+        $request = $this->publishRequest(array(
+            'post_title' => '',
+            '_wpnonce'   => 'valid-classic-nonce',
+        ));
+
+        $this->assertSame(array('Title — This field is required.'), $validator->validate($request));
+        $this->assertSame('update-post_42', $seenAction);
+
+        $_POST = $request;
+        $validator->onLoadPost();
+        $this->assertCount(1, $this->deaths);
+        $this->assertStringContainsString('Title — This field is required.', $this->deaths[0]['message']);
+    }
+
     public function testRegisterHooksClassicLoadActionsAndDoesNotPersist(): void
     {
         $src = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/WordPress/CoreSaveValidator.php');
@@ -552,6 +657,13 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertStringContainsString('wp_is_serving_rest_request', $src);
         $this->assertStringContainsString("request['acf']", $src);
         $this->assertStringContainsString('EditorNoticePresentation', $src);
+        $this->assertStringContainsString("current_user_can('edit_post'", $src);
+        $this->assertStringContainsString('wp_verify_nonce', $src);
+        $this->assertStringContainsString("'update-post_'", $src);
+        $this->assertLessThan(
+            strpos($src, '$this->incoming->evaluate'),
+            strpos($src, 'isAuthorizedClassicSave')
+        );
         $this->assertStringNotContainsString('wp_insert_post_data', $src);
         $this->assertStringNotContainsString('wp_update_post', $src);
         $this->assertStringNotContainsString('wp_insert_post(', $src);
@@ -564,6 +676,8 @@ final class CoreSaveValidatorTest extends TestCase
     /**
      * @param array<int, mixed> $rules
      * @param callable(): bool|null $isRestRequest
+     * @param callable(int $postId): bool|null $canEditPost
+     * @param callable(string $nonce, string $action): bool|null $verifyNonce
      */
     private function validator(
         array $rules,
@@ -571,6 +685,8 @@ final class CoreSaveValidatorTest extends TestCase
         ?AcfFieldCatalog $acfCatalog = null,
         string $postType = 'post',
         mixed $isRestRequest = null,
+        mixed $canEditPost = null,
+        mixed $verifyNonce = null,
     ): CoreSaveValidator {
         $repository = new InMemoryRuleRepository($rules);
         $acfCatalog ??= new AcfFieldCatalog(static fn (): array => array());
@@ -590,7 +706,9 @@ final class CoreSaveValidatorTest extends TestCase
                     'title'   => $title,
                     'args'    => $args,
                 );
-            }
+            },
+            $canEditPost ?? static fn (int $postId): bool => true,
+            $verifyNonce ?? static fn (string $nonce, string $action): bool => true
         );
     }
 

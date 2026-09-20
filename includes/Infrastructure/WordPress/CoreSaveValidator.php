@@ -4,9 +4,11 @@
  *
  * Hooked to load-post.php / load-post-new.php so a blocking Core (or mixed)
  * failure can abort before WordPress persists a Classic admin save. Evaluates submitted
- * values through IncomingSaveEvaluator. Drafts, autosaves, revisions, REST
- * requests, and non-editpost admin posts are not blocked. Gutenberg REST
- * remains RestSaveValidator's responsibility.
+ * values through IncomingSaveEvaluator. Classic editpost requests must pass
+ * current_user_can('edit_post') and the Classic update-post_{id} nonce before
+ * evaluation or wp_die(); unauthorized requests fail closed. Drafts, autosaves,
+ * revisions, REST requests, and non-editpost admin posts are not blocked.
+ * Gutenberg REST remains RestSaveValidator's responsibility.
  *
  * @package ContentGuard
  */
@@ -26,12 +28,16 @@ final class CoreSaveValidator
     /**
      * @param callable(): bool|null $isRestRequest
      * @param callable(string $message, string $title, array<string, mixed> $args): void|null $die
+     * @param callable(int $postId): bool|null $canEditPost
+     * @param callable(string $nonce, string $action): bool|null $verifyNonce
      */
     public function __construct(
         private IncomingSaveEvaluator $incoming,
         private IntendedPostStatusResolver $statusResolver,
         private mixed $isRestRequest = null,
         private mixed $die = null,
+        private mixed $canEditPost = null,
+        private mixed $verifyNonce = null,
     ) {
     }
 
@@ -65,6 +71,10 @@ final class CoreSaveValidator
     public function validate(array $request): ?array
     {
         if ($this->isIgnoredRequest($request)) {
+            return null;
+        }
+
+        if (!$this->isAuthorizedClassicSave($request)) {
             return null;
         }
 
@@ -118,6 +128,48 @@ final class CoreSaveValidator
         }
 
         return false;
+    }
+
+    /**
+     * Classic editpost must already be allowed to edit the post and present
+     * WordPress's update-post_{id} nonce. Fail closed before evaluation.
+     *
+     * @param array<string, mixed> $request
+     */
+    private function isAuthorizedClassicSave(array $request): bool
+    {
+        $postId = $this->resolvePostId($request);
+
+        return $this->userCanEditPost($postId) && $this->classicUpdateNonceIsValid($request, $postId);
+    }
+
+    private function userCanEditPost(int $postId): bool
+    {
+        if (is_callable($this->canEditPost)) {
+            return (bool) ($this->canEditPost)($postId);
+        }
+
+        return $postId > 0 && function_exists('current_user_can') && current_user_can('edit_post', $postId);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     */
+    private function classicUpdateNonceIsValid(array $request, int $postId): bool
+    {
+        $nonce = isset($request['_wpnonce']) && is_scalar($request['_wpnonce'])
+            ? (string) $request['_wpnonce']
+            : '';
+        $action = 'update-post_' . $postId;
+
+        if (is_callable($this->verifyNonce)) {
+            return (bool) ($this->verifyNonce)($nonce, $action);
+        }
+
+        return $postId > 0
+            && $nonce !== ''
+            && function_exists('wp_verify_nonce')
+            && wp_verify_nonce($nonce, $action) !== false;
     }
 
     private function servingRestRequest(): bool
