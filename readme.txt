@@ -131,7 +131,7 @@ Deactivating the plugin without deleting it keeps this data.
 == Installation ==
 
 1. Install and activate Advanced Custom Fields 6.0 or higher (Free or Pro, as needed for your field types).
-2. Install ContentGuard from the WordPress Plugins screen, or upload the plugin folder to `/wp-content/plugins/contentguard`.
+2. Install ContentGuard from a plugin ZIP via Plugins → Add New → Upload Plugin, or place the plugin folder at `/wp-content/plugins/contentguard`.
 3. Activate ContentGuard through the Plugins screen.
 4. Open **ContentGuard** in the admin menu to create rules and run audits.
 
