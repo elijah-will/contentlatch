@@ -130,10 +130,11 @@ Deactivating the plugin without deleting it keeps this data.
 
 == Installation ==
 
-1. Install and activate Advanced Custom Fields 6.0 or higher (Free or Pro, as needed for your field types).
-2. Install ContentGuard from a plugin ZIP via Plugins → Add New → Upload Plugin, or place the plugin folder at `/wp-content/plugins/contentguard`.
-3. Activate ContentGuard through the Plugins screen.
-4. Open **ContentGuard** in the admin menu to create rules and run audits.
+1. In WordPress Admin, go to **Plugins → Add New**.
+2. Search for **ContentGuard**, then install and activate it.
+3. For ACF field validation, install and activate Advanced Custom Fields 6.0 or higher (Free or Pro, as needed for your field types). WordPress Core field validation works without ACF.
+4. Alternatively, install from a downloaded package: upload the plugin ZIP via **Plugins → Add New → Upload Plugin**, or place the plugin folder at `/wp-content/plugins/contentguard`, then activate ContentGuard.
+5. Open **ContentGuard** in the admin menu to create rules and run audits.
 
 == Frequently Asked Questions ==
 
