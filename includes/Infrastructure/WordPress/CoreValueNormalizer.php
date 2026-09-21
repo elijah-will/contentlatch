@@ -33,6 +33,7 @@ final class CoreValueNormalizer
         }
 
         $text = html_entity_decode(
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- Intentional validation normalization (visible text), not output escaping; wp_strip_all_tags would drop script/style contents and change empty/required evaluation.
             strip_tags((string) $value),
             ENT_QUOTES | ENT_HTML5,
             'UTF-8'

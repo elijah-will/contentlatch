@@ -174,7 +174,14 @@ final class RulesPage
         }
 
         $ruleId = isset($_GET['rule']) ? (int) wp_unslash((string) $_GET['rule']) : 0;
-        if (isset($_GET['action']) && (string) $_GET['action'] === 'new') {
+        $action = '';
+        if (isset($_GET['action'])) {
+            $action = (string) wp_unslash((string) $_GET['action']);
+            $action = function_exists('sanitize_key')
+                ? sanitize_key($action)
+                : strtolower((string) preg_replace('/[^a-z0-9_\-]/', '', $action));
+        }
+        if ($action === 'new') {
             $this->renderEditor(null, 0);
 
             return;
@@ -457,7 +464,8 @@ final class RulesPage
      */
     private function notice(): ?array
     {
-        return AdminNotice::fromQuery($_GET);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- AdminNotice::fromQuery unslashes and sanitize_text_field's the notice keys it reads.
+        return AdminNotice::fromQuery(is_array($_GET) ? $_GET : array());
     }
 
     /**

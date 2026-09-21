@@ -21,6 +21,7 @@ use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -181,12 +182,15 @@ final class EditorAuditNotice
 
     public function preserveAuditRunOnRedirect(string $location): string
     {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; EditorFieldNavigation::sanitizeRunId validates the run id.
         $runId = EditorFieldNavigation::requestedRunId(
-            is_array($_REQUEST) ? $_REQUEST : array()
+            HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())
         );
         if ($runId <= 0 && isset($_SERVER['HTTP_REFERER'])) {
-            $query = array();
-            parse_str((string) (parse_url((string) $_SERVER['HTTP_REFERER'], PHP_URL_QUERY) ?? ''), $query);
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Referer is unslashed and only its query string is parsed for a digit run id.
+            $referer = (string) (function_exists('wp_unslash') ? wp_unslash($_SERVER['HTTP_REFERER']) : $_SERVER['HTTP_REFERER']);
+            $query   = array();
+            parse_str(self::refererQueryString($referer), $query);
             $runId = EditorFieldNavigation::requestedRunId($query);
         }
 
@@ -204,7 +208,9 @@ final class EditorAuditNotice
         }
 
         $postId = $this->editorPostId();
-        $issues = $this->issuesForRequest($postId, $_GET);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; issuesForRequest / EditorFieldNavigation sanitize keys they consume.
+        $request = HttpRequest::unslash(is_array($_GET) ? $_GET : array());
+        $issues  = $this->issuesForRequest($postId, $request);
         if ($issues === array()) {
             return;
         }
@@ -215,7 +221,7 @@ final class EditorAuditNotice
             return;
         }
 
-        EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($issues));
+        EditorFieldFocus::enqueueAssets($request, self::navigationExtras($issues));
 
         wp_register_script(
             'contentguard-editor-audit',
@@ -224,7 +230,7 @@ final class EditorAuditNotice
             \ContentGuard\Plugin::VERSION,
             true
         );
-        $runId = EditorFieldNavigation::requestedRunId($_GET);
+        $runId = EditorFieldNavigation::requestedRunId($request);
         wp_localize_script(
             'contentguard-editor-audit',
             'contentguardEditorAudit',
@@ -245,8 +251,10 @@ final class EditorAuditNotice
         }
 
         $postId = $this->editorPostId();
-        $issues = $this->issuesForRequest($postId, $_GET);
-        $html   = EditorAuditIssues::classicNoticeHtml($issues);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; issuesForRequest sanitizes the run id it consumes.
+        $request = HttpRequest::unslash(is_array($_GET) ? $_GET : array());
+        $issues  = $this->issuesForRequest($postId, $request);
+        $html    = EditorAuditIssues::classicNoticeHtml($issues);
         if ($html === '') {
             return;
         }
@@ -336,8 +344,10 @@ final class EditorAuditNotice
 
     private function editorPostId(): int
     {
-        if (isset($_GET['post']) && is_numeric($_GET['post'])) {
-            return (int) $_GET['post'];
+        if (isset($_GET['post'])) {
+            $post = function_exists('wp_unslash') ? wp_unslash($_GET['post']) : $_GET['post'];
+
+            return (int) $post;
         }
 
         if (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
@@ -345,6 +355,21 @@ final class EditorAuditNotice
         }
 
         return 0;
+    }
+
+    /**
+     * Query string from an editor redirect referer.
+     */
+    private static function refererQueryString(string $referer): string
+    {
+        if (function_exists('wp_parse_url')) {
+            $query = wp_parse_url($referer, PHP_URL_QUERY);
+        } else {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Fallback when wp_parse_url is unavailable (unit tests without WP HTTP API).
+            $query = parse_url($referer, PHP_URL_QUERY);
+        }
+
+        return is_string($query) ? $query : '';
     }
 
     private function isBlockEditorScreen(): bool
