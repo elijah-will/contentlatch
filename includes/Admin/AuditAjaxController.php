@@ -80,6 +80,7 @@ final class AuditAjaxController
     public function status(): void
     {
         $this->respond(function (): array {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in handle() before this callback reads $_POST.
             $runId = isset($_POST['run_id']) ? (int) $_POST['run_id'] : 0;
             $run   = $runId > 0 ? $this->audit->getRun($runId) : $this->audit->getActiveRun();
 
@@ -97,6 +98,7 @@ final class AuditAjaxController
      */
     public function dispatch(string $action, array $request): array
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Test helper; handle() verifies nonce before handlers read $_POST.
         $_POST = $request;
 
         return match ($action) {
@@ -146,7 +148,9 @@ final class AuditAjaxController
             return array('ok' => false, 'message' => __('You are not allowed to run ContentGuard audits.', 'contentguard'));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified immediately below via verifyNonce before handlers run.
         $_POST = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce value is read here and verified on the next lines via verifyNonce.
         $nonce = isset($_POST['_wpnonce']) ? (string) $_POST['_wpnonce'] : '';
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
@@ -162,6 +166,7 @@ final class AuditAjaxController
 
     private function runId(): int
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in handle() before this helper reads $_POST.
         return isset($_POST['run_id']) ? (int) $_POST['run_id'] : 0;
     }
 
@@ -171,6 +176,7 @@ final class AuditAjaxController
             return (int) get_current_user_id();
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in handle() before this helper reads $_POST.
         return isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
     }
 

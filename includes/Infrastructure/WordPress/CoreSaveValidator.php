@@ -53,6 +53,7 @@ final class CoreSaveValidator
     public function onLoadPost(): void
     {
         try {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in isAuthorizedClassicSave() via validate().
             $messages = $this->validate(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
             if ($messages === null) {
                 return;

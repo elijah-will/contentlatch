@@ -73,6 +73,7 @@ final class RulesController
 
     public function save(): void
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
         $request = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
         $payload = $this->handleSave($request);
         $this->respondAdmin($payload, $this->redirectAfterSave($request, $payload));
@@ -81,6 +82,7 @@ final class RulesController
     public function delete(): void
     {
         $this->respondAdmin(
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
             $this->handleDelete(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
             admin_url('admin.php?page=' . RulesPage::SLUG)
         );
@@ -89,6 +91,7 @@ final class RulesController
     public function status(): void
     {
         $this->respondAdmin(
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
             $this->handleStatus(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
             admin_url('admin.php?page=' . RulesPage::SLUG)
         );
@@ -96,6 +99,7 @@ final class RulesController
 
     public function fields(): void
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
         $payload = $this->handleFields(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
         if (!function_exists('wp_send_json')) {
             return;
