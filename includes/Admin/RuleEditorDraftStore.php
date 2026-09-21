@@ -15,6 +15,8 @@ final class RuleEditorDraftStore
 {
     public const TTL = 900;
 
+    public const KEY_PREFIX = 'contentguard_rule_draft_';
+
     /**
      * @param callable(string $key, mixed $value, int $ttl): void $set
      * @param callable(string $key): mixed $get
@@ -59,6 +61,43 @@ final class RuleEditorDraftStore
     }
 
     /**
+     * Remove all ContentGuard rule-editor draft transients from the options table.
+     *
+     * WordPress stores set_transient() values as _transient_{name} and
+     * _transient_timeout_{name}. There is no registry of draft keys, so uninstall
+     * deletes by the stable key prefix owned by this store.
+     */
+    public static function deleteAllStored(): void
+    {
+        global $wpdb;
+
+        if (!isset($wpdb) || !is_object($wpdb) || !isset($wpdb->options) || !is_string($wpdb->options) || $wpdb->options === '') {
+            return;
+        }
+
+        if (!method_exists($wpdb, 'prepare') || !method_exists($wpdb, 'query')) {
+            return;
+        }
+
+        $transientPrefix = '_transient_' . self::KEY_PREFIX;
+        $timeoutPrefix   = '_transient_timeout_' . self::KEY_PREFIX;
+        $like            = method_exists($wpdb, 'esc_like')
+            ? $wpdb->esc_like($transientPrefix) . '%'
+            : $transientPrefix . '%';
+        $timeoutLike     = method_exists($wpdb, 'esc_like')
+            ? $wpdb->esc_like($timeoutPrefix) . '%'
+            : $timeoutPrefix . '%';
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+                $like,
+                $timeoutLike
+            )
+        );
+    }
+
+    /**
      * @param array<string, mixed> $snapshot
      */
     public function put(int $ruleId, array $snapshot): void
@@ -96,6 +135,6 @@ final class RuleEditorDraftStore
     {
         $userId = is_callable($this->userId) ? (int) ($this->userId)() : 0;
 
-        return 'contentguard_rule_draft_' . $userId . '_' . max(0, $ruleId);
+        return self::KEY_PREFIX . $userId . '_' . max(0, $ruleId);
     }
 }

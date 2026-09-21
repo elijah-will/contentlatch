@@ -11,6 +11,7 @@ namespace ContentGuard;
 
 defined('ABSPATH') || exit;
 
+use ContentGuard\Admin\RuleEditorDraftStore;
 use ContentGuard\Infrastructure\WordPress\AuditSchema;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
 use ContentGuard\Infrastructure\WordPress\RulePostType;
@@ -38,5 +39,6 @@ final class Uninstaller
 
         Capabilities::revoke();
         AuditSchema::drop();
+        RuleEditorDraftStore::deleteAllStored();
     }
 }
