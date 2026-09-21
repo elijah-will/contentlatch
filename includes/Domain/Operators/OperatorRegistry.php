@@ -32,6 +32,7 @@ final class OperatorRegistry
     public function get(string $id): OperatorInterface
     {
         if (!isset($this->operators[$id])) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new UnknownOperatorException($id);
         }
 

@@ -37,6 +37,7 @@ final class WpRulePostStore implements RulePostStoreInterface
 
         if (is_wp_error($id) || !is_int($id) || $id <= 0) {
             $message = is_wp_error($id) ? $id->get_error_message() : 'Could not create rule.';
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new RulePersistenceException($message);
         }
 
@@ -65,6 +66,7 @@ final class WpRulePostStore implements RulePostStoreInterface
 
         if (is_wp_error($result) || $result === 0) {
             $message = is_wp_error($result) ? $result->get_error_message() : 'Could not update rule.';
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new RulePersistenceException($message);
         }
 

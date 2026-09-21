@@ -32,6 +32,7 @@ final class ValidatorRegistry
     public function get(string $id): ValidatorInterface
     {
         if (!isset($this->validators[$id])) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new UnknownValidatorException($id);
         }
 

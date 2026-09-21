@@ -102,6 +102,7 @@ final class ContentAuditService
                 return $again;
             }
 
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('Another audit start is already in progress.'));
         }
 
@@ -132,6 +133,7 @@ final class ContentAuditService
     {
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('This audit run is no longer active.'));
         }
 
@@ -150,6 +152,7 @@ final class ContentAuditService
     {
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('This audit run is no longer active.'));
         }
 
@@ -396,11 +399,13 @@ final class ContentAuditService
     {
         $factory = $this->providerFactory;
         if (!is_callable($factory)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('Audit value provider is not configured.'));
         }
 
         $provider = $factory($post->id, $post->postType, $this->fieldTypesFor($post->postType));
         if (!$provider instanceof FieldValueProviderInterface) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('Audit value provider is invalid.'));
         }
 
@@ -650,11 +655,13 @@ final class ContentAuditService
     private function requireRun(int $runId): AuditRun
     {
         if ($runId <= 0) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('Invalid audit run.'));
         }
 
         $run = $this->store->findRun($runId);
         if ($run === null) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new AuditException(I18n::translate('Audit run not found.'));
         }
 

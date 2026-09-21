@@ -111,11 +111,13 @@ final class Rule
 
         $statusEnum = RuleStatus::tryFrom($status);
         if ($statusEnum === null) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(sprintf('Invalid rule status "%s".', $status));
         }
 
         $severityEnum = RuleSeverity::tryFrom($severity);
         if ($severityEnum === null) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(sprintf('Invalid rule severity "%s".', $severity));
         }
 
@@ -147,12 +149,14 @@ final class Rule
     private static function arrayOfMaps(mixed $value, string $label): array
     {
         if (!is_array($value)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(sprintf('Rule %s must be an array.', $label));
         }
 
         $maps = array();
         foreach ($value as $item) {
             if (!is_array($item)) {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(sprintf('Rule %s entries must be objects.', $label));
             }
             $maps[] = $item;

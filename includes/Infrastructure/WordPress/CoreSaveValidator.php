@@ -233,7 +233,7 @@ final class CoreSaveValidator
         }
 
         $html  = EditorNoticePresentation::noticeHtml(EditorNoticePresentation::SEVERITY_BLOCKING, $items);
-        $title = EditorNoticePresentation::title(EditorNoticePresentation::SEVERITY_BLOCKING);
+        $title = $this->escape(EditorNoticePresentation::title(EditorNoticePresentation::SEVERITY_BLOCKING));
         $args  = array(
             'response'  => 400,
             'back_link' => true,
@@ -246,6 +246,7 @@ final class CoreSaveValidator
         }
 
         if (function_exists('wp_die')) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $html is built from esc_html'd items via noticeHtml; $title is escaped above; $args are wp_die config (response/back_link), not markup.
             wp_die($html, $title, $args);
         }
     }

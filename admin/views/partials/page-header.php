@@ -36,12 +36,14 @@ $renderAction = static function (array $action, string $defaultClass): void {
     }
 
     if ($href !== '') {
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute names/values in $attrHtml are individually escaped with esc_attr before concatenation.
         echo '<a href="' . esc_url($href) . '" class="' . esc_attr($class) . '"' . $attrHtml . '>'
             . esc_html($label)
             . '</a>';
         return;
     }
 
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Attribute names/values in $attrHtml are individually escaped with esc_attr before concatenation.
     echo '<button type="button" class="' . esc_attr($class) . '"' . $attrHtml;
     disabled($disabled);
     echo '>' . esc_html($label) . '</button>';

@@ -46,6 +46,7 @@ final class RuleDocumentValidator
         $data = json_decode($json, true);
 
         if (!is_array($data)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate('Rule document must be valid JSON.'));
         }
 
@@ -58,11 +59,13 @@ final class RuleDocumentValidator
     public function validateArray(array $data): Rule
     {
         if ((int) ($data['schema_version'] ?? 0) !== Rule::SCHEMA_VERSION) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate('Unsupported rule schema version.'));
         }
 
         $logic = (string) ($data['condition_logic'] ?? Rule::CONDITION_LOGIC_AND);
         if ($logic !== Rule::CONDITION_LOGIC_AND) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate('Only AND condition logic is supported.'));
         }
 
@@ -75,19 +78,23 @@ final class RuleDocumentValidator
     public function validateRule(Rule $rule): void
     {
         if ($rule->schemaVersion !== Rule::SCHEMA_VERSION) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate('Unsupported rule schema version.'));
         }
 
         if ($rule->conditionLogic !== Rule::CONDITION_LOGIC_AND) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate('Only AND condition logic is supported.'));
         }
 
         foreach ($rule->conditions as $condition) {
             if ($condition->field->key === '') {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(I18n::translate('Field key is required.'));
             }
 
             if (!$this->operators->has($condition->operator)) {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(
                     I18n::sprintf(
                         /* translators: %s: operator id */
@@ -99,15 +106,18 @@ final class RuleDocumentValidator
         }
 
         if ($rule->conditions === array() && $rule->validations === array()) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
             throw new InvalidRuleException(I18n::translate(self::MSG_MISSING_WHEN_OR_THEN));
         }
 
         foreach ($rule->validations as $validation) {
             if ($validation->field->key === '') {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(I18n::translate('Field key is required.'));
             }
 
             if (!$this->validators->has($validation->type)) {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(
                     I18n::sprintf(
                         /* translators: %s: validation type id */
@@ -120,6 +130,7 @@ final class RuleDocumentValidator
             if ($validation->type === 'allowed_values') {
                 $values = $validation->params['values'] ?? array();
                 if (!is_array($values) || $values === array()) {
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     throw new InvalidRuleException(I18n::translate(self::MSG_ALLOWED_VALUES));
                 }
             }
@@ -137,6 +148,7 @@ final class RuleDocumentValidator
 
         foreach ($operatorsByField as $operators) {
             if (in_array('is_empty', $operators, true) && in_array('is_not_empty', $operators, true)) {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(I18n::translate(self::MSG_EMPTY_AND_NOT_EMPTY));
             }
         }
@@ -150,12 +162,15 @@ final class RuleDocumentValidator
 
             if ($validation->type === 'required') {
                 if (in_array('is_empty', $fieldOps, true)) {
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     throw new InvalidRuleException(I18n::translate(self::MSG_EMPTY_AND_REQUIRED));
                 }
                 if (in_array('is_not_empty', $fieldOps, true)) {
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     throw new InvalidRuleException(I18n::translate(self::MSG_NOT_EMPTY_AND_REQUIRED));
                 }
                 if (in_array('equals', $fieldOps, true)) {
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     throw new InvalidRuleException(I18n::translate(self::MSG_EQUALS_AND_REQUIRED));
                 }
             }
@@ -170,6 +185,7 @@ final class RuleDocumentValidator
 
         foreach ($minByField as $key => $min) {
             if (isset($maxByField[$key]) && $min > $maxByField[$key]) {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(I18n::translate(self::MSG_MIN_GT_MAX));
             }
         }
