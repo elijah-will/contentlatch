@@ -24,7 +24,7 @@ use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\CoreIntegration;
 use ContentGuard\Tests\Support\AcfCloneFixtures;

@@ -12,7 +12,7 @@ use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
 use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
 use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 

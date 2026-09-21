@@ -7,9 +7,7 @@
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\InMemory;
-
-defined('ABSPATH') || exit;
+namespace ContentGuard\Tests\Support;
 
 use ContentGuard\Application\Exception\RulePersistenceException;
 use ContentGuard\Application\RuleDocumentValidator;

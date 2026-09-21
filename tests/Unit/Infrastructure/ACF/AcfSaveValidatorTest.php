@@ -15,7 +15,7 @@ use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 use ContentGuard\Infrastructure\WordPress\RulePostRecord;
 use ContentGuard\Tests\Support\FakeRulePostStore;

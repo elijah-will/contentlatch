@@ -18,7 +18,7 @@ use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 

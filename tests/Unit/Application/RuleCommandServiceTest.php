@@ -11,7 +11,7 @@ use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 

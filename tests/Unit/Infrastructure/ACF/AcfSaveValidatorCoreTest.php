@@ -11,7 +11,7 @@ use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use ContentGuard\Tests\Support\IncomingSaveFixtures;
 use ContentGuard\Tests\Support\RuleFactory;

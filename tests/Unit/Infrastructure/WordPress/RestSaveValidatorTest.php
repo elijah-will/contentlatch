@@ -10,7 +10,7 @@ namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
 use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;

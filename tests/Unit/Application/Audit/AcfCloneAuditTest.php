@@ -52,7 +52,7 @@ final class AcfCloneAuditTest extends TestCase
         );
 
         $evaluation = (new ContentEvaluator(
-            new \ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository($rules),
+            new \ContentGuard\Tests\Support\InMemoryRuleRepository($rules),
             RuleEngine::v1()
         ))->evaluate(
             9,

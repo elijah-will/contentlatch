@@ -19,7 +19,7 @@ use ContentGuard\Domain\EvaluationStatus;
 use ContentGuard\Domain\FieldInstance;
 use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\AcfCloneFixtures;
 use ContentGuard\Tests\Support\FakeIntegration;
 use ContentGuard\Tests\Support\InMemoryAuditLock;

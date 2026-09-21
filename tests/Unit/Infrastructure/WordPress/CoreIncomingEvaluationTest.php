@@ -20,7 +20,7 @@ use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use ContentGuard\Tests\Support\RuleFactory;

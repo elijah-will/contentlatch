@@ -12,7 +12,7 @@ use ContentGuard\Domain\FieldRef;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Tests\Support\CoreCatalogFixtures;
 use ContentGuard\Tests\Support\IncomingSaveFixtures;

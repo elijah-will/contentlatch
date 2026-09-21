@@ -23,7 +23,7 @@ use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
 use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
 use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures as HH;
 use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
 use ContentGuard\Tests\Support\AcfRepeaterFixtures;

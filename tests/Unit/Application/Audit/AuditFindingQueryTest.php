@@ -18,7 +18,7 @@ use ContentGuard\Domain\RuleEngine;
 use ContentGuard\Domain\RuleSeverity;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
 use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\InMemory\InMemoryRuleRepository;
+use ContentGuard\Tests\Support\InMemoryRuleRepository;
 use ContentGuard\Tests\Support\InMemoryAuditLock;
 use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
 use ContentGuard\Tests\Support\InMemoryAuditStore;
