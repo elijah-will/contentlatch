@@ -97,6 +97,7 @@ final class RuleMutationPresentation
 
         $encoded = function_exists('wp_json_encode')
             ? wp_json_encode($safe)
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Non-WP / early-bootstrap fallback when wp_json_encode is unavailable.
             : json_encode($safe);
 
         error_log('ContentGuard ' . $context . ($encoded ? ': ' . $encoded : ''));

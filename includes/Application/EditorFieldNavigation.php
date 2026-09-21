@@ -657,7 +657,10 @@ final class EditorFieldNavigation
             return '';
         }
 
-        $json = json_encode($path, JSON_UNESCAPED_SLASHES);
+        $json = function_exists('wp_json_encode')
+            ? wp_json_encode($path, JSON_UNESCAPED_SLASHES)
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Non-WP unit-test fallback when wp_json_encode is unavailable.
+            : json_encode($path, JSON_UNESCAPED_SLASHES);
         if (!is_string($json) || $json === '') {
             return 'data-contentguard-repeater-path="invalid"';
         }

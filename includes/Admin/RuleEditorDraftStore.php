@@ -88,13 +88,19 @@ final class RuleEditorDraftStore
             ? $wpdb->esc_like($timeoutPrefix) . '%'
             : $timeoutPrefix . '%';
 
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- No Core API deletes transient rows by key prefix; uninstall must clear ContentGuard draft keys.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Destructive uninstall cleanup must hit the options table directly.
+        // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table is $wpdb->options; LIKE values use esc_like + $wpdb->prepare %s.
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- {$wpdb->options} is the Core options table name, not user input.
         $wpdb->query(
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query string is built with $wpdb->prepare() immediately below.
             $wpdb->prepare(
                 "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
                 $like,
                 $timeoutLike
             )
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
     }
 
     /**

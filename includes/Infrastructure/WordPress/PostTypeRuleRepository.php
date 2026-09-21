@@ -204,7 +204,11 @@ final class PostTypeRuleRepository implements RuleRepositoryInterface
 
     private function encode(Rule $rule): string
     {
-        $json = json_encode($rule->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $data = $rule->toArray();
+        $json = function_exists('wp_json_encode')
+            ? wp_json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Non-WP unit-test fallback when wp_json_encode is unavailable.
+            : json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         if (!is_string($json)) {
             throw new RulePersistenceException('Could not serialize rule document.');
         }
