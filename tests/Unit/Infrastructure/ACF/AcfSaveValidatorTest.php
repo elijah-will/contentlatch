@@ -91,20 +91,20 @@ final class AcfSaveValidatorTest extends TestCase
 
     public function testGutenbergAcfAjaxPublishWithoutPostStatusIsBlocked(): void
     {
-        $request = $this->request(
-            array(
-                'action'               => 'acf/validate_save_post',
-                'original_post_status' => 'auto-draft',
-                '_acf_screen'          => 'post',
-                '_acf_post_id'         => '42',
-            )
+        $this->validate(
+            $this->gutenbergAcfAjaxRequest(),
+            $this->signaturePayload('')
         );
-        unset($request['post_status']);
-
-        $this->validate($request, $this->signaturePayload(''));
 
         $this->assertCount(1, $this->errors);
         $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+        $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'    => 'field_description',
+            'fieldKey' => 'field_description',
+            'label'    => 'Recipe Description',
+            'message'  => 'This field is required.',
+        ));
     }
 
     public function testRealRecipeFieldKeysOnAcfAjaxPublishAreBlocked(): void
@@ -168,29 +168,28 @@ final class AcfSaveValidatorTest extends TestCase
         $this->validateWith(
             new InMemoryRuleRepository(array($rule)),
             $catalog,
-            array(
-                'action'               => 'acf/validate_save_post',
+            $this->gutenbergAcfAjaxRequest(array(
                 'post_ID'              => 42,
                 'post_type'            => 'recipe',
                 'original_post_status' => 'draft',
                 '_acf_screen'          => 'post',
                 '_acf_post_id'         => '42',
-            ),
+            )),
             array(
                 'field_65021edb3fb73' => '1',
                 'field_64f8a42a61f56' => '',
             )
         );
 
-        $this->assertSame(
-            array(
-                array(
-                    'input'   => 'acf[field_64f8a42a61f56]',
-                    'message' => 'Recipe Description — This field is required.',
-                ),
-            ),
-            $this->errors
-        );
+        $this->assertCount(1, $this->errors);
+        $this->assertSame('acf[field_64f8a42a61f56]', $this->errors[0]['input']);
+        $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'    => 'field_64f8a42a61f56',
+            'fieldKey' => 'field_64f8a42a61f56',
+            'label'    => 'Recipe Description',
+            'message'  => 'This field is required.',
+        ));
 
         $this->validateWith(
             new InMemoryRuleRepository(array($rule)),
@@ -660,9 +659,13 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertStringContainsString('isClassicEditorRequest', $php);
         $this->assertStringContainsString('EditorAuditIssues::classicValidationNotice', $php);
+        $this->assertStringContainsString('EditorAuditIssues::fromResult', $php);
+        $this->assertStringContainsString('decorateAcfValidationError', $php);
+        $this->assertStringContainsString("['contentguard']", $php);
         $this->assertStringNotContainsString('requestedFieldKey', $php);
         $this->assertStringNotContainsString('QUERY_ARG', $php);
         $this->assertStringNotContainsString('requestedRunId', $php);
+        $this->assertStringNotContainsString('show_in_rest', $php);
     }
 
     public function testGutenbergAcfAjaxKeepsFieldErrorsWithoutAClassicSummary(): void
@@ -680,16 +683,209 @@ final class AcfSaveValidatorTest extends TestCase
             $this->signaturePayload('')
         );
 
-        $this->assertSame(
+        $this->assertCount(1, $this->errors);
+        $this->assertSame('acf[field_description]', $this->errors[0]['input']);
+        $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
+        $this->assertStringNotContainsString('ContentGuard · Blocking', $this->errors[0]['message']);
+        $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'    => 'field_description',
+            'fieldKey' => 'field_description',
+            'label'    => 'Recipe Description',
+            'message'  => 'This field is required.',
+        ));
+    }
+
+    public function testGutenbergRepeaterErrorIncludesOneLevelPath(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
+            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            $this->gutenbergAcfAjaxRequest(),
             array(
+                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Pepper'),
+                    'row-2' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                ),
+            )
+        );
+
+        $input = 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
+            . '][row-2][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']';
+        $this->assertCount(1, $this->errors);
+        $this->assertSame($input, $this->errors[0]['input']);
+        $this->assertSame(
+            'Ingredient List → Ingredient — This field is required in row 3.',
+            $this->errors[0]['message']
+        );
+        $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'        => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+            'fieldKey'     => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+            'label'        => 'Ingredient List → Ingredient',
+            'message'      => 'Ingredient is required in row 3.',
+            'repeaterPath' => array(
                 array(
-                    'input'   => 'acf[field_description]',
-                    'message' => 'Recipe Description — This field is required.',
+                    'repeater'    => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
+                    'display_row' => 3,
                 ),
             ),
-            $this->errors
+        ));
+    }
+
+    public function testGutenbergNestedRepeaterErrorIncludesOuterThenInnerPath(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->nestedStepNameRule())),
+            \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog(),
+            $this->gutenbergAcfAjaxRequest(),
+            array(
+                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS => array(
+                    'row-0' => array(
+                        \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                            'row-0' => array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
+                            'row-1' => array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                        ),
+                    ),
+                ),
+            )
         );
-        $this->assertStringNotContainsString('ContentGuard · Blocking', $this->errors[0]['message']);
+
+        $input = 'acf[' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
+            . '][row-0][' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS
+            . '][row-1][' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME . ']';
+        $this->assertCount(1, $this->errors);
+        $this->assertSame($input, $this->errors[0]['input']);
+        $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'        => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
+            'fieldKey'     => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
+            'label'        => 'Directions → Steps → Name',
+            'message'      => 'Name is required in row 1/2.',
+            'repeaterPath' => array(
+                array(
+                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
+                    'display_row' => 1,
+                ),
+                array(
+                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
+                    'display_row' => 2,
+                ),
+            ),
+        ));
+    }
+
+    public function testGutenbergFlexibleErrorIncludesLayoutAndAffectedRow(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->heroTitleRule())),
+            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            $this->gutenbergAcfAjaxRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                    'row-0' => array(
+                        'acf_fc_layout' => 'hero',
+                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    ),
+                ),
+            )
+        );
+
+        $input = 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES
+            . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']';
+        $this->assertCount(1, $this->errors);
+        $this->assertSame($input, $this->errors[0]['input']);
+        $this->assertSame(
+            'Modules → Hero → Title — This field is required.',
+            $this->errors[0]['message']
+        );
+        $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'        => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+            'fieldKey'     => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+            'label'        => 'Modules → Hero → Title',
+            'message'      => 'This field is required.',
+            'layout'       => 'hero',
+            'affectedRows' => array(1),
+        ));
+    }
+
+    public function testGutenbergCloneErrorUsesResolutionIdentity(): void
+    {
+        $this->validateWith(
+            new InMemoryRuleRepository(array($this->cloneTitleRule())),
+            \ContentGuard\Tests\Support\AcfCloneFixtures::pageCatalog(),
+            $this->gutenbergAcfAjaxRequest(array('post_type' => 'page')),
+            array(
+                \ContentGuard\Tests\Support\AcfCloneFixtures::CLONE_A => array(
+                    \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
+                ),
+            )
+        );
+
+        $input = 'acf[' . \ContentGuard\Tests\Support\AcfCloneFixtures::CLONE_A
+            . '][' . \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() . ']';
+        $this->assertCount(1, $this->errors);
+        $this->assertSame($input, $this->errors[0]['input']);
+        $this->assertSame(
+            'Shared Content → Title — This field is required.',
+            $this->errors[0]['message']
+        );
+        $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
+        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+            'field'    => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+            'fieldKey' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+            'label'    => 'Shared Content → Title',
+            'message'  => 'This field is required.',
+        ));
+    }
+
+    public function testGutenbergDoesNotDecorateNativeAcfErrors(): void
+    {
+        $this->errors = array(
+            array(
+                'input'   => 'acf[field_title]',
+                'message' => 'ACF own error',
+            ),
+        );
+        $repository = new InMemoryRuleRepository(array($this->signatureRule()));
+        $catalog    = $this->recipeCatalog();
+        $validator  = new AcfSaveValidator(
+            $repository,
+            $catalog,
+            new IntendedPostStatusResolver(),
+            function (string $input, string $message): void {
+                $this->errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            },
+            IncomingSaveFixtures::evaluator($repository, $catalog),
+            array($this, 'decorateCapturedError')
+        );
+        $validator->validate($this->gutenbergAcfAjaxRequest(), $this->signaturePayload(''));
+
+        $this->assertSame('acf[field_title]', $this->errors[0]['input']);
+        $this->assertSame('ACF own error', $this->errors[0]['message']);
+        $this->assertArrayNotHasKey('contentguard', $this->errors[0]);
+        $this->assertSame('acf[field_description]', $this->errors[1]['input']);
+        $this->assertArrayHasKey('contentguard', $this->errors[1]);
+        $this->assertSame('field_description', $this->errors[1]['contentguard']['field']);
+    }
+
+    public function testClassicFieldErrorsRemainUndecorated(): void
+    {
+        $this->validate($this->publishRequest(), $this->signaturePayload(''));
+
+        $this->assertClassicBlockingSummary(array(
+            array(
+                'input'   => 'acf[field_description]',
+                'message' => 'Recipe Description — This field is required.',
+            ),
+        ));
+        $this->assertArrayNotHasKey('contentguard', $this->errors[0]);
+        $this->assertArrayNotHasKey('contentguard', $this->errors[1]);
     }
 
     public function testRepeaterChildTargetsExactPostedRowInput(): void
@@ -1138,6 +1334,56 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertSame($fieldErrors, array_slice($this->errors, 1));
     }
 
+    /**
+     * @param array<string, mixed> $error
+     * @param array<string, mixed> $expected
+     */
+    private function assertGutenbergContentGuardMetadata(array $error, array $expected): void
+    {
+        $this->assertArrayHasKey('contentguard', $error);
+        $this->assertIsArray($error['contentguard']);
+        $this->assertSame($expected['field'], $error['contentguard']['field']);
+        $this->assertSame($expected['fieldKey'], $error['contentguard']['fieldKey']);
+        $this->assertSame($expected['label'], $error['contentguard']['label']);
+        $this->assertSame($expected['message'], $error['contentguard']['message']);
+        if (isset($expected['repeaterPath'])) {
+            $this->assertSame($expected['repeaterPath'], $error['contentguard']['repeaterPath']);
+        } else {
+            $this->assertArrayNotHasKey('repeaterPath', $error['contentguard']);
+        }
+        if (isset($expected['layout'])) {
+            $this->assertSame($expected['layout'], $error['contentguard']['layout']);
+        } else {
+            $this->assertArrayNotHasKey('layout', $error['contentguard']);
+        }
+        if (isset($expected['affectedRows'])) {
+            $this->assertSame($expected['affectedRows'], $error['contentguard']['affectedRows']);
+        } else {
+            $this->assertArrayNotHasKey('affectedRows', $error['contentguard']);
+        }
+        $this->assertStringNotContainsString('<button', (string) $error['message']);
+        $this->assertStringNotContainsString('contentguard', (string) $error['message']);
+    }
+
+    /**
+     * @param array<string, mixed> $contentguard
+     */
+    public function decorateCapturedError(string $input, array $contentguard): void
+    {
+        for ($i = count($this->errors) - 1; $i >= 0; $i--) {
+            if (($this->errors[$i]['input'] ?? '') !== $input) {
+                continue;
+            }
+            if (isset($this->errors[$i]['contentguard'])) {
+                continue;
+            }
+
+            $this->errors[$i]['contentguard'] = $contentguard;
+
+            return;
+        }
+    }
+
     private function validateWith(
         RuleRepositoryInterface $repository,
         AcfFieldCatalog $catalog,
@@ -1156,10 +1402,33 @@ final class AcfSaveValidatorTest extends TestCase
                     'message' => $message,
                 );
             },
-            IncomingSaveFixtures::evaluator($repository, $catalog)
+            IncomingSaveFixtures::evaluator($repository, $catalog),
+            array($this, 'decorateCapturedError')
         );
 
         $validator->validate($request, $payload);
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function gutenbergAcfAjaxRequest(array $overrides = array()): array
+    {
+        $request = $this->request(
+            array_merge(
+                array(
+                    'action'               => 'acf/validate_save_post',
+                    'original_post_status' => 'auto-draft',
+                    '_acf_screen'          => 'post',
+                    '_acf_post_id'         => '42',
+                ),
+                $overrides
+            )
+        );
+        unset($request['post_status']);
+
+        return $request;
     }
 
     /**
@@ -1348,6 +1617,39 @@ final class AcfSaveValidatorTest extends TestCase
                 $overrides
             )
         );
+    }
+
+    private function nestedStepNameRule(): Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 60,
+            'name'        => 'Step name required',
+            'postType'    => 'recipe',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'type'       => 'required',
+                    'quantifier' => 'every',
+                )),
+            ),
+        ));
+    }
+
+    private function cloneTitleRule(): Rule
+    {
+        return RuleFactory::rule(array(
+            'id'          => 70,
+            'name'        => 'Clone title required',
+            'postType'    => 'page',
+            'conditions'  => array(),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
+                    'type'  => 'required',
+                )),
+            ),
+        ));
     }
 
     private function nestedCaloriesRule(): Rule

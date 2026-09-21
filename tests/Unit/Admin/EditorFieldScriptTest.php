@@ -63,7 +63,18 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('data-contentguard-field', $js);
         $this->assertStringContainsString('data-contentguard-core', $js);
         $this->assertStringContainsString('.editor-post-title__input', $js);
+        $this->assertStringContainsString('h1.wp-block-post-title', $js);
+        $this->assertStringContainsString('iframe[name="editor-canvas"]', $js);
+        $this->assertStringContainsString('contentDocument', $js);
+        $this->assertStringContainsString('editorDocuments', $js);
+        $this->assertStringContainsString('canvasDocuments', $js);
+        $this->assertStringContainsString('queryAllInEditor', $js);
+        $this->assertStringContainsString('firstMatchInCanvas', $js);
         $this->assertStringContainsString('.block-editor-writing-flow', $js);
+        $this->assertStringContainsString('.is-root-container', $js);
+        $this->assertStringContainsString('.editor-styles-wrapper', $js);
+        $this->assertStringContainsString('[data-type="core/post-content"]', $js);
+        $this->assertStringNotContainsString('.editor-visual-editor', $js);
         $this->assertStringContainsString('post-excerpt', $js);
         $this->assertStringContainsString('featured-image', $js);
         $this->assertStringContainsString('#title', $js);
@@ -114,7 +125,11 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('tryCoreFocus(fieldId, 20, coreNavGeneration)', $js);
         $this->assertStringContainsString('attemptsLeft <= 0', $js);
         $this->assertStringContainsString('.editor-post-title__input', $js);
+        $this->assertStringContainsString('h1.wp-block-post-title', $js);
+        $this->assertStringContainsString('iframe[name="editor-canvas"]', $js);
+        $this->assertStringContainsString('firstMatchInCanvas', $js);
         $this->assertStringContainsString('.block-editor-writing-flow', $js);
+        $this->assertStringNotContainsString('.editor-visual-editor', $js);
         $this->assertStringContainsString('.editor-post-featured-image', $js);
         $this->assertStringContainsString('openEditorPanel("featured-image")', $js);
         $this->assertStringContainsString('openEditorPanel("post-excerpt")', $js);
@@ -128,5 +143,54 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringNotContainsString('toggleEditorPanelEnabled', $warnings);
         $this->assertStringContainsString('data-contentguard-core', $warnings);
         $this->assertStringContainsString('contentguardNavigateToField', $warnings);
+    }
+
+    public function testGutenbergCoreTitleAndContentUseCanvasDocumentsNotParentVisualEditor(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-field.js');
+
+        $this->assertStringContainsString('function canvasDocuments(', $js);
+        $this->assertStringContainsString('function firstMatchInCanvas(', $js);
+        $this->assertStringContainsString('iframe[name="editor-canvas"]', $js);
+        $this->assertStringContainsString('contentDocument', $js);
+        $this->assertStringNotContainsString('.editor-visual-editor', $js);
+
+        $this->assertMatchesRegularExpression(
+            '/if \(fieldId === "title"\) \{(?:(?!\n    if \(fieldId).)*firstMatchInCanvas\(/s',
+            $js
+        );
+        $this->assertMatchesRegularExpression(
+            '/if \(fieldId === "content"\) \{(?:(?!\n    if \(fieldId).)*firstMatchInCanvas\(/s',
+            $js
+        );
+
+        preg_match('/if \(fieldId === "title"\) \{.*?\n    \}/s', $js, $title);
+        $this->assertNotSame(array(), $title);
+        $this->assertStringContainsString('.editor-post-title__input', $title[0]);
+        $this->assertStringContainsString('h1.editor-post-title', $title[0]);
+        $this->assertStringContainsString('h1.wp-block-post-title', $title[0]);
+        $this->assertStringContainsString('.wp-block-post-title', $title[0]);
+        $this->assertStringContainsString('[data-type="core/post-title"]', $title[0]);
+        $this->assertStringContainsString('firstMatchInCanvas', $title[0]);
+
+        preg_match('/if \(fieldId === "content"\) \{.*?\n    \}/s', $js, $content);
+        $this->assertNotSame(array(), $content);
+        $this->assertStringContainsString('firstMatchInCanvas', $content[0]);
+        $this->assertStringContainsString('.is-root-container', $content[0]);
+        $this->assertStringContainsString('.editor-styles-wrapper', $content[0]);
+        $this->assertStringContainsString('[data-type="core/post-content"]', $content[0]);
+        $this->assertStringContainsString('.block-editor-writing-flow', $content[0]);
+        $this->assertStringNotContainsString('.editor-visual-editor', $content[0]);
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/function navigateGutenbergExcerpt\([^)]*\)\s*\{(?:(?!\n  function ).)*firstMatchInCanvas\(/s',
+            $js
+        );
+        $this->assertStringContainsString('openEditorPanel("featured-image")', $js);
+        $this->assertStringContainsString('.editor-post-featured-image', $js);
+        $this->assertStringContainsString('.acf-field[data-key="', $js);
+        $this->assertStringContainsString('findFieldInRepeaterPath', $js);
+        $this->assertStringContainsString('#title', $js);
+        $this->assertStringContainsString('#postdivrich', $js);
     }
 }

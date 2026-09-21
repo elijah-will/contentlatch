@@ -257,8 +257,8 @@ final class SaveWarningNotifier
             return;
         }
 
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress branch applies wp_kses_post(); fallback is for non-WordPress/test environments. $html items are already escaped at construction.
-        echo function_exists('wp_kses_post') ? wp_kses_post($html) : $html;
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress branch uses wp_kses() with allowedNoticeHtml(); fallback is for non-WordPress/test environments. $html items are already escaped at construction.
+        echo EditorNoticePresentation::kses($html);
     }
 
     /**

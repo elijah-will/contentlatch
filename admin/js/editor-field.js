@@ -39,6 +39,40 @@
     return typeof fieldId === "string" && coreIdsForSurface(coreSurface()).indexOf(fieldId) !== -1;
   }
 
+  function canvasDocuments() {
+    var docs = [];
+    var nodes = document.querySelectorAll(
+      'iframe[name="editor-canvas"], iframe.editor-canvas__iframe'
+    );
+    for (var i = 0; i < nodes.length; i++) {
+      try {
+        var doc = nodes[i].contentDocument;
+        if (doc && docs.indexOf(doc) === -1) {
+          docs.push(doc);
+        }
+      } catch (error) {
+        // Ignore cross-origin canvas documents.
+      }
+    }
+    return docs;
+  }
+
+  function editorDocuments() {
+    return [document].concat(canvasDocuments());
+  }
+
+  function queryAllInEditor(selector) {
+    var nodes = [];
+    var docs = editorDocuments();
+    for (var d = 0; d < docs.length; d++) {
+      var found = docs[d].querySelectorAll(selector);
+      for (var i = 0; i < found.length; i++) {
+        nodes.push(found[i]);
+      }
+    }
+    return nodes;
+  }
+
   function parseResolutionId(id) {
     if (typeof id !== "string") {
       return { clone: "", key: "" };
@@ -185,24 +219,36 @@
       return null;
     }
 
-    var scope = document;
-    for (var i = 0; i < path.length; i++) {
-      var repeaterField = scope === document
-        ? findFieldInScope(document, path[i].repeater, "")
-        : findFieldInScope(scope, path[i].repeater, "");
-      if (!repeaterField) {
-        return null;
+    var docs = editorDocuments();
+    for (var d = 0; d < docs.length; d++) {
+      var scope = docs[d];
+      var failed = false;
+      for (var i = 0; i < path.length; i++) {
+        var repeaterField = findFieldInScope(scope, path[i].repeater, "");
+        if (!repeaterField) {
+          failed = true;
+          break;
+        }
+
+        var rows = realRepeaterRows(repeaterField);
+        var row = rows[path[i].display_row - 1];
+        if (!row) {
+          failed = true;
+          break;
+        }
+        scope = row;
+      }
+      if (failed) {
+        continue;
       }
 
-      var rows = realRepeaterRows(repeaterField);
-      var row = rows[path[i].display_row - 1];
-      if (!row) {
-        return null;
+      var field = findFieldInScope(scope, fieldKey, clone);
+      if (field) {
+        return field;
       }
-      scope = row;
     }
 
-    return findFieldInScope(scope, fieldKey, clone);
+    return null;
   }
 
   function isRealLayout(node) {
@@ -287,7 +333,7 @@
   }
 
   function findFieldInLayout(fieldKey, layout, clone) {
-    var layouts = document.querySelectorAll('.layout[data-layout="' + layout + '"]');
+    var layouts = queryAllInEditor('.layout[data-layout="' + layout + '"]');
     for (var i = 0; i < layouts.length; i++) {
       if (!isRealLayout(layouts[i])) {
         continue;
@@ -304,7 +350,7 @@
 
   function seedLayout(fieldKey, layout) {
     if (isSafeLayout(layout)) {
-      var layouts = document.querySelectorAll('.layout[data-layout="' + layout + '"]');
+      var layouts = queryAllInEditor('.layout[data-layout="' + layout + '"]');
       for (var i = 0; i < layouts.length; i++) {
         if (isRealLayout(layouts[i])) {
           return layouts[i];
@@ -312,7 +358,7 @@
       }
     }
 
-    var field = firstRealField(document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+    var field = firstRealField(queryAllInEditor('.acf-field[data-key="' + fieldKey + '"]'));
     return field ? field.closest(".layout") : null;
   }
 
@@ -374,20 +420,23 @@
     }
 
     if (clone) {
-      var cloned = findClonedField(document, fieldKey, clone);
-      if (cloned) {
-        return cloned;
+      var docs = editorDocuments();
+      for (var d = 0; d < docs.length; d++) {
+        var cloned = findClonedField(docs[d], fieldKey, clone);
+        if (cloned) {
+          return cloned;
+        }
       }
     }
 
-    var fallback = firstRealField(document.querySelectorAll('.acf-field[data-key="' + fieldKey + '"]'));
+    var fallback = firstRealField(queryAllInEditor('.acf-field[data-key="' + fieldKey + '"]'));
     if (fallback) {
       return fallback;
     }
 
-    var cloneChild = document.querySelector('.acf-clone .acf-field[data-key="' + fieldKey + '"]');
-    if (cloneChild) {
-      return cloneChild.closest(".acf-field-repeater, .acf-flexible-content, .layout");
+    var cloneMatches = queryAllInEditor('.acf-clone .acf-field[data-key="' + fieldKey + '"]');
+    if (cloneMatches.length) {
+      return cloneMatches[0].closest(".acf-field-repeater, .acf-flexible-content, .layout");
     }
 
     return null;
@@ -509,15 +558,25 @@
     tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20, path);
   }
 
-  function firstMatch(selectors) {
-    for (var i = 0; i < selectors.length; i++) {
-      var node = document.querySelector(selectors[i]);
-      if (node) {
-        return node;
+  function firstMatchIn(docs, selectors) {
+    for (var d = 0; d < docs.length; d++) {
+      for (var i = 0; i < selectors.length; i++) {
+        var node = docs[d].querySelector(selectors[i]);
+        if (node) {
+          return node;
+        }
       }
     }
 
     return null;
+  }
+
+  function firstMatch(selectors) {
+    return firstMatchIn([document], selectors);
+  }
+
+  function firstMatchInCanvas(selectors) {
+    return firstMatchIn(canvasDocuments(), selectors);
   }
 
   function focusNode(node) {
@@ -646,14 +705,22 @@
 
   function navigateGutenbergCore(fieldId) {
     if (fieldId === "title") {
-      return focusNode(firstMatch([".editor-post-title__input", "h1.editor-post-title"]));
+      return focusNode(firstMatchInCanvas([
+        ".editor-post-title__input",
+        "h1.editor-post-title",
+        "h1.wp-block-post-title",
+        ".wp-block-post-title",
+        '[data-type="core/post-title"]'
+      ]));
     }
 
     if (fieldId === "content") {
-      return focusNode(firstMatch([
-        ".block-editor-writing-flow",
-        ".editor-visual-editor",
-        ".editor-styles-wrapper"
+      return focusNode(firstMatchInCanvas([
+        ".is-root-container",
+        ".wp-block-post-content",
+        '[data-type="core/post-content"]',
+        ".editor-styles-wrapper",
+        ".block-editor-writing-flow"
       ]));
     }
 

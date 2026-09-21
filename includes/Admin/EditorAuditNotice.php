@@ -18,6 +18,7 @@ use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\AuditPresentation;
 use ContentGuard\Application\EditorAuditIssues;
 use ContentGuard\Application\EditorCoreNavigation;
+use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
@@ -259,8 +260,8 @@ final class EditorAuditNotice
             return;
         }
 
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress branch applies wp_kses_post(); fallback is for non-WordPress/test environments. $html items are already escaped at construction.
-        echo function_exists('wp_kses_post') ? wp_kses_post($html) : $html;
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- WordPress branch uses wp_kses() with allowedNoticeHtml(); fallback is for non-WordPress/test environments. $html items are already escaped at construction.
+        echo EditorNoticePresentation::kses($html);
     }
 
     /**

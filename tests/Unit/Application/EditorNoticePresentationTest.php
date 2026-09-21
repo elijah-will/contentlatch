@@ -153,4 +153,20 @@ final class EditorNoticePresentationTest extends TestCase
         $this->assertStringContainsString('Avoid &lt;script&gt;alert(1)&lt;/script&gt; &amp; more', $script);
         $this->assertStringNotContainsString('<script>', $script);
     }
+
+    public function testNoticeKsesAllowlistKeepsClickTargets(): void
+    {
+        $allowed = EditorNoticePresentation::allowedNoticeHtml();
+
+        $this->assertArrayHasKey('button', $allowed);
+        $this->assertArrayHasKey('data-contentguard-field', $allowed['button']);
+        $this->assertArrayHasKey('data-contentguard-core', $allowed['button']);
+        $this->assertArrayHasKey('data-contentguard-layout', $allowed['button']);
+        $this->assertArrayHasKey('data-contentguard-display-row', $allowed['button']);
+        $this->assertArrayHasKey('data-contentguard-repeater-path', $allowed['button']);
+        $this->assertArrayHasKey('aria-label', $allowed['button']);
+
+        $html = '<button type="button" class="contentguard-warning-field" data-contentguard-field="field_description">Title</button>';
+        $this->assertSame($html, EditorNoticePresentation::kses($html));
+    }
 }

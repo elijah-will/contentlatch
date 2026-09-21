@@ -49,10 +49,17 @@ final class EditorRestBlockNotice
 
         EditorFieldFocus::enqueueAssets(is_array($_GET) ? $_GET : array());
 
+        // acf-input owns validation_complete / validation_failure (ACF 6.0+ Free/Pro).
+        // Declaring it as a dependency guarantees those hooks exist before this script runs.
+        $deps = array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field');
+        if (function_exists('wp_script_is') && wp_script_is('acf-input', 'registered')) {
+            $deps[] = 'acf-input';
+        }
+
         wp_register_script(
             'contentguard-editor-rest-blockers',
             CONTENTGUARD_URL . 'admin/js/editor-rest-blockers.js',
-            array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field'),
+            $deps,
             \ContentGuard\Plugin::VERSION,
             true
         );

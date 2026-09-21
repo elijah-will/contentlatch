@@ -10,10 +10,13 @@
   var SAVE_NOTICE_IDS = Array.isArray(config.saveNoticeIds) && config.saveNoticeIds.length
     ? config.saveNoticeIds
     : [SAVE_NOTICE_ID, "editor-save"];
+  var ACF_VALIDATION_NOTICE_ID = "acf-validation";
   var capturedError = null;
   var shownFromSave = false;
+  var shownFromAcfValidation = false;
   var lastNoticeHtml = null;
   var dispatchingNotice = false;
+  var acfContentGuardIssues = [];
 
   function editorSelect() {
     return window.wp && wp.data && wp.data.select ? wp.data.select("core/editor") : null;
@@ -347,12 +350,132 @@
   }
 
   function hideBlockingNotice() {
-    if (!shownFromSave) {
+    if (!shownFromSave && !shownFromAcfValidation) {
       return;
     }
 
     shownFromSave = false;
+    shownFromAcfValidation = false;
     showNotice("", "");
+  }
+
+  function isAcfValidationNotice(notice) {
+    if (!notice || notice.status !== "error") {
+      return false;
+    }
+
+    return asString(notice.id) === ACF_VALIDATION_NOTICE_ID;
+  }
+
+  function acfValidationNotices() {
+    return listedNotices().filter(isAcfValidationNotice);
+  }
+
+  function shouldReplaceAcfValidationNotice() {
+    return shownFromAcfValidation;
+  }
+
+  function suppressAcfValidationNotice() {
+    var notices = noticeStore();
+    if (!shouldReplaceAcfValidationNotice() || dispatchingNotice || !notices || typeof notices.removeNotice !== "function") {
+      return;
+    }
+
+    acfValidationNotices().forEach(function (notice) {
+      dispatchingNotice = true;
+      try {
+        if (notice.context) {
+          notices.removeNotice(notice.id, notice.context);
+        } else {
+          notices.removeNotice(notice.id);
+        }
+      } finally {
+        dispatchingNotice = false;
+      }
+    });
+  }
+
+  function queueAcfValidationNoticeSuppress() {
+    afterCurrentCycle(suppressAcfValidationNotice);
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(function () {
+        afterCurrentCycle(suppressAcfValidationNotice);
+      });
+    }
+  }
+
+  function contentGuardIssueFromAcfError(error) {
+    if (!error || typeof error !== "object") {
+      return null;
+    }
+
+    var payload = error.contentguard;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return null;
+    }
+
+    if (asString(payload.field || payload.fieldKey) === "") {
+      return null;
+    }
+
+    return payload;
+  }
+
+  function collectAcfContentGuardIssues(data) {
+    acfContentGuardIssues = [];
+    if (!data || typeof data !== "object" || !Array.isArray(data.errors)) {
+      return data;
+    }
+
+    data.errors.forEach(function (error) {
+      var issue = contentGuardIssueFromAcfError(error);
+      if (issue) {
+        acfContentGuardIssues.push(issue);
+      }
+    });
+
+    return data;
+  }
+
+  function showAcfContentGuardNotice() {
+    if (!acfContentGuardIssues.length) {
+      return;
+    }
+
+    var failures = acfContentGuardIssues.slice();
+    acfContentGuardIssues = [];
+    var built = buildNotice({
+      code: ERROR_CODE,
+      data: { failures: failures }
+    });
+    if (!built.html) {
+      return;
+    }
+
+    shownFromSave = true;
+    shownFromAcfValidation = true;
+    showNotice(built.html, built.text);
+    queueAcfValidationNoticeSuppress();
+  }
+
+  function bindAcfValidationHooks() {
+    if (!window.acf || typeof acf.addFilter !== "function" || typeof acf.addAction !== "function") {
+      return;
+    }
+    if (bindAcfValidationHooks.bound) {
+      return;
+    }
+
+    bindAcfValidationHooks.bound = true;
+    acf.addFilter("validation_complete", function (data) {
+      return collectAcfContentGuardIssues(data);
+    });
+    acf.addAction("validation_failure", showAcfContentGuardNotice);
+  }
+
+  bindAcfValidationHooks();
+  if (document.addEventListener) {
+    document.addEventListener("DOMContentLoaded", bindAcfValidationHooks);
   }
 
   function shouldReplaceNativeSaveNotice() {
@@ -483,5 +606,17 @@
     }
 
     afterCurrentCycle(suppressGutenbergSaveNotice);
+  });
+
+  wp.data.subscribe(function () {
+    if (!shouldReplaceAcfValidationNotice() || dispatchingNotice) {
+      return;
+    }
+
+    if (acfValidationNotices().length === 0) {
+      return;
+    }
+
+    afterCurrentCycle(suppressAcfValidationNotice);
   });
 })();

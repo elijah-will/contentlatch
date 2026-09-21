@@ -33,6 +33,7 @@ final class AcfSaveValidator
 {
     /**
      * @param callable(string $input, string $message): void $addError
+     * @param callable(string $input, array<string, mixed> $contentguard): void|null $decorateError
      */
     public function __construct(
         private RuleRepositoryInterface $repository,
@@ -40,6 +41,7 @@ final class AcfSaveValidator
         private IntendedPostStatusResolver $statusResolver,
         private mixed $addError,
         private IncomingSaveEvaluator $incoming,
+        private mixed $decorateError = null,
     ) {
     }
 
@@ -132,11 +134,13 @@ final class AcfSaveValidator
             if ($error['input'] === '') {
                 $coreLines[] = $error['message'];
             } else {
-                $fieldErrors[] = $error;
+                $error['contentguard'] = $this->contentGuardMetadata($result);
+                $fieldErrors[]         = $error;
             }
         }
 
-        if ($this->isClassicEditorRequest($request)) {
+        $isClassic = $this->isClassicEditorRequest($request);
+        if ($isClassic) {
             $summary = EditorAuditIssues::classicValidationNotice(
                 EditorAuditIssues::fromEvaluation($evaluation, $postId)
             );
@@ -152,6 +156,14 @@ final class AcfSaveValidator
 
         foreach ($fieldErrors as $error) {
             $addError($error['input'], $error['message']);
+            if ($isClassic) {
+                continue;
+            }
+
+            $this->attachContentGuardMetadata(
+                $error['input'],
+                is_array($error['contentguard'] ?? null) ? $error['contentguard'] : array()
+            );
         }
     }
 
@@ -248,6 +260,99 @@ final class AcfSaveValidator
             'input'   => $input,
             'message' => $message,
         );
+    }
+
+    /**
+     * Gutenberg ACF AJAX extras only. Classic keeps the HTML summary and
+     * never receives this object. Native ACF errors are not decorated.
+     *
+     * @return array<string, mixed>
+     */
+    private function contentGuardMetadata(EvaluationResult $result): array
+    {
+        $issue = EditorAuditIssues::fromResult($result);
+        $field = (string) ($issue['fieldKey'] ?? '');
+        if ($field === '') {
+            return array();
+        }
+
+        $payload = array(
+            'field'    => $field,
+            'fieldKey' => $field,
+            'label'    => (string) ($issue['label'] ?? ''),
+            'message'  => (string) ($issue['message'] ?? ''),
+        );
+
+        if (isset($issue['repeaterPath']) && is_array($issue['repeaterPath']) && $issue['repeaterPath'] !== array()) {
+            $payload['repeaterPath'] = $issue['repeaterPath'];
+        }
+        if (!empty($issue['repeaterPathInvalid'])) {
+            $payload['repeaterPathInvalid'] = true;
+        }
+
+        $layout = (string) ($issue['layout'] ?? '');
+        if ($layout !== '') {
+            $payload['layout'] = $layout;
+        }
+        if (isset($issue['affectedRows']) && is_array($issue['affectedRows']) && $issue['affectedRows'] !== array()) {
+            $payload['affectedRows'] = $issue['affectedRows'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $contentguard
+     */
+    private function attachContentGuardMetadata(string $input, array $contentguard): void
+    {
+        if ($contentguard === array()) {
+            return;
+        }
+
+        $decorate = $this->decorateError;
+        if (is_callable($decorate)) {
+            $decorate($input, $contentguard);
+
+            return;
+        }
+
+        self::decorateAcfValidationError($input, $contentguard);
+    }
+
+    /**
+     * Narrowest ACF hook: extra keys on the error object we just added.
+     * ACF 6.8.9 only stores input/message; unknown keys survive JSON.
+     *
+     * @param array<string, mixed> $contentguard
+     */
+    private static function decorateAcfValidationError(string $input, array $contentguard): void
+    {
+        if ($contentguard === array() || !function_exists('acf')) {
+            return;
+        }
+
+        $acf = acf();
+        if (!is_object($acf) || !isset($acf->validation) || !is_object($acf->validation)) {
+            return;
+        }
+        if (!isset($acf->validation->errors) || !is_array($acf->validation->errors)) {
+            return;
+        }
+
+        for ($i = count($acf->validation->errors) - 1; $i >= 0; $i--) {
+            $error = $acf->validation->errors[$i];
+            if (!is_array($error) || (string) ($error['input'] ?? '') !== $input) {
+                continue;
+            }
+            if (array_key_exists('contentguard', $error)) {
+                continue;
+            }
+
+            $acf->validation->errors[$i]['contentguard'] = $contentguard;
+
+            return;
+        }
     }
 
     private function issueLine(EvaluationResult $result): string

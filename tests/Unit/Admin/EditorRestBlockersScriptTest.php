@@ -63,6 +63,49 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringNotContainsString('min_length', $js);
         $this->assertStringNotContainsString('IncomingSaveEvaluator', $js);
         $this->assertStringNotContainsString('RuleEngine', $js);
+        $this->assertStringNotContainsString('show_in_rest', $js);
+    }
+
+    public function testAcfAjaxValidationRendersTheExistingBlockingNotice(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-rest-blockers.js');
+        $field = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-field.js');
+        $warnings = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-warnings.js');
+
+        $this->assertStringContainsString('acf.addFilter("validation_complete"', $js);
+        $this->assertStringContainsString('acf.addAction("validation_failure"', $js);
+        $this->assertStringContainsString('error.contentguard', $js);
+        $this->assertStringContainsString('function contentGuardIssueFromAcfError', $js);
+        $this->assertStringContainsString('payload.field || payload.fieldKey', $js);
+        $this->assertStringContainsString('collectAcfContentGuardIssues', $js);
+        $this->assertStringContainsString('showAcfContentGuardNotice', $js);
+        $this->assertStringContainsString('bindAcfValidationHooks.bound', $js);
+        $this->assertStringContainsString('DOMContentLoaded', $js);
+        $this->assertStringContainsString('buildNotice({', $js);
+        $this->assertStringContainsString('data: { failures: failures }', $js);
+        $this->assertStringContainsString('__unstableHTML', $js);
+        $this->assertStringContainsString('id: NOTICE_ID', $js);
+        $this->assertStringContainsString('contentguard-audit-blockers', $js);
+        $this->assertStringContainsString('acf-validation', $js);
+        $this->assertStringContainsString('suppressAcfValidationNotice', $js);
+        $this->assertStringContainsString('queueAcfValidationNoticeSuppress', $js);
+        $this->assertStringContainsString('shownFromAcfValidation', $js);
+        $this->assertStringContainsString('contentguard_validation_failed', $js);
+        $this->assertStringContainsString('failure.repeaterPath', $js);
+        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
+        $this->assertStringContainsString('data-contentguard-layout', $js);
+        $this->assertStringContainsString('data-contentguard-field', $js);
+        $this->assertStringNotContainsString('innerText', $js);
+        $this->assertStringNotContainsString('textContent', $js);
+        $this->assertStringNotContainsString('acf-notice', $js);
+        $this->assertStringNotContainsString('.acf-error', $js);
+        $this->assertStringNotContainsString('show_in_rest', $js);
+        $this->assertStringNotContainsString('setInterval', $js);
+        $this->assertStringNotContainsString('acf.addFilter("validation_complete"', $field);
+        $this->assertStringNotContainsString('error.contentguard', $field);
+        $this->assertStringNotContainsString('acf.addFilter("validation_complete"', $warnings);
+        $this->assertStringNotContainsString('error.contentguard', $warnings);
+        $this->assertStringNotContainsString('acf-validation', $warnings);
     }
 
     public function testNoticeDispatchIsDeferredAndReentrancyGuarded(): void

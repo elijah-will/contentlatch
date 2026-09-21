@@ -41,4 +41,21 @@ final class EditorRestBlockNoticeTest extends TestCase
         $this->assertSame('contentguard_validation_failed', RestSaveValidator::ERROR_CODE);
         $this->assertSame('contentguard-audit-blockers', EditorRestBlockNotice::NOTICE_ID);
     }
+
+    public function testRestBlockersDeclareAcfInputWhenRegistered(): void
+    {
+        $php = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/EditorRestBlockNotice.php');
+
+        $this->assertStringContainsString("wp_script_is('acf-input', 'registered')", $php);
+        $this->assertStringContainsString("\$deps[] = 'acf-input'", $php);
+        $this->assertStringContainsString('wp-api-fetch', $php);
+        $this->assertStringContainsString('wp-data', $php);
+        $this->assertStringContainsString('wp-i18n', $php);
+        $this->assertStringContainsString('contentguard-editor-field', $php);
+        $this->assertStringContainsString('validation_complete', $php);
+        $this->assertStringContainsString('validation_failure', $php);
+        $this->assertStringNotContainsString('acf-pro-input', $php);
+        $this->assertStringNotContainsString('setInterval', $php);
+        $this->assertStringNotContainsString('acf/validate_save_post', $php);
+    }
 }

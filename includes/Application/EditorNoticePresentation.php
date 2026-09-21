@@ -188,4 +188,46 @@ final class EditorNoticePresentation
 
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
+
+    /**
+     * Allowlist for already-escaped notice markup. wp_kses_post() strips
+     * <button> and data-contentguard-* attributes, which removes click-to-focus.
+     *
+     * @return array<string, array<string, bool>>
+     */
+    public static function allowedNoticeHtml(): array
+    {
+        $attrs = array(
+            'class'                           => true,
+            'id'                              => true,
+            'type'                            => true,
+            'role'                            => true,
+            'aria-hidden'                     => true,
+            'aria-label'                      => true,
+            'data-contentguard-field'         => true,
+            'data-contentguard-core'          => true,
+            'data-contentguard-layout'        => true,
+            'data-contentguard-display-row'   => true,
+            'data-contentguard-repeater-path' => true,
+        );
+
+        return array(
+            'div'    => $attrs,
+            'p'      => $attrs,
+            'ul'     => $attrs,
+            'li'     => $attrs,
+            'span'   => $attrs,
+            'button' => $attrs,
+            'br'     => array(),
+        );
+    }
+
+    public static function kses(string $html): string
+    {
+        if (function_exists('wp_kses')) {
+            return wp_kses($html, self::allowedNoticeHtml());
+        }
+
+        return $html;
+    }
 }
