@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Audit\AuditRuleImpact;
 use ContentGuard\Application\Audit\AuditRun;
 use ContentGuard\Application\Audit\ContentAuditService;

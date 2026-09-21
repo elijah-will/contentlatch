@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Domain\Condition;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleSeverity;

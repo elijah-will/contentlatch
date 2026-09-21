@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\Exception\AuditException;
 use ContentGuard\Infrastructure\WordPress\Capabilities;

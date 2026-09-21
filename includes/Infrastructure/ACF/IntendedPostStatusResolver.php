@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+defined('ABSPATH') || exit;
+
 final class IntendedPostStatusResolver
 {
     /**

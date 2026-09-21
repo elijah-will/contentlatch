@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 final class AuditSchema
 {
     public const VERSION        = '2';

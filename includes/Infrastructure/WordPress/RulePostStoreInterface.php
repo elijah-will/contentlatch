@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 interface RulePostStoreInterface
 {
     public function insert(string $title, string $wpStatus, string $json, string $targetPostType): int;

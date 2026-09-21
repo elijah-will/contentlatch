@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 final class AdminAssets
 {
     public const STYLE = 'contentguard-admin';

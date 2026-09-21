@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 final class I18n
 {
     public static function translate(string $text): string

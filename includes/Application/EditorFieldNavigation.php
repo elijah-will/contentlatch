@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
 use ContentGuard\Domain\FieldRef;

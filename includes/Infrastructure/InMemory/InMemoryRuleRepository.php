@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\InMemory;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Exception\RulePersistenceException;
 use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RuleRepositoryInterface;

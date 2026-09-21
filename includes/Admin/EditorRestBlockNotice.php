@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
 
 final class EditorRestBlockNotice

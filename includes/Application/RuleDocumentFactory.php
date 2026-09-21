@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\FieldRef;

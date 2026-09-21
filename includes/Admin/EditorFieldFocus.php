@@ -11,6 +11,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;

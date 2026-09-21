@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application\Exception;
 
+defined('ABSPATH') || exit;
+
 use RuntimeException;
 
 final class RulePersistenceException extends RuntimeException

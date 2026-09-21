@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditFindingQuery;
 use ContentGuard\Application\Audit\AuditRepeaterCoordinates;

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Admin\AuditAjaxController;
 use ContentGuard\Admin\AuditPage;
 use ContentGuard\Admin\EditorAuditNotice;

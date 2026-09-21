@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application\Audit;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\StatusPresentation;
 use ContentGuard\Domain\RuleSeverity;
 

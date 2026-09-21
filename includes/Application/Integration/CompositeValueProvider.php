@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application\Integration;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
 
 final class CompositeValueProvider implements FieldValueProviderInterface

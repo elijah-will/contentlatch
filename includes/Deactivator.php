@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard;
 
+defined('ABSPATH') || exit;
+
 final class Deactivator
 {
     public static function deactivate(): void

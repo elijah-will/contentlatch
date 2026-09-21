@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 final class Capabilities
 {
     public const MANAGE = 'manage_contentguard';

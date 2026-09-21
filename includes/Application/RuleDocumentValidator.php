@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Operators\OperatorRegistry;
 use ContentGuard\Domain\Rule;

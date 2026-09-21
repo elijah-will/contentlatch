@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Audit\AuditLockInterface;
 
 final class WpAuditLock implements AuditLockInterface

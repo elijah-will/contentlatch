@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 final class FieldValuePresentation
 {
     public static function isTrueFalse(?string $fieldType): bool

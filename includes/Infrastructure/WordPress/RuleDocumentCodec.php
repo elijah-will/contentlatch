@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 final class RuleDocumentCodec
 {
     public static function isDocument(string $raw): bool

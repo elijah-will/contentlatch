@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Admin\EditorFieldFocus;
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\EditorCoreNavigation;

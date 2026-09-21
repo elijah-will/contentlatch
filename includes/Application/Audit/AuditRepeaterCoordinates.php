@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application\Audit;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Domain\EvaluationResult;
 
 final class AuditRepeaterCoordinates

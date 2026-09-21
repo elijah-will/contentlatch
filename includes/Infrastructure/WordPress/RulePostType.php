@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 final class RulePostType
 {
     public const POST_TYPE = 'contentguard_rule';

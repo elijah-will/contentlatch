@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\WordPress;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\IncomingSaveEvaluator;
 use ContentGuard\Domain\EvaluationResult;

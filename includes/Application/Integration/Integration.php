@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application\Integration;
 
+defined('ABSPATH') || exit;
+
 final class Integration
 {
     public const ACF  = 'acf';

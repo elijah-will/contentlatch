@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 
 final class EditorCoreNavigation

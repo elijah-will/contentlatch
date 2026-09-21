@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
 use ContentGuard\Application\Exception\RulePersistenceException;

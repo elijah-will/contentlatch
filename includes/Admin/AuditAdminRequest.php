@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Admin;
 
+defined('ABSPATH') || exit;
+
 final class AuditAdminRequest
 {
     public const TYPE_QUERY_ARG = 'cg_type';

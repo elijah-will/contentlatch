@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Infrastructure\ACF;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Domain\FieldRef;
 
 final class FieldDefinition

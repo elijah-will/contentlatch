@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace ContentGuard\Application;
 
+defined('ABSPATH') || exit;
+
 use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
 use ContentGuard\Domain\Rule;
 
