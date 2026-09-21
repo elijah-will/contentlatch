@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom audit tables have no Core API equivalent.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Live audit run/findings state must not be served from object cache.
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentGuard table constants; values use $wpdb->prepare with %i/%d/%s.
 
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditFindingQuery;

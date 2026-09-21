@@ -14,6 +14,7 @@ defined('ABSPATH') || exit;
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom tables have no Core API equivalent.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema existence checks are not object-cache data.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange -- dbDelta install and uninstall DROP TABLE are intentional.
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentGuard table constants; SHOW/DROP use prepare (%s/%i); dbDelta CREATE strings are intentionally interpolated.
 
 final class AuditSchema
 {

@@ -13,6 +13,7 @@ defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- ID/cursor audit scans have no Core API equivalent that preserves this query.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Cursor pagination must read live wp_posts rows, not object cache.
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Uses $wpdb->posts plus generated %s/%d placeholders; all values pass through $wpdb->prepare.
 
 use ContentGuard\Application\Audit\AuditPost;
 use ContentGuard\Application\Audit\AuditPostScanner;
@@ -84,7 +85,7 @@ final class WpAuditPostScanner implements AuditPostScanner
             $args = array_merge($postTypes, $statuses, array($cursor, $limit));
         }
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Placeholder count matches the type/status arrays (and cursor/limit when not counting).
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Placeholder count matches the type/status arrays (and cursor/limit when not counting); $sql is built only from %s/%d tokens and $wpdb->posts.
         $rows = $wpdb->get_results($wpdb->prepare($sql, $args), ARRAY_A);
 
         return is_array($rows) ? $rows : array();
