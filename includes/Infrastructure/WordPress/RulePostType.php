@@ -27,8 +27,8 @@ final class RulePostType
             self::POST_TYPE,
             array(
                 'labels'              => array(
-                    'name'          => 'ContentGuard Rules',
-                    'singular_name' => 'ContentGuard Rule',
+                    'name'          => __('ContentGuard Rules', 'contentguard'),
+                    'singular_name' => __('ContentGuard Rule', 'contentguard'),
                 ),
                 'public'              => false,
                 'publicly_queryable'  => false,

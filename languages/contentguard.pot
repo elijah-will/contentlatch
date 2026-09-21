@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-14T02:06:43+00:00\n"
+"POT-Creation-Date: 2026-09-21T01:57:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: contentguard\n"
@@ -18,7 +18,7 @@ msgstr ""
 #. Author of the plugin
 #: contentguard.php
 #: admin/views/partials/page-header.php:16
-#: includes/Admin/RulesPage.php:59
+#: includes/Admin/RulesPage.php:61
 msgid "ContentGuard"
 msgstr ""
 
@@ -28,8 +28,8 @@ msgid "Define content rules for WordPress Core and ACF fields, then validate bef
 msgstr ""
 
 #: admin/views/audit.php:72
-#: includes/Admin/AuditPage.php:46
-#: includes/Admin/AuditPage.php:47
+#: includes/Admin/AuditPage.php:48
+#: includes/Admin/AuditPage.php:49
 msgid "Audit"
 msgstr ""
 
@@ -76,17 +76,17 @@ msgid "need review"
 msgstr ""
 
 #: admin/views/audit.php:184
-#: includes/Admin/AuditPage.php:102
+#: includes/Admin/AuditPage.php:104
 msgid "Cancel Audit"
 msgstr ""
 
 #: admin/views/audit.php:189
-#: includes/Admin/AuditPage.php:100
+#: includes/Admin/AuditPage.php:102
 msgid "Stop audit"
 msgstr ""
 
 #: admin/views/audit.php:192
-#: includes/Admin/AuditPage.php:101
+#: includes/Admin/AuditPage.php:103
 msgid "Keep running"
 msgstr ""
 
@@ -100,7 +100,7 @@ msgstr ""
 
 #: admin/views/audit.php:218
 #: admin/views/audit.php:231
-#: includes/Admin/AuditPage.php:141
+#: includes/Admin/AuditPage.php:143
 msgid "Previous audit"
 msgstr ""
 
@@ -231,13 +231,13 @@ msgstr ""
 
 #: admin/views/audit.php:384
 #: admin/views/rule-edit.php:315
-#: includes/Admin/EditorRestBlockNotice.php:69
+#: includes/Admin/EditorRestBlockNotice.php:71
 msgid "Blocking"
 msgstr ""
 
 #: admin/views/audit.php:393
 #: admin/views/rule-edit.php:322
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:228
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:230
 msgid "Warning"
 msgstr ""
 
@@ -372,31 +372,31 @@ msgid "Delete"
 msgstr ""
 
 #: admin/views/rule-edit.php:48
-#: includes/Admin/RulesPage.php:112
+#: includes/Admin/RulesPage.php:114
 msgid "is required"
 msgstr ""
 
 #: admin/views/rule-edit.php:49
 #: admin/views/rule-edit.php:282
-#: includes/Admin/RulesPage.php:113
+#: includes/Admin/RulesPage.php:115
 msgid "Minimum length"
 msgstr ""
 
 #: admin/views/rule-edit.php:50
 #: admin/views/rule-edit.php:287
-#: includes/Admin/RulesPage.php:114
+#: includes/Admin/RulesPage.php:116
 msgid "Maximum length"
 msgstr ""
 
 #: admin/views/rule-edit.php:51
 #: admin/views/rule-edit.php:292
-#: includes/Admin/RulesPage.php:115
+#: includes/Admin/RulesPage.php:117
 msgid "Allowed values"
 msgstr ""
 
 #: admin/views/rule-edit.php:56
 #: admin/views/rule-edit.php:357
-#: includes/Admin/RulesPage.php:436
+#: includes/Admin/RulesPage.php:438
 msgid "Back to rules"
 msgstr ""
 
@@ -407,7 +407,7 @@ msgid "Add another rule"
 msgstr ""
 
 #: admin/views/rule-edit.php:74
-#: includes/Admin/RulesPage.php:126
+#: includes/Admin/RulesPage.php:128
 msgid "Choose a field"
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 
 #: admin/views/rule-edit.php:151
 #: admin/views/rule-edit.php:162
-#: includes/Admin/RulesPage.php:138
+#: includes/Admin/RulesPage.php:140
 msgid "Warning:"
 msgstr ""
 
@@ -462,27 +462,27 @@ msgid "Repeater and Flexible Content fields can be used in WHEN and THEN. WHEN a
 msgstr ""
 
 #: admin/views/rule-edit.php:218
-#: includes/Admin/RulesPage.php:131
+#: includes/Admin/RulesPage.php:133
 msgid "WHEN field"
 msgstr ""
 
 #: admin/views/rule-edit.php:222
-#: includes/Admin/RulesPage.php:132
+#: includes/Admin/RulesPage.php:134
 msgid "Operator"
 msgstr ""
 
 #: admin/views/rule-edit.php:228
-#: includes/Admin/RulesPage.php:133
+#: includes/Admin/RulesPage.php:135
 msgid "Value"
 msgstr ""
 
 #: admin/views/rule-edit.php:231
-#: includes/Admin/RulesPage.php:128
+#: includes/Admin/RulesPage.php:130
 msgid "Yes"
 msgstr ""
 
 #: admin/views/rule-edit.php:232
-#: includes/Admin/RulesPage.php:129
+#: includes/Admin/RulesPage.php:131
 msgid "No"
 msgstr ""
 
@@ -496,7 +496,7 @@ msgstr ""
 #. translators: %s: requirement number
 #: admin/views/rule-edit.php:241
 #: admin/views/rule-edit.php:299
-#: includes/Admin/RulesPage.php:130
+#: includes/Admin/RulesPage.php:132
 msgid "Remove"
 msgstr ""
 
@@ -509,18 +509,18 @@ msgid "Optional. Leave the field unselected if matching the WHEN condition itsel
 msgstr ""
 
 #: admin/views/rule-edit.php:271
-#: includes/Admin/RulesPage.php:134
+#: includes/Admin/RulesPage.php:136
 msgid "THEN field"
 msgstr ""
 
 #: admin/views/rule-edit.php:275
-#: includes/Admin/RulesPage.php:135
+#: includes/Admin/RulesPage.php:137
 msgid "Requirement"
 msgstr ""
 
 #: admin/views/rule-edit.php:284
 #: admin/views/rule-edit.php:289
-#: includes/Admin/RulesPage.php:137
+#: includes/Admin/RulesPage.php:139
 msgid "characters"
 msgstr ""
 
@@ -530,7 +530,7 @@ msgstr ""
 
 #: admin/views/rule-edit.php:295
 #: admin/views/rule-edit.php:296
-#: includes/Admin/RulesPage.php:136
+#: includes/Admin/RulesPage.php:138
 msgid "Custom message (optional)"
 msgstr ""
 
@@ -597,8 +597,8 @@ msgid "Update Rule"
 msgstr ""
 
 #: admin/views/rules-list.php:40
-#: includes/Admin/RulesPage.php:68
-#: includes/Admin/RulesPage.php:69
+#: includes/Admin/RulesPage.php:70
+#: includes/Admin/RulesPage.php:71
 msgid "Rules"
 msgstr ""
 
@@ -627,158 +627,159 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: minimum PHP version
-#: includes/Activator.php:26
-#: includes/Dependencies.php:69
+#: includes/Activator.php:28
+#: includes/Dependencies.php:71
 #, php-format
 msgid "ContentGuard requires PHP %s or higher."
 msgstr ""
 
 #. translators: %s: minimum WordPress version
-#: includes/Activator.php:41
-#: includes/Dependencies.php:77
+#: includes/Activator.php:43
+#: includes/Dependencies.php:79
 #, php-format
 msgid "ContentGuard requires WordPress %s or higher."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:115
+#: includes/Admin/AuditAjaxController.php:117
 msgid "Unknown audit action."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:144
+#: includes/Admin/AuditAjaxController.php:146
 msgid "You are not allowed to run ContentGuard audits."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:151
+#: includes/Admin/AuditAjaxController.php:153
 msgid "Invalid audit nonce."
 msgstr ""
 
-#: includes/Admin/AuditPage.php:95
+#: includes/Admin/AuditPage.php:97
 #, php-format
 msgid "%1$d of %2$d content items checked"
 msgstr ""
 
-#: includes/Admin/AuditPage.php:96
+#: includes/Admin/AuditPage.php:98
 #, php-format
 msgid "%d content items checked"
 msgstr ""
 
-#: includes/Admin/AuditPage.php:97
+#: includes/Admin/AuditPage.php:99
 msgid "Could not start the audit."
 msgstr ""
 
-#: includes/Admin/AuditPage.php:98
+#: includes/Admin/AuditPage.php:100
 msgid "The audit could not continue."
 msgstr ""
 
-#: includes/Admin/AuditPage.php:332
-#: includes/Admin/RulesPage.php:158
+#: includes/Admin/AuditPage.php:334
+#: includes/Admin/RulesPage.php:160
 msgid "You are not allowed to access this page."
 msgstr ""
 
-#: includes/Admin/EditorFieldFocus.php:92
+#: includes/Admin/EditorFieldFocus.php:94
 msgid "Moved to the field that needs attention."
 msgstr ""
 
-#: includes/Admin/EditorRestBlockNotice.php:70
+#: includes/Admin/EditorRestBlockNotice.php:72
 #, php-format
 msgid "%d blocking issues"
 msgstr ""
 
-#: includes/Admin/EditorRestBlockNotice.php:71
+#: includes/Admin/EditorRestBlockNotice.php:73
 msgid "This field is required."
 msgstr ""
 
-#: includes/Admin/EditorRestBlockNotice.php:72
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:229
+#: includes/Admin/EditorRestBlockNotice.php:74
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:231
 #, php-format
 msgid "Go to field: %s"
 msgstr ""
 
-#: includes/Admin/RulesController.php:120
+#: includes/Admin/RulesController.php:122
 msgid "Unknown rule action."
 msgstr ""
 
-#: includes/Admin/RulesController.php:194
+#: includes/Admin/RulesController.php:196
 msgid "Invalid rule."
 msgstr ""
 
-#: includes/Admin/RulesController.php:204
+#: includes/Admin/RulesController.php:206
 msgid "Rule deleted."
 msgstr ""
 
-#: includes/Admin/RulesController.php:205
-#: includes/Admin/RulesController.php:222
+#: includes/Admin/RulesController.php:207
+#: includes/Admin/RulesController.php:224
 msgid "Rule not found."
 msgstr ""
 
-#: includes/Admin/RulesController.php:228
+#: includes/Admin/RulesController.php:230
 msgid "Invalid rule status."
 msgstr ""
 
-#: includes/Admin/RulesController.php:244
+#: includes/Admin/RulesController.php:246
 msgid "Rule activated."
 msgstr ""
 
-#: includes/Admin/RulesController.php:245
+#: includes/Admin/RulesController.php:247
 msgid "Rule deactivated."
 msgstr ""
 
-#: includes/Admin/RulesController.php:279
+#: includes/Admin/RulesController.php:281
 msgid "You are not allowed to manage ContentGuard rules."
 msgstr ""
 
-#: includes/Admin/RulesController.php:284
+#: includes/Admin/RulesController.php:286
 msgid "Invalid rule management nonce."
 msgstr ""
 
-#: includes/Admin/RulesPage.php:58
+#: includes/Admin/RulesPage.php:60
+#: includes/Infrastructure/WordPress/RulePostType.php:30
 msgid "ContentGuard Rules"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:127
+#: includes/Admin/RulesPage.php:129
 msgid "Field"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:139
+#: includes/Admin/RulesPage.php:141
 #, php-format
 msgid "Remove condition %d"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:140
+#: includes/Admin/RulesPage.php:142
 #, php-format
 msgid "Remove requirement %d"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:229
+#: includes/Admin/RulesPage.php:231
 msgid "Active Blocking"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:235
+#: includes/Admin/RulesPage.php:237
 msgid "Active Warning"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:241
+#: includes/Admin/RulesPage.php:243
 msgid "Inactive Blocking"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:247
+#: includes/Admin/RulesPage.php:249
 msgid "Inactive Warning"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:319
+#: includes/Admin/RulesPage.php:321
 msgid "None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content."
 msgstr ""
 
-#: includes/Admin/RulesPage.php:328
+#: includes/Admin/RulesPage.php:330
 msgid "No completed audit yet"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:333
+#: includes/Admin/RulesPage.php:335
 msgid "No findings in latest audit"
 msgstr ""
 
 #. translators: %d: number of content items
-#: includes/Admin/RulesPage.php:339
+#: includes/Admin/RulesPage.php:341
 #, php-format
 msgid "%d content item with warnings"
 msgid_plural "%d content items with warnings"
@@ -786,576 +787,580 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of content items
-#: includes/Admin/RulesPage.php:351
+#: includes/Admin/RulesPage.php:353
 #, php-format
 msgid "%d content item failing"
 msgid_plural "%d content items failing"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/Dependencies.php:83
+#: includes/Dependencies.php:85
 msgid "ContentGuard requires Advanced Custom Fields 6.0 or higher (Free or Pro)."
 msgstr ""
 
 #. translators: %s: minimum ACF version
-#: includes/Dependencies.php:88
+#: includes/Dependencies.php:90
 #, php-format
 msgid "ContentGuard requires Advanced Custom Fields %s or higher (Free or Pro)."
 msgstr ""
 
-#: includes/Application/RuleBuilderFieldLabels.php:75
+#: includes/Infrastructure/WordPress/RulePostType.php:31
+msgid "ContentGuard Rule"
+msgstr ""
+
+#: includes/Application/RuleBuilderFieldLabels.php:77
 msgid "(every row)"
 msgstr ""
 
-#: includes/Application/RuleBuilderFieldLabels.php:81
+#: includes/Application/RuleBuilderFieldLabels.php:83
 msgid "layout"
 msgstr ""
 
-#: includes/Application/RuleBuilderFieldLabels.php:84
+#: includes/Application/RuleBuilderFieldLabels.php:86
 msgid "(every %s row)"
 msgstr ""
 
-#: includes/Application/EditorFieldNavigation.php:141
-#: includes/Application/EditorFieldNavigation.php:149
-#: includes/Application/AuditPresentation.php:158
+#: includes/Application/EditorFieldNavigation.php:143
+#: includes/Application/EditorFieldNavigation.php:151
+#: includes/Application/AuditPresentation.php:160
 msgid "field"
 msgstr ""
 
-#: includes/Application/EditorFieldNavigation.php:156
+#: includes/Application/EditorFieldNavigation.php:158
 msgid "Go to %1$s, row %2$d"
 msgstr ""
 
-#: includes/Application/RulePreview.php:16
+#: includes/Application/RulePreview.php:18
 msgid "Add a THEN requirement to preview this rule."
 msgstr ""
 
-#: includes/Application/RulePreview.php:21
+#: includes/Application/RulePreview.php:23
 msgid "Add a WHEN condition or THEN requirement to preview this rule."
 msgstr ""
 
-#: includes/Application/RulePreview.php:26
+#: includes/Application/RulePreview.php:28
 msgid "Finish the WHEN condition to preview this rule."
 msgstr ""
 
-#: includes/Application/RulePreview.php:31
+#: includes/Application/RulePreview.php:33
 msgid "Finish the THEN requirement to preview this rule."
 msgstr ""
 
-#: includes/Application/RulePreview.php:36
+#: includes/Application/RulePreview.php:38
 msgid "this rule blocks publishing"
 msgstr ""
 
-#: includes/Application/RulePreview.php:41
+#: includes/Application/RulePreview.php:43
 msgid "this rule reports a warning"
 msgstr ""
 
-#: includes/Application/RulePreview.php:74
-#: includes/Application/RulePreview.php:83
+#: includes/Application/RulePreview.php:76
+#: includes/Application/RulePreview.php:85
 msgid "When %1$s, %2$s."
 msgstr ""
 
-#: includes/Application/RulePreview.php:79
+#: includes/Application/RulePreview.php:81
 msgid "%s."
 msgstr ""
 
-#: includes/Application/RulePreview.php:130
-#: includes/Application/RulePreview.php:184
+#: includes/Application/RulePreview.php:132
+#: includes/Application/RulePreview.php:186
 msgid " and "
-msgstr ""
-
-#: includes/Application/RulePreview.php:204
-#: includes/Application/RulePresentation.php:65
-msgid "%1$s is %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:206
 #: includes/Application/RulePresentation.php:67
-msgid "%1$s is not %2$s"
+msgid "%1$s is %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:208
-#: includes/Application/RulePresentation.php:78
-msgid "%1$s contains %2$s"
+#: includes/Application/RulePresentation.php:69
+msgid "%1$s is not %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:210
 #: includes/Application/RulePresentation.php:80
-msgid "%1$s does not contain %2$s"
+msgid "%1$s contains %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:212
 #: includes/Application/RulePresentation.php:82
-msgid "%1$s is greater than %2$s"
+msgid "%1$s does not contain %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:214
 #: includes/Application/RulePresentation.php:84
-msgid "%1$s is at least %2$s"
+msgid "%1$s is greater than %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:216
 #: includes/Application/RulePresentation.php:86
-msgid "%1$s is less than %2$s"
+msgid "%1$s is at least %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:218
 #: includes/Application/RulePresentation.php:88
-msgid "%1$s is at most %2$s"
+msgid "%1$s is less than %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:220
 #: includes/Application/RulePresentation.php:90
-msgid "%s is empty"
+msgid "%1$s is at most %2$s"
 msgstr ""
 
 #: includes/Application/RulePreview.php:222
 #: includes/Application/RulePresentation.php:92
+msgid "%s is empty"
+msgstr ""
+
+#: includes/Application/RulePreview.php:224
+#: includes/Application/RulePresentation.php:94
 msgid "%s is not empty"
 msgstr ""
 
-#: includes/Application/RulePreview.php:231
-#: includes/Application/RulePresentation.php:106
+#: includes/Application/RulePreview.php:233
+#: includes/Application/RulePresentation.php:108
 msgid "%s is required"
 msgstr ""
 
-#: includes/Application/RulePreview.php:233
+#: includes/Application/RulePreview.php:235
 msgid "%1$s must be at least %2$s characters"
 msgstr ""
 
-#: includes/Application/RulePreview.php:235
+#: includes/Application/RulePreview.php:237
 msgid "%1$s must be at most %2$s characters"
 msgstr ""
 
-#: includes/Application/RulePreview.php:237
+#: includes/Application/RulePreview.php:239
 msgid "%1$s must be one of: %2$s"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:29
+#: includes/Application/AuditPresentation.php:31
 msgid "Deleted rule"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:61
+#: includes/Application/AuditPresentation.php:63
 msgid "Content no longer available"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:66
+#: includes/Application/AuditPresentation.php:68
 msgid "Edit content"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:74
+#: includes/Application/AuditPresentation.php:76
 msgid "Edit content: %s"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:79
+#: includes/Application/AuditPresentation.php:81
 msgid "No matching findings"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:84
+#: includes/Application/AuditPresentation.php:86
 msgid "Try changing or clearing your filters."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:95
+#: includes/Application/AuditPresentation.php:97
 msgid "Showing 0 of 0 findings"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:107
+#: includes/Application/AuditPresentation.php:109
 msgid "Showing %1$d–%2$d of %3$d findings"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:112
+#: includes/Application/AuditPresentation.php:114
 msgid "Findings pagination"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:118
+#: includes/Application/AuditPresentation.php:120
 msgid "Showing 0 of 0 audits"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:130
+#: includes/Application/AuditPresentation.php:132
 msgid "Showing %1$d–%2$d of %3$d audits"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:135
+#: includes/Application/AuditPresentation.php:137
 msgid "Audit history pagination"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:161
+#: includes/Application/AuditPresentation.php:163
 msgid "Edit content and go to field: %s"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:232
+#: includes/Application/AuditPresentation.php:234
 msgid "Ready to check your content"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:237
+#: includes/Application/AuditPresentation.php:239
 msgid "Run an audit to see whether your existing content follows your active rules."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:242
+#: includes/Application/AuditPresentation.php:244
 msgid "ContentGuard only reports issues. It does not change your content."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:247
+#: includes/Application/AuditPresentation.php:249
 msgid "When it finishes, you will see what passed and what needs attention."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:252
+#: includes/Application/AuditPresentation.php:254
 msgid "No active rules"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:257
+#: includes/Application/AuditPresentation.php:259
 msgid "Activate at least one rule before running an audit. Previous completed results, if any, stay available below."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:262
+#: includes/Application/AuditPresentation.php:264
 msgid "Audit in progress"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:278
+#: includes/Application/AuditPresentation.php:280
 msgid "Audit completed"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:283
+#: includes/Application/AuditPresentation.php:285
 msgid "All clear"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:289
+#: includes/Application/AuditPresentation.php:291
 msgid "No issues were found in this audit."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:290
+#: includes/Application/AuditPresentation.php:292
 msgid "This audit completed with no eligible content and no issues."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:295
+#: includes/Application/AuditPresentation.php:297
 msgid "Audit failed"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:300
+#: includes/Application/AuditPresentation.php:302
 msgid "The audit could not be completed. It was not used as the latest completed result."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:305
+#: includes/Application/AuditPresentation.php:307
 msgid "Audit cancelled"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:310
+#: includes/Application/AuditPresentation.php:312
 msgid "The audit was stopped. Cancelled audits are not used as the latest completed result."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:315
+#: includes/Application/AuditPresentation.php:317
 msgid "Stop this audit? It will not become the latest completed result."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:320
+#: includes/Application/AuditPresentation.php:322
 msgid "This is not the current content health result."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:327
+#: includes/Application/AuditPresentation.php:329
 msgid "Viewing results from %s"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:328
+#: includes/Application/AuditPresentation.php:330
 msgid "Viewing historical audit results"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:333
+#: includes/Application/AuditPresentation.php:335
 msgid "Back to latest audit"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:338
+#: includes/Application/AuditPresentation.php:340
 msgid "Current"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:343
+#: includes/Application/AuditPresentation.php:345
 msgid "Viewing"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:348
+#: includes/Application/AuditPresentation.php:350
 msgid "View results"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:353
+#: includes/Application/AuditPresentation.php:355
 msgid "Audit History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:358
+#: includes/Application/AuditPresentation.php:360
 msgid "Show History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:363
+#: includes/Application/AuditPresentation.php:365
 msgid "Hide History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:368
+#: includes/Application/AuditPresentation.php:370
 msgid "No audit history yet."
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:379
+#: includes/Application/AuditPresentation.php:381
 msgid "%1$d need attention · %2$d need review"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:389
+#: includes/Application/AuditPresentation.php:391
 msgid "Rule"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:394
+#: includes/Application/AuditPresentation.php:396
 msgid "Content type"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:24
+#: includes/Application/RulePresentation.php:26
 msgid "Always applies"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:36
+#: includes/Application/RulePresentation.php:38
 msgid " AND "
 msgstr ""
 
-#: includes/Application/RulePresentation.php:48
+#: includes/Application/RulePresentation.php:50
 msgid "None"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:74
+#: includes/Application/RulePresentation.php:76
 msgid "%1$s equals %2$s"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:76
+#: includes/Application/RulePresentation.php:78
 msgid "%1$s does not equal %2$s"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:108
+#: includes/Application/RulePresentation.php:110
 msgid "%1$s min length %2$s"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:110
+#: includes/Application/RulePresentation.php:112
 msgid "%1$s max length %2$s"
 msgstr ""
 
-#: includes/Application/RulePresentation.php:112
+#: includes/Application/RulePresentation.php:114
 msgid "%s allowed values"
 msgstr ""
 
-#: includes/Application/EditorAuditIssues.php:121
+#: includes/Application/EditorAuditIssues.php:123
 msgid "%1$s in row %2$d."
 msgstr ""
 
-#: includes/Application/EditorAuditIssues.php:398
-#: includes/Application/Audit/ContentAuditService.php:585
-#: includes/Infrastructure/WordPress/RestSaveValidator.php:247
+#: includes/Application/EditorAuditIssues.php:400
+#: includes/Application/Audit/ContentAuditService.php:587
+#: includes/Infrastructure/WordPress/RestSaveValidator.php:253
 msgid "%s is required."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:87
+#: includes/Application/RuleDocumentFactory.php:89
 msgid "Rule name is required."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:92
-#: includes/Application/RuleDocumentFactory.php:169
+#: includes/Application/RuleDocumentFactory.php:94
+#: includes/Application/RuleDocumentFactory.php:171
 msgid "Unsupported post type."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:100
+#: includes/Application/RuleDocumentFactory.php:102
 msgid "Invalid rule severity."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:229
+#: includes/Application/RuleDocumentFactory.php:231
 msgid "Rule conditions must be an array."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:237
+#: includes/Application/RuleDocumentFactory.php:239
 msgid "Rule conditions entries must be objects."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:247
-#: includes/Application/RuleDocumentValidator.php:92
+#: includes/Application/RuleDocumentFactory.php:249
+#: includes/Application/RuleDocumentValidator.php:94
 msgid "Unknown condition operator \"%s\"."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:256
-#: includes/Application/RuleDocumentFactory.php:260
+#: includes/Application/RuleDocumentFactory.php:258
+#: includes/Application/RuleDocumentFactory.php:262
 msgid "A condition value is required."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:264
+#: includes/Application/RuleDocumentFactory.php:266
 msgid "Numeric comparisons can only be used with number fields."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:267
+#: includes/Application/RuleDocumentFactory.php:269
 msgid "A numeric condition value is required."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:272
+#: includes/Application/RuleDocumentFactory.php:274
 msgid "Contains conditions can only be used with text fields."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:300
+#: includes/Application/RuleDocumentFactory.php:302
 msgid "Rule validations must be an array."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:308
+#: includes/Application/RuleDocumentFactory.php:310
 msgid "Rule validations entries must be objects."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:322
-#: includes/Application/RuleDocumentValidator.php:112
+#: includes/Application/RuleDocumentFactory.php:324
+#: includes/Application/RuleDocumentValidator.php:114
 msgid "Unknown validation type \"%s\"."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:358
+#: includes/Application/RuleDocumentFactory.php:360
 #: includes/Domain/Validators/MinLengthValidator.php:24
 msgid "Minimum length is not configured."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:367
+#: includes/Application/RuleDocumentFactory.php:369
 #: includes/Domain/Validators/MaxLengthValidator.php:24
 msgid "Maximum length is not configured."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:424
-#: includes/Application/RuleDocumentFactory.php:453
+#: includes/Application/RuleDocumentFactory.php:426
+#: includes/Application/RuleDocumentFactory.php:455
 msgid "Unsupported field."
 msgstr ""
 
-#: includes/Application/RuleDocumentFactory.php:473
+#: includes/Application/RuleDocumentFactory.php:475
 msgid "Invalid field path."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:21
+#: includes/Application/RuleMutationPresentation.php:23
 msgid "Rule added."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:26
+#: includes/Application/RuleMutationPresentation.php:28
 msgid "Rule saved."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:32
-#: includes/Application/RuleMutationPresentation.php:49
+#: includes/Application/RuleMutationPresentation.php:34
+#: includes/Application/RuleMutationPresentation.php:51
 msgid "We could not add this rule. "
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:33
-#: includes/Application/RuleMutationPresentation.php:50
+#: includes/Application/RuleMutationPresentation.php:35
+#: includes/Application/RuleMutationPresentation.php:52
 msgid "We could not save this rule. "
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:40
+#: includes/Application/RuleMutationPresentation.php:42
 msgid "It is no longer available. Your entered values have been preserved so you can try again."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:43
+#: includes/Application/RuleMutationPresentation.php:45
 msgid "Your entered values have been preserved so you can correct the issue and try again."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:52
+#: includes/Application/RuleMutationPresentation.php:54
 msgid "The rule could not be read after saving. Your entered values have been preserved so you can try again."
 msgstr ""
 
-#: includes/Application/RuleMutationPresentation.php:57
+#: includes/Application/RuleMutationPresentation.php:59
 msgid "We could not open this rule. It may have been deleted or could not be read."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:103
+#: includes/Application/Audit/ContentAuditService.php:105
 msgid "Another audit start is already in progress."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:133
-#: includes/Application/Audit/ContentAuditService.php:151
+#: includes/Application/Audit/ContentAuditService.php:135
+#: includes/Application/Audit/ContentAuditService.php:153
 msgid "This audit run is no longer active."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:397
+#: includes/Application/Audit/ContentAuditService.php:399
 msgid "Audit value provider is not configured."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:402
+#: includes/Application/Audit/ContentAuditService.php:404
 msgid "Audit value provider is invalid."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:520
+#: includes/Application/Audit/ContentAuditService.php:522
 msgid "%s in %s row %d."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:528
+#: includes/Application/Audit/ContentAuditService.php:530
 msgid "%s in row %d."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:550
+#: includes/Application/Audit/ContentAuditService.php:552
 msgid "%s in %d %s rows (rows %s)."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:559
+#: includes/Application/Audit/ContentAuditService.php:561
 msgid "%s in %d rows (rows %s)."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:651
+#: includes/Application/Audit/ContentAuditService.php:653
 msgid "Invalid audit run."
 msgstr ""
 
-#: includes/Application/Audit/ContentAuditService.php:656
+#: includes/Application/Audit/ContentAuditService.php:658
 msgid "Audit run not found."
 msgstr ""
 
-#: includes/Application/StatusPresentation.php:28
+#: includes/Application/StatusPresentation.php:30
 msgid "Running"
 msgstr ""
 
-#: includes/Application/StatusPresentation.php:29
+#: includes/Application/StatusPresentation.php:31
 msgid "Cancelled"
 msgstr ""
 
-#: includes/Application/StatusPresentation.php:30
+#: includes/Application/StatusPresentation.php:32
 msgid "Failed"
 msgstr ""
 
-#: includes/Application/StatusPresentation.php:33
+#: includes/Application/StatusPresentation.php:35
 msgid "Pending"
 msgstr ""
 
-#: includes/Application/RuleDocumentValidator.php:47
+#: includes/Application/RuleDocumentValidator.php:49
 msgid "Rule document must be valid JSON."
 msgstr ""
 
-#: includes/Application/RuleDocumentValidator.php:59
-#: includes/Application/RuleDocumentValidator.php:76
+#: includes/Application/RuleDocumentValidator.php:61
+#: includes/Application/RuleDocumentValidator.php:78
 msgid "Unsupported rule schema version."
 msgstr ""
 
-#: includes/Application/RuleDocumentValidator.php:64
-#: includes/Application/RuleDocumentValidator.php:80
+#: includes/Application/RuleDocumentValidator.php:66
+#: includes/Application/RuleDocumentValidator.php:82
 msgid "Only AND condition logic is supported."
 msgstr ""
 
-#: includes/Application/RuleDocumentValidator.php:85
-#: includes/Application/RuleDocumentValidator.php:105
+#: includes/Application/RuleDocumentValidator.php:87
+#: includes/Application/RuleDocumentValidator.php:107
 msgid "Field key is required."
 msgstr ""
 
-#: includes/Infrastructure/WordPress/RestSaveValidator.php:255
+#: includes/Infrastructure/WordPress/RestSaveValidator.php:261
 msgid "%s is invalid."
 msgstr ""
 
-#: includes/Infrastructure/WordPress/RestSaveValidator.php:256
+#: includes/Infrastructure/WordPress/RestSaveValidator.php:262
 msgid "ContentGuard validation failed."
 msgstr ""
 
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:440
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:551
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:673
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:442
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:553
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:675
 msgid "Content warning."
 msgstr ""
 
-#: includes/Domain/RuleEngine.php:66
+#: includes/Domain/RuleEngine.php:73
 msgid "Rule skipped because its conditions were not met."
 msgstr ""
 
-#: includes/Domain/RuleEngine.php:81
+#: includes/Domain/RuleEngine.php:88
 msgid "Rule applied with no validations."
 msgstr ""
 
-#: includes/Domain/RuleEngine.php:187
+#: includes/Domain/RuleEngine.php:194
 msgid "This content matches the rule condition."
 msgstr ""
 
-#: includes/Domain/RuleEngine.php:245
+#: includes/Domain/RuleEngine.php:252
 msgid "Add at least one %s row."
 msgstr ""
 
