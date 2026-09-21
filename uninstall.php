@@ -9,10 +9,10 @@ declare(strict_types=1);
 
 defined('WP_UNINSTALL_PLUGIN') || exit;
 
-$autoload = __DIR__ . '/vendor/autoload.php';
+$contentguard_autoload = __DIR__ . '/vendor/autoload.php';
 
-if (is_readable($autoload)) {
-    require_once $autoload;
+if (is_readable($contentguard_autoload)) {
+    require_once $contentguard_autoload;
 } else {
     require_once __DIR__ . '/includes/Autoloader.php';
     if (!defined('CONTENTGUARD_DIR')) {
