@@ -11,6 +11,9 @@ namespace ContentGuard\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom audit tables have no Core API equivalent.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Live audit run/findings state must not be served from object cache.
+
 use ContentGuard\Application\Audit\AuditFinding;
 use ContentGuard\Application\Audit\AuditFindingQuery;
 use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
@@ -69,9 +72,10 @@ final class WpAuditStore implements AuditStoreInterface
 
         $finishedSql = $run->finishedAt === null ? 'NULL' : '%s';
         $errorSql    = $run->errorMessage === null ? 'NULL' : '%s';
-        $sql         = 'UPDATE ' . AuditSchema::runsTable() . " SET
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- finished_at/error_message are literal NULL or %s; table uses %i.
+        $sql         = 'UPDATE %i SET
 status = %s,
-finished_at = {$finishedSql},
+finished_at = ' . $finishedSql . ',
 heartbeat_at = %s,
 posts_scanned = %d,
 posts_passed = %d,
@@ -79,13 +83,13 @@ posts_warned = %d,
 posts_failed = %d,
 posts_not_evaluated = %d,
 posts_total = %d,
-" . AuditSchema::CURSOR_COLUMN . " = %d,
+' . AuditSchema::CURSOR_COLUMN . ' = %d,
 actor_user_id = %d,
 post_types = %s,
-error_message = {$errorSql}
-WHERE id = %d";
+error_message = ' . $errorSql . '
+WHERE id = %d';
 
-        $args = array($run->status->value);
+        $args = array(AuditSchema::runsTable(), $run->status->value);
         if ($run->finishedAt !== null) {
             $args[] = $run->finishedAt;
         }
@@ -110,6 +114,7 @@ WHERE id = %d";
 
         $args[] = $run->id;
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- finished_at/error_message are literal NULL or %s; placeholders and $args are built together from the same null checks.
         $updated = $wpdb->query($wpdb->prepare($sql, ...$args));
         if ($updated === false) {
             $this->logDbError('Could not save audit run.');
@@ -125,7 +130,8 @@ WHERE id = %d";
 
         $row = $wpdb->get_row(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::runsTable() . ' WHERE id = %d',
+                'SELECT * FROM %i WHERE id = %d',
+                AuditSchema::runsTable(),
                 $id
             ),
             ARRAY_A
@@ -140,7 +146,8 @@ WHERE id = %d";
 
         $row = $wpdb->get_row(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::runsTable() . ' WHERE status IN (%s, %s) ORDER BY id ASC LIMIT 1',
+                'SELECT * FROM %i WHERE status IN (%s, %s) ORDER BY id ASC LIMIT 1',
+                AuditSchema::runsTable(),
                 AuditRunStatus::Pending->value,
                 AuditRunStatus::Running->value
             ),
@@ -155,7 +162,10 @@ WHERE id = %d";
         global $wpdb;
 
         $row = $wpdb->get_row(
-            'SELECT * FROM ' . AuditSchema::runsTable() . ' ORDER BY id DESC LIMIT 1',
+            $wpdb->prepare(
+                'SELECT * FROM %i ORDER BY id DESC LIMIT 1',
+                AuditSchema::runsTable()
+            ),
             ARRAY_A
         );
 
@@ -168,7 +178,8 @@ WHERE id = %d";
 
         $row = $wpdb->get_row(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::runsTable() . ' WHERE status = %s ORDER BY id DESC LIMIT 1',
+                'SELECT * FROM %i WHERE status = %s ORDER BY id DESC LIMIT 1',
+                AuditSchema::runsTable(),
                 AuditRunStatus::Complete->value
             ),
             ARRAY_A
@@ -184,10 +195,11 @@ WHERE id = %d";
         $postIds = array_values(array_filter(array_map('intval', $postIds)));
         if ($postIds !== array()) {
             $placeholders = implode(',', array_fill(0, count($postIds), '%d'));
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN placeholders are generated as %d tokens from intval'd IDs; arguments are the same ID list.
             $wpdb->query(
                 $wpdb->prepare(
-                    'DELETE FROM ' . AuditSchema::findingsTable() . ' WHERE run_id = %d AND post_id IN (' . $placeholders . ')',
-                    array_merge(array($runId), $postIds)
+                    'DELETE FROM %i WHERE run_id = %d AND post_id IN (' . $placeholders . ')',
+                    array_merge(array(AuditSchema::findingsTable(), $runId), $postIds)
                 )
             );
         }
@@ -219,7 +231,8 @@ WHERE id = %d";
         if ($severity !== null && $severity !== '') {
             $rows = $wpdb->get_results(
                 $wpdb->prepare(
-                    'SELECT * FROM ' . AuditSchema::findingsTable() . ' WHERE run_id = %d AND severity = %s ORDER BY id ASC',
+                    'SELECT * FROM %i WHERE run_id = %d AND severity = %s ORDER BY id ASC',
+                    AuditSchema::findingsTable(),
                     $runId,
                     $severity
                 ),
@@ -228,7 +241,8 @@ WHERE id = %d";
         } else {
             $rows = $wpdb->get_results(
                 $wpdb->prepare(
-                    'SELECT * FROM ' . AuditSchema::findingsTable() . ' WHERE run_id = %d ORDER BY id ASC',
+                    'SELECT * FROM %i WHERE run_id = %d ORDER BY id ASC',
+                    AuditSchema::findingsTable(),
                     $runId
                 ),
                 ARRAY_A
@@ -257,11 +271,11 @@ WHERE id = %d";
         $args[]         = $query->limit;
         $args[]         = $query->offset;
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::findingsTable()
-                . ' WHERE ' . $where
-                . ' ORDER BY id ASC LIMIT %d OFFSET %d',
+                'SELECT * FROM %i WHERE ' . $where . ' ORDER BY id ASC LIMIT %d OFFSET %d',
+                AuditSchema::findingsTable(),
                 ...$args
             ),
             ARRAY_A
@@ -287,9 +301,11 @@ WHERE id = %d";
 
         [$where, $args] = $this->findingWhere($query);
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         return (int) $wpdb->get_var(
             $wpdb->prepare(
-                'SELECT COUNT(*) FROM ' . AuditSchema::findingsTable() . ' WHERE ' . $where,
+                'SELECT COUNT(*) FROM %i WHERE ' . $where,
+                AuditSchema::findingsTable(),
                 ...$args
             )
         );
@@ -301,9 +317,11 @@ WHERE id = %d";
 
         [$where, $args] = $this->findingWhere($query);
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         return (int) $wpdb->get_var(
             $wpdb->prepare(
-                'SELECT COUNT(DISTINCT post_id) FROM ' . AuditSchema::findingsTable() . ' WHERE ' . $where,
+                'SELECT COUNT(DISTINCT post_id) FROM %i WHERE ' . $where,
+                AuditSchema::findingsTable(),
                 ...$args
             )
         );
@@ -318,8 +336,8 @@ WHERE id = %d";
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT severity, COUNT(*) AS finding_count FROM ' . AuditSchema::findingsTable()
-                . ' WHERE run_id = %d GROUP BY severity',
+                'SELECT severity, COUNT(*) AS finding_count FROM %i WHERE run_id = %d GROUP BY severity',
+                AuditSchema::findingsTable(),
                 $runId
             ),
             ARRAY_A
@@ -357,9 +375,8 @@ WHERE id = %d";
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT rule_id, COUNT(*) AS finding_count, COUNT(DISTINCT post_id) AS post_count FROM '
-                . AuditSchema::findingsTable()
-                . ' WHERE run_id = %d GROUP BY rule_id',
+                'SELECT rule_id, COUNT(*) AS finding_count, COUNT(DISTINCT post_id) AS post_count FROM %i WHERE run_id = %d GROUP BY rule_id',
+                AuditSchema::findingsTable(),
                 $runId
             ),
             ARRAY_A
@@ -394,7 +411,8 @@ WHERE id = %d";
 
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT * FROM ' . AuditSchema::runsTable() . ' ORDER BY id DESC LIMIT %d OFFSET %d',
+                'SELECT * FROM %i ORDER BY id DESC LIMIT %d OFFSET %d',
+                AuditSchema::runsTable(),
                 max(1, $limit),
                 max(0, $offset)
             ),
@@ -419,7 +437,12 @@ WHERE id = %d";
     {
         global $wpdb;
 
-        return (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . AuditSchema::runsTable());
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                'SELECT COUNT(*) FROM %i',
+                AuditSchema::runsTable()
+            )
+        );
     }
 
     /**

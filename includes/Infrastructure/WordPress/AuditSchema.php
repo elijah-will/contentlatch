@@ -11,6 +11,10 @@ namespace ContentGuard\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom tables have no Core API equivalent.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema existence checks are not object-cache data.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange -- dbDelta install and uninstall DROP TABLE are intentional.
+
 final class AuditSchema
 {
     public const VERSION        = '2';
@@ -99,8 +103,8 @@ final class AuditSchema
             return;
         }
 
-        $wpdb->query('DROP TABLE IF EXISTS ' . self::findingsTable());
-        $wpdb->query('DROP TABLE IF EXISTS ' . self::runsTable());
+        $wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', self::findingsTable()));
+        $wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', self::runsTable()));
 
         if (function_exists('delete_option')) {
             delete_option(self::OPTION_KEY);
@@ -113,6 +117,7 @@ final class AuditSchema
         $table   = self::runsTable();
         $charset = self::charsetCollate();
 
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- dbDelta requires interpolated table/charset; both are prefix + constants, not user input.
         return "CREATE TABLE {$table} (
 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 status varchar(20) NOT NULL,
@@ -140,6 +145,7 @@ KEY heartbeat_at (heartbeat_at)
         $table   = self::findingsTable();
         $charset = self::charsetCollate();
 
+        // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- dbDelta requires interpolated table/charset; both are prefix + constants, not user input.
         return "CREATE TABLE {$table} (
 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 run_id bigint(20) unsigned NOT NULL,
