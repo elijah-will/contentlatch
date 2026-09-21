@@ -1,5 +1,5 @@
 === ContentGuard ===
-Contributors: contentguard
+Contributors: elijahwill
 Tags: acf, validation, content audit, quality control, content governance
 Requires at least: 6.6
 Tested up to: 6.8
