@@ -106,22 +106,22 @@ final class ConditionOperators
     {
         if (self::isNumericField($fieldType)) {
             return array(
-                'equals'                => 'is equal to',
-                'not_equals'            => 'is not equal to',
-                'greater_than'          => 'is greater than',
-                'greater_than_or_equal' => 'is at least',
-                'less_than'             => 'is less than',
-                'less_than_or_equal'    => 'is at most',
-                'is_empty'              => 'is empty',
-                'is_not_empty'          => 'is not empty',
+                'equals'                => I18n::translate('is equal to'),
+                'not_equals'            => I18n::translate('is not equal to'),
+                'greater_than'          => I18n::translate('is greater than'),
+                'greater_than_or_equal' => I18n::translate('is at least'),
+                'less_than'             => I18n::translate('is less than'),
+                'less_than_or_equal'    => I18n::translate('is at most'),
+                'is_empty'              => I18n::translate('is empty'),
+                'is_not_empty'          => I18n::translate('is not empty'),
             );
         }
 
         $labels = array(
-            'equals'       => 'is',
-            'not_equals'   => 'is not',
-            'is_empty'     => 'is empty',
-            'is_not_empty' => 'is not empty',
+            'equals'       => I18n::translate('is'),
+            'not_equals'   => I18n::translate('is not'),
+            'is_empty'     => I18n::translate('is empty'),
+            'is_not_empty' => I18n::translate('is not empty'),
         );
 
         if ($fieldType !== '' && !self::isStringContentField($fieldType)) {
@@ -129,12 +129,12 @@ final class ConditionOperators
         }
 
         return array(
-            'equals'           => 'is',
-            'not_equals'       => 'is not',
-            'contains'         => 'contains',
-            'does_not_contain' => 'does not contain',
-            'is_empty'         => 'is empty',
-            'is_not_empty'     => 'is not empty',
+            'equals'           => I18n::translate('is'),
+            'not_equals'       => I18n::translate('is not'),
+            'contains'         => I18n::translate('contains'),
+            'does_not_contain' => I18n::translate('does not contain'),
+            'is_empty'         => I18n::translate('is empty'),
+            'is_not_empty'     => I18n::translate('is not empty'),
         );
     }
 

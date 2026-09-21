@@ -223,7 +223,7 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                             <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentguard'); ?></label>
                             <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentguard-operator">
                                 <?php foreach ($operators as $value => $label) : ?>
-                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html__($label, 'contentguard'); ?></option>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <label class="screen-reader-text" for="<?php echo esc_attr($operandId); ?>"><?php echo esc_html__('Value', 'contentguard'); ?></label>

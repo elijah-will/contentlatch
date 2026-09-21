@@ -18,7 +18,6 @@ use ContentGuard\Application\AdminNotice;
 use ContentGuard\Application\ConditionOperators;
 use ContentGuard\Application\RuleCommandService;
 use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
 use ContentGuard\Application\RuleMutationPresentation;
 use ContentGuard\Application\RulePresentation;
 use ContentGuard\Application\RulePreview;
@@ -138,16 +137,30 @@ final class RulesPage
                     'customMessage'     => __('Custom message (optional)', 'contentguard'),
                     'characters'        => __('characters', 'contentguard'),
                     'warning'           => __('Warning:', 'contentguard'),
+                    /* translators: %d: Condition number. */
                     'removeCondition'   => __('Remove condition %d', 'contentguard'),
+                    /* translators: %d: Requirement number. */
                     'removeRequirement' => __('Remove requirement %d', 'contentguard'),
-                    'emptyAndNotEmpty'  => __(RuleDocumentValidator::MSG_EMPTY_AND_NOT_EMPTY, 'contentguard'),
-                    'missingThen'       => __(RuleDocumentValidator::MSG_MISSING_THEN, 'contentguard'),
-                    'emptyAndRequired'  => __(RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED, 'contentguard'),
-                    'notEmptyAndRequired' => __(RuleDocumentValidator::MSG_NOT_EMPTY_AND_REQUIRED, 'contentguard'),
-                    'equalsAndRequired' => __(RuleDocumentValidator::MSG_EQUALS_AND_REQUIRED, 'contentguard'),
-                    'allowedValues'     => __(RuleDocumentValidator::MSG_ALLOWED_VALUES, 'contentguard'),
-                    'minGtMax'          => __(RuleDocumentValidator::MSG_MIN_GT_MAX, 'contentguard'),
-                    'missingWhenOrThen' => __(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN, 'contentguard'),
+                    'emptyAndNotEmpty'  => __(
+                        'This rule cannot be saved because a field cannot be both empty and not empty.',
+                        'contentguard'
+                    ),
+                    'missingThen'       => __('Each requirement needs a field and a validator.', 'contentguard'),
+                    'emptyAndRequired'  => __(
+                        'This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.',
+                        'contentguard'
+                    ),
+                    'notEmptyAndRequired' => __(
+                        'This rule cannot be saved because a field is already required to have a value by the WHEN condition.',
+                        'contentguard'
+                    ),
+                    'equalsAndRequired' => __(
+                        'This rule cannot be saved because a field that must already have a specific value does not need to be required.',
+                        'contentguard'
+                    ),
+                    'allowedValues'     => __('Enter at least one allowed value.', 'contentguard'),
+                    'minGtMax'          => __('Minimum length cannot be greater than maximum length.', 'contentguard'),
+                    'missingWhenOrThen' => __('Add a WHEN condition or THEN requirement.', 'contentguard'),
                 ),
             )
         );
@@ -452,12 +465,7 @@ final class RulesPage
      */
     private function operatorLabels(string $fieldType): array
     {
-        $labels = array();
-        foreach (ConditionOperators::labelsForFieldType($fieldType) as $id => $label) {
-            $labels[$id] = __($label, 'contentguard');
-        }
-
-        return $labels;
+        return ConditionOperators::labelsForFieldType($fieldType);
     }
 
     /**
@@ -465,15 +473,6 @@ final class RulesPage
      */
     private function operatorsByType(): array
     {
-        $map = array();
-        foreach (ConditionOperators::labelsByFieldType() as $type => $labels) {
-            $translated = array();
-            foreach ($labels as $id => $label) {
-                $translated[$id] = __($label, 'contentguard');
-            }
-            $map[$type] = $translated;
-        }
-
-        return $map;
+        return ConditionOperators::labelsByFieldType();
     }
 }

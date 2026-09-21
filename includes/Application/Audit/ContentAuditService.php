@@ -523,6 +523,7 @@ final class ContentAuditService
             $row         = is_int($row) || (is_numeric($row) && (int) $row > 0) ? (int) $row : 0;
             $layoutLabel = $this->layoutLabel($first);
             if ($row > 0 && $layoutLabel !== '') {
+                /* translators: 1: Base validation message. 2: Flexible Content layout label. 3: 1-based row number. */
                 return I18n::sprintf(
                     I18n::translate('%s in %s row %d.'),
                     rtrim($base, '.'),
@@ -532,6 +533,7 @@ final class ContentAuditService
             }
 
             if ($row > 0) {
+                /* translators: 1: Base validation message. 2: 1-based row number. */
                 return I18n::sprintf(I18n::translate('%s in row %d.'), rtrim($base, '.'), $row);
             }
 
@@ -553,6 +555,7 @@ final class ContentAuditService
 
         $layoutLabel = $this->layoutLabel($first);
         if ($layoutLabel !== '') {
+            /* translators: 1: Base validation message. 2: Number of rows. 3: Flexible Content layout label. 4: Comma-separated row numbers. */
             return I18n::sprintf(
                 I18n::translate('%s in %d %s rows (rows %s).'),
                 rtrim($base, '.'),
@@ -562,6 +565,7 @@ final class ContentAuditService
             );
         }
 
+        /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row numbers. */
         return I18n::sprintf(
             I18n::translate('%s in %d rows (rows %s).'),
             rtrim($base, '.'),
@@ -579,7 +583,7 @@ final class ContentAuditService
         $stockRequired = 'This field is required.';
         if ($result->message !== ''
             && $result->message !== $stockRequired
-            && $result->message !== I18n::translate($stockRequired)
+            && $result->message !== I18n::translate('This field is required.')
         ) {
             return $result->message;
         }
@@ -589,11 +593,12 @@ final class ContentAuditService
         if ($hasRowContext && $result->code === 'required') {
             $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
             if ($label !== '') {
+                /* translators: %s: Field label. */
                 return I18n::sprintf(I18n::translate('%s is required.'), $label);
             }
         }
 
-        return $result->message !== '' ? $result->message : I18n::translate($stockRequired);
+        return $result->message !== '' ? $result->message : I18n::translate('This field is required.');
     }
 
     private function layoutLabel(EvaluationResult $result): string

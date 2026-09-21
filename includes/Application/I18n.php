@@ -18,17 +18,20 @@ final class I18n
 {
     public static function translate(string $text): string
     {
+        // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Wrapper passes caller literals through to __() for Domain/Application soft i18n.
         return function_exists('__') ? __($text, 'contentguard') : $text;
     }
 
     public static function translateContext(string $text, string $context): string
     {
+        // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText, WordPress.WP.I18n.NonSingularStringLiteralContext -- Wrapper passes caller literals through to _x().
         return function_exists('_x') ? _x($text, $context, 'contentguard') : $text;
     }
 
     public static function translatePlural(string $single, string $plural, int $number): string
     {
         if (function_exists('_n')) {
+            // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralSingle, WordPress.WP.I18n.NonSingularStringLiteralPlural -- Wrapper passes caller literals through to _n().
             return _n($single, $plural, $number, 'contentguard');
         }
 

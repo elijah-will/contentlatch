@@ -69,8 +69,10 @@ final class EditorRestBlockNotice
                 'saveNoticeIds' => self::SAVE_NOTICE_IDS,
                 'i18n'         => array(
                     'blocking' => __('Blocking', 'contentguard'),
+                    /* translators: %d: Number of blocking issues. */
                     'count'    => __('%d blocking issues', 'contentguard'),
                     'required' => __('This field is required.', 'contentguard'),
+                    /* translators: %s: Field label. */
                     'goToField' => __('Go to field: %s', 'contentguard'),
                 ),
             )

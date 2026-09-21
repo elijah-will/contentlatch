@@ -28,9 +28,11 @@ final class EditorNoticePresentation
         }
 
         if ($severity === self::SEVERITY_WARNING) {
+            /* translators: %d: Number of warnings. */
             return sprintf(self::translate('%d warnings'), $count);
         }
 
+        /* translators: %d: Number of blocking issues. */
         return sprintf(self::translate('%d blocking issues'), $count);
     }
 
@@ -174,6 +176,7 @@ final class EditorNoticePresentation
 
     private static function translate(string $text): string
     {
+        // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Local presentation wrapper; callers pass string literals.
         return function_exists('__') ? __($text, 'contentguard') : $text;
     }
 

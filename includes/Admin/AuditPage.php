@@ -94,7 +94,9 @@ final class AuditPage
                 'i18n'    => array(
                     'pending'          => StatusPresentation::label('pending'),
                     'running'          => StatusPresentation::label('running'),
+                    /* translators: 1: Number of content items checked. 2: Total content items. */
                     'progressKnown'    => __('%1$d of %2$d content items checked', 'contentguard'),
+                    /* translators: %d: Number of content items checked. */
                     'progressUnknown'  => __('%d content items checked', 'contentguard'),
                     'couldNotStart'    => __('Could not start the audit.', 'contentguard'),
                     'batchFailed'      => __('The audit could not continue.', 'contentguard'),

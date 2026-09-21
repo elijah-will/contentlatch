@@ -16,6 +16,7 @@ final class Text
 {
     public static function translate(string $text): string
     {
+        // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Soft Domain wrapper; callers pass string literals that make-pot extracts via I18n/Text::translate.
         return function_exists('__') ? __($text, 'contentguard') : $text;
     }
 

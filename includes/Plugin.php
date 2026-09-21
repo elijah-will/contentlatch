@@ -88,7 +88,6 @@ final class Plugin
 
     public function boot(): void
     {
-        $this->loadTextDomain();
         $this->dependencies->registerAdminNotices();
         Capabilities::grant();
         add_action('init', array(RulePostType::class, 'register'));
@@ -243,12 +242,4 @@ final class Plugin
         ));
     }
 
-    private function loadTextDomain(): void
-    {
-        load_plugin_textdomain(
-            self::TEXT_DOMAIN,
-            false,
-            dirname(plugin_basename(CONTENTGUARD_FILE)) . '/languages'
-        );
-    }
 }

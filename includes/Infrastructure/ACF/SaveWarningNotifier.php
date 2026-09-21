@@ -228,6 +228,7 @@ final class SaveWarningNotifier
                 'text'     => self::noticeText($warnings),
                 'i18n'     => array(
                     'warning'   => __('Warning', 'contentguard'),
+                    /* translators: %s: Field label. */
                     'goToField' => __('Go to field: %s', 'contentguard'),
                 ),
             )

@@ -125,6 +125,7 @@ $rules          = RulesPage::sortForList($rules);
                 $count      = count($groupRules);
                 $headingId  = 'contentguard-rule-group-' . $groupId;
                 $countLabel = sprintf(
+                    /* translators: %d: Number of rules in this group. */
                     _n('%d rule', '%d rules', $count, 'contentguard'),
                     $count
                 );
@@ -133,7 +134,7 @@ $rules          = RulesPage::sortForList($rules);
                     <details class="contentguard-rule-group__details"<?php echo !empty($group['open']) ? ' open' : ''; ?>>
                         <summary class="contentguard-rule-group__summary">
                             <h2 class="contentguard-rule-group__title" id="<?php echo esc_attr($headingId); ?>">
-                                <?php echo esc_html__($groupTitle, 'contentguard'); ?>
+                                <?php echo esc_html($groupTitle); ?>
                             </h2>
                             <span class="contentguard-rule-group__count"><?php echo esc_html($countLabel); ?></span>
                         </summary>
