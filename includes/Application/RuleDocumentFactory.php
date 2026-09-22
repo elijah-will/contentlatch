@@ -254,8 +254,8 @@ final class RuleDocumentFactory
 
             $operator = (string) ($row['operator'] ?? '');
             if (!$this->operators->has($operator)) {
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentguard'), $operator));
+                /* translators: %s: Condition operator key. */
+                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentguard'), $operator)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
@@ -338,8 +338,8 @@ final class RuleDocumentFactory
             }
 
             if (!$this->validators->has($type)) {
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentguard'), $type));
+                /* translators: %s: Validation type key. */
+                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentguard'), $type)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
 
             $message = trim((string) ($row['message'] ?? ''));

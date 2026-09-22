@@ -120,8 +120,8 @@ final class EditorAuditIssues
         } else {
             $displayRow = EditorFieldNavigation::sanitizeDisplayRow($result->context['display_row'] ?? null);
             if ($displayRow > 0 && EditorFieldNavigation::layoutFromContext($result->context) === '') {
-                /* translators: 1: Base validation message. 2: 1-based row number. */
                 $message = sprintf(
+                    /* translators: 1: Base validation message. 2: 1-based row number. */
                     __('%1$s in row %2$d.', 'contentguard'),
                     rtrim(self::nestedBaseMessage($result, $message), '.'),
                     $displayRow

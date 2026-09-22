@@ -523,9 +523,9 @@ final class ContentAuditService
             $row         = is_int($row) || (is_numeric($row) && (int) $row > 0) ? (int) $row : 0;
             $layoutLabel = $this->layoutLabel($first);
             if ($row > 0 && $layoutLabel !== '') {
-                /* translators: 1: Base validation message. 2: Flexible Content layout label. 3: 1-based row number. */
                 return sprintf(
-                    __('%s in %s row %d.', 'contentguard'),
+                    /* translators: 1: Base validation message. 2: Flexible Content layout label. 3: 1-based row number. */
+                    __('%1$s in %2$s row %3$d.', 'contentguard'),
                     rtrim($base, '.'),
                     $layoutLabel,
                     $row
@@ -533,8 +533,12 @@ final class ContentAuditService
             }
 
             if ($row > 0) {
-                /* translators: 1: Base validation message. 2: 1-based row number. */
-                return sprintf(__('%s in row %d.', 'contentguard'), rtrim($base, '.'), $row);
+                return sprintf(
+                    /* translators: 1: Base validation message. 2: 1-based row number. */
+                    __('%1$s in row %2$d.', 'contentguard'),
+                    rtrim($base, '.'),
+                    $row
+                );
             }
 
             return $base;
@@ -555,9 +559,9 @@ final class ContentAuditService
 
         $layoutLabel = $this->layoutLabel($first);
         if ($layoutLabel !== '') {
-            /* translators: 1: Base validation message. 2: Number of rows. 3: Flexible Content layout label. 4: Comma-separated row numbers. */
             return sprintf(
-                __('%s in %d %s rows (rows %s).', 'contentguard'),
+                /* translators: 1: Base validation message. 2: Number of rows. 3: Flexible Content layout label. 4: Comma-separated row numbers. */
+                __('%1$s in %2$d %3$s rows (rows %4$s).', 'contentguard'),
                 rtrim($base, '.'),
                 count($rows),
                 $layoutLabel,
@@ -565,9 +569,9 @@ final class ContentAuditService
             );
         }
 
-        /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row numbers. */
         return sprintf(
-            __('%s in %d rows (rows %s).', 'contentguard'),
+            /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row numbers. */
+            __('%1$s in %2$d rows (rows %3$s).', 'contentguard'),
             rtrim($base, '.'),
             count($rows),
             implode(', ', $rows)

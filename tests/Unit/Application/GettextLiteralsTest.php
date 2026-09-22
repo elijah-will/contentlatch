@@ -110,6 +110,31 @@ final class GettextLiteralsTest extends TestCase
         );
     }
 
+    public function testAuditSummariesKeepEnglishPluralWording(): void
+    {
+        $this->assertSame('1 required field is missing', AuditPresentation::requiredFieldsSummary(1));
+        $this->assertSame('2 required fields are missing', AuditPresentation::requiredFieldsSummary(2));
+        $this->assertSame('1 validation issue needs attention', AuditPresentation::validationIssuesSummary(1));
+        $this->assertSame('2 validation issues need attention', AuditPresentation::validationIssuesSummary(2));
+    }
+
+    public function testSnapshotPlaceholdersAreOrdered(): void
+    {
+        $service = (string) file_get_contents($this->pluginRoot() . '/includes/Application/Audit/ContentAuditService.php');
+        $coords  = (string) file_get_contents($this->pluginRoot() . '/includes/Application/Audit/AuditRepeaterCoordinates.php');
+
+        $this->assertStringContainsString('%1$s in %2$s row %3$d.', $service);
+        $this->assertStringContainsString('%1$s in row %2$d.', $service);
+        $this->assertStringContainsString('%1$s in %2$d %3$s rows (rows %4$s).', $service);
+        $this->assertStringContainsString('%1$s in %2$d rows (rows %3$s).', $service);
+        $this->assertStringNotContainsString("'%s in %s row %d.'", $service);
+        $this->assertStringNotContainsString("'%s in %d rows (rows %s).'", $service);
+
+        $this->assertStringContainsString('%1$s in row %2$s.', $coords);
+        $this->assertStringContainsString('%1$s in %2$d rows (rows %3$s).', $coords);
+        $this->assertStringNotContainsString("'%s in row %s.'", $coords);
+    }
+
     public function testPotExtractionDoesNotScrapeTranslationWrappers(): void
     {
         $script = (string) file_get_contents($this->pluginRoot() . '/bin/make-pot.php');
@@ -128,6 +153,11 @@ final class GettextLiteralsTest extends TestCase
                 'Title',
                 'Featured Image',
                 'Add at least one %s row.',
+                '%1$s in %2$s row %3$d.',
+                '%1$s in row %2$d.',
+                '%1$s in %2$d %3$s rows (rows %4$s).',
+                '%1$s in %2$d rows (rows %3$s).',
+                '%1$s in row %2$s.',
             ) as $msgid
         ) {
             $this->assertStringContainsString('msgid "' . $msgid . '"', $pot, $msgid);

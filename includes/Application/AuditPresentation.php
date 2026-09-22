@@ -202,8 +202,8 @@ final class AuditPresentation
 
     public static function requiredFieldsSummary(int $count): string
     {
-        /* translators: %d: Number of missing required fields. */
         return sprintf(
+            /* translators: %d: Number of missing required fields. */
             _n('%d required field is missing', '%d required fields are missing', $count, 'contentguard'),
             $count
         );
@@ -211,8 +211,8 @@ final class AuditPresentation
 
     public static function validationIssuesSummary(int $count): string
     {
-        /* translators: %d: Number of validation issues. */
         return sprintf(
+            /* translators: %d: Number of validation issues. */
             _n('%d validation issue needs attention', '%d validation issues need attention', $count, 'contentguard'),
             $count
         );

@@ -94,15 +94,8 @@ final class RuleDocumentValidator
             }
 
             if (!$this->operators->has($condition->operator)) {
-                throw new InvalidRuleException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    sprintf(
-                        /* translators: %s: operator id */
-                        __('Unknown condition operator "%s".', 'contentguard'),
-                        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        $condition->operator
-                    )
-                );
+                /* translators: %s: Condition operator key. */
+                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentguard'), $condition->operator)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
         }
 
@@ -118,15 +111,8 @@ final class RuleDocumentValidator
             }
 
             if (!$this->validators->has($validation->type)) {
-                throw new InvalidRuleException(
-                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    sprintf(
-                        /* translators: %s: validation type id */
-                        __('Unknown validation type "%s".', 'contentguard'),
-                        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        $validation->type
-                    )
-                );
+                /* translators: %s: Validation type key. */
+                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentguard'), $validation->type)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
 
             if ($validation->type === 'allowed_values') {

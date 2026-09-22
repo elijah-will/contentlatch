@@ -250,7 +250,11 @@ final class RestSaveValidator
             && ($message === $stockRequired || $message === __('This field is required.', 'contentguard'))
             && $label !== ''
         ) {
-            return sprintf(__('%s is required.', 'contentguard'), $label);
+            return sprintf(
+                /* translators: %s: Field label. */
+                __('%s is required.', 'contentguard'),
+                $label
+            );
         }
 
         if ($message !== '') {
@@ -258,7 +262,11 @@ final class RestSaveValidator
         }
 
         return $label !== ''
-            ? sprintf(__('%s is invalid.', 'contentguard'), $label)
+            ? sprintf(
+                /* translators: %s: Field label. */
+                __('%s is invalid.', 'contentguard'),
+                $label
+            )
             : __('ContentGuard validation failed.', 'contentguard');
     }
 }
