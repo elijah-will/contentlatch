@@ -204,7 +204,11 @@ final class SaveWarningNotifier
             return;
         }
 
-        EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));
+        // Only republish contentguardEditorField when there are warnings to
+        // navigate. An empty extras localize overwrites Audit arrival state.
+        if ($warnings !== array()) {
+            EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));
+        }
 
         wp_register_script(
             'contentguard-editor-warnings',

@@ -836,11 +836,109 @@
   });
 
   var autoStarted = false;
+  var arrivalStarted = false;
+  var arrivalGeneration = 0;
+  var stopMetaBoxWatch = null;
+
+  function stableGutenbergField(fieldKey, layout, displayRow, repeaterPath) {
+    var path = parseRepeaterPath(repeaterPath);
+    if (path === null) {
+      return null;
+    }
+
+    var field = findField(fieldKey, layout || "", sanitizeDisplayRow(displayRow), path);
+    var root = document.querySelector(".edit-post-layout__metaboxes");
+    if (!field || !root || typeof root.contains !== "function" || !root.contains(field)) {
+      return null;
+    }
+
+    return field;
+  }
+
+  function stopAuditArrivalWatch() {
+    if (typeof stopMetaBoxWatch === "function") {
+      stopMetaBoxWatch();
+      stopMetaBoxWatch = null;
+    }
+  }
+
+  function completeAuditArrivalIfStable(generation) {
+    if (generation !== arrivalGeneration || autoStarted) {
+      return false;
+    }
+
+    var field = stableGutenbergField(
+      config.fieldKey,
+      config.layout || "",
+      config.displayRow || 0,
+      config.repeaterPath
+    );
+    if (!field) {
+      return false;
+    }
+
+    autoStarted = true;
+    arrivalGeneration += 1;
+    stopAuditArrivalWatch();
+    navigateToField(
+      config.fieldKey,
+      config.layout || "",
+      config.displayRow || 0,
+      config.repeaterPath
+    );
+    return true;
+  }
+
+  function watchMetaBoxesInitialized() {
+    if (stopMetaBoxWatch || !window.wp || !wp.data || typeof wp.data.subscribe !== "function") {
+      return;
+    }
+
+    stopMetaBoxWatch = wp.data.subscribe(function () {
+      var select = wp.data.select ? wp.data.select("core/edit-post") : null;
+      if (
+        !select ||
+        typeof select.areMetaBoxesInitialized !== "function" ||
+        !select.areMetaBoxesInitialized()
+      ) {
+        return;
+      }
+
+      completeAuditArrivalIfStable(arrivalGeneration);
+    });
+  }
+
+  function tryAuditArrival(attemptsLeft, generation) {
+    if (generation !== arrivalGeneration || autoStarted) {
+      return;
+    }
+    if (completeAuditArrivalIfStable(generation)) {
+      return;
+    }
+    if (attemptsLeft <= 0) {
+      arrivalGeneration += 1;
+      stopAuditArrivalWatch();
+      return;
+    }
+
+    watchMetaBoxesInitialized();
+    window.setTimeout(function () {
+      tryAuditArrival(attemptsLeft - 1, generation);
+    }, 250);
+  }
+
   function startFromUrl() {
-    if (autoStarted || !config.autoNavigate) {
+    if (autoStarted || arrivalStarted || !config.autoNavigate) {
       return;
     }
     if (isSafeFieldKey(config.fieldKey)) {
+      if (coreSurface() === "gutenberg") {
+        arrivalStarted = true;
+        watchMetaBoxesInitialized();
+        tryAuditArrival(20, arrivalGeneration);
+        return;
+      }
+
       autoStarted = true;
       navigateToField(
         config.fieldKey,

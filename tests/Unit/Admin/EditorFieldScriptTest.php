@@ -193,4 +193,81 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('#title', $js);
         $this->assertStringContainsString('#postdivrich', $js);
     }
+
+    public function testAuditArrivalWaitsForTheStableGutenbergMetabox(): void
+    {
+        $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-field.js');
+
+        $this->assertStringNotContainsString('setInterval', $js);
+        $this->assertStringNotContainsString('MutationObserver', $js);
+
+        $stable = $this->functionSource($js, 'stableGutenbergField');
+        $this->assertStringContainsString('.edit-post-layout__metaboxes', $stable);
+        $this->assertStringContainsString('root.contains(field)', $stable);
+        $this->assertStringContainsString('findField(', $stable);
+        $this->assertStringContainsString('return null', $stable);
+
+        $complete = $this->functionSource($js, 'completeAuditArrivalIfStable');
+        $this->assertStringContainsString('stableGutenbergField(', $complete);
+        $this->assertLessThan(
+            strpos($complete, 'navigateToField('),
+            strpos($complete, 'if (!field)')
+        );
+        $this->assertStringContainsString('stopAuditArrivalWatch()', $complete);
+
+        $retry = $this->functionSource($js, 'tryAuditArrival');
+        $this->assertStringContainsString('attemptsLeft <= 0', $retry);
+        $this->assertStringContainsString('stopAuditArrivalWatch()', $retry);
+        $this->assertStringContainsString('tryAuditArrival(attemptsLeft - 1, generation)', $retry);
+        $this->assertStringContainsString('}, 250);', $retry);
+        $this->assertStringNotContainsString('navigateToField(', $retry);
+
+        $watch = $this->functionSource($js, 'watchMetaBoxesInitialized');
+        $this->assertStringContainsString('wp.data.subscribe', $watch);
+        $this->assertStringContainsString('areMetaBoxesInitialized', $watch);
+        $this->assertStringContainsString('completeAuditArrivalIfStable(arrivalGeneration)', $watch);
+
+        $stop = $this->functionSource($js, 'stopAuditArrivalWatch');
+        $this->assertStringContainsString('stopMetaBoxWatch()', $stop);
+
+        $start = $this->functionSource($js, 'startFromUrl');
+        $this->assertStringContainsString('coreSurface() === "gutenberg"', $start);
+        $this->assertStringContainsString('tryAuditArrival(20, arrivalGeneration)', $start);
+        $this->assertLessThan(
+            strpos($start, 'navigateToField('),
+            strpos($start, 'tryAuditArrival(20, arrivalGeneration)')
+        );
+        $this->assertStringContainsString('navigateToCore(config.fieldKey)', $start);
+
+        $focus = $this->functionSource($js, 'tryFocus');
+        $this->assertStringNotContainsString('.edit-post-layout__metaboxes', $focus);
+        $this->assertStringContainsString('findField(', $focus);
+        $this->assertStringContainsString('reveal(field, announcedRow)', $focus);
+        $this->assertStringContainsString('attemptsLeft <= 0', $focus);
+
+        preg_match('/document\.addEventListener\("click", function \(event\) \{.*?\n  \}\);/s', $js, $click);
+        $this->assertNotSame(array(), $click);
+        $this->assertStringContainsString('navigateToField(', $click[0]);
+        $this->assertStringContainsString('data-contentguard-repeater-path', $click[0]);
+        $this->assertStringNotContainsString('.edit-post-layout__metaboxes', $click[0]);
+        $this->assertStringNotContainsString('stableGutenbergField', $click[0]);
+        $this->assertStringNotContainsString('tryAuditArrival', $click[0]);
+
+        $this->assertStringContainsString('function parseRepeaterPath(', $js);
+        $this->assertStringContainsString('function findFieldInRepeaterPath(', $js);
+        $this->assertStringContainsString('function navigateToField(', $js);
+        $this->assertStringContainsString('tryFocus(fieldKey, layout || "", sanitizeDisplayRow(displayRow), 20, path)', $js);
+    }
+
+    private function functionSource(string $js, string $name): string
+    {
+        $matched = preg_match(
+            '/function ' . preg_quote($name, '/') . '\(.*?\n  \}/s',
+            $js,
+            $function
+        );
+        $this->assertSame(1, $matched, $name);
+
+        return $function[0];
+    }
 }

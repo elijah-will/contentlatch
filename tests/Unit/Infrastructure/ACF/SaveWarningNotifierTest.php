@@ -50,6 +50,78 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertFalse(SaveWarningNotifier::shouldEnqueue('contentguard_page_contentguard-audit'));
     }
 
+    public function testEmptyWarningsDoNotRepublishEditorFieldNavigationState(): void
+    {
+        $php = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/ACF/SaveWarningNotifier.php');
+
+        $this->assertMatchesRegularExpression(
+            '/if\s*\(\s*\$warnings\s*!==\s*array\(\)\s*\)\s*\{\s*EditorFieldFocus::enqueueAssets\(/s',
+            $php
+        );
+        $this->assertStringContainsString(
+            'EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));',
+            $php
+        );
+        $this->assertSame(
+            1,
+            substr_count($php, 'EditorFieldFocus::enqueueAssets')
+        );
+        $this->assertStringContainsString('navigationExtras($warnings)', $php);
+        $this->assertStringContainsString('contentguard-editor-warnings', $php);
+        $this->assertStringContainsString('contentguardEditorWarnings', $php);
+        $this->assertStringNotContainsString(
+            "wp_localize_script(\n            'contentguard-editor-field'",
+            $php
+        );
+        $this->assertStringNotContainsString(
+            "wp_localize_script(\n            \"contentguard-editor-field\"",
+            $php
+        );
+    }
+
+    public function testWarningNavigationExtrasStillCarryRepeaterPathForASingleWarning(): void
+    {
+        $method = new \ReflectionMethod(SaveWarningNotifier::class, 'navigationExtras');
+        $method->setAccessible(true);
+
+        $empty = $method->invoke(null, array());
+        $this->assertSame(array(), $empty);
+
+        $path = array(
+            array(
+                'repeater'    => 'field_66a7ff4394039',
+                'display_row' => 3,
+            ),
+        );
+        $extras = $method->invoke(null, array(
+            array(
+                'text'         => 'Ingredient List → Ingredient — This field is required in row 3.',
+                'message'      => 'This field is required in row 3.',
+                'label'        => 'Ingredient List → Ingredient',
+                'fieldKey'     => 'field_66a800089403a',
+                'repeaterPath' => $path,
+            ),
+        ));
+        $this->assertSame($path, $extras['repeaterPath']);
+        $this->assertArrayNotHasKey('displayRow', $extras);
+
+        $multiple = $method->invoke(null, array(
+            array(
+                'text'     => 'One',
+                'message'  => 'One',
+                'label'    => 'A',
+                'fieldKey' => 'field_a',
+            ),
+            array(
+                'text'     => 'Two',
+                'message'  => 'Two',
+                'label'    => 'B',
+                'fieldKey' => 'field_b',
+            ),
+        ));
+        $this->assertSame(array(), $multiple);
+    }
+
     public function testWarningMessagesIgnoreFailuresAndPasses(): void
     {
         $engine = RuleEngine::v1();

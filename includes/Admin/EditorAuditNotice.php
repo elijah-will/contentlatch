@@ -222,7 +222,7 @@ final class EditorAuditNotice
             return;
         }
 
-        EditorFieldFocus::enqueueAssets($request, self::navigationExtras($issues));
+        EditorFieldFocus::enqueueAssets($request, self::navigationExtras($issues, $request));
 
         wp_register_script(
             'contentguard-editor-audit',
@@ -265,29 +265,103 @@ final class EditorAuditNotice
     }
 
     /**
-     * Single failing Flex row can auto-navigate without putting a row in the URL.
+     * Navigation hints for the Audit field named in the editor URL.
      *
-     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>}> $issues
-     * @return array{layout?: string, displayRow?: int}
+     * A single issue keeps its metadata. With several issues, the requested
+     * contentguard_field selects the matching issue when that match is unique
+     * or every match names the same row. Differing rows are left unset.
+     *
+     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>}> $issues
+     * @param array<string, mixed> $request
+     * @return array{layout?: string, displayRow?: int, repeaterPath?: list<array{repeater: string, display_row: int}>}
      */
-    private static function navigationExtras(array $issues): array
+    private static function navigationExtras(array $issues, array $request = array()): array
     {
-        if (count($issues) !== 1) {
+        $issue = self::issueForNavigation($issues, $request);
+        if ($issue === null) {
             return array();
         }
 
-        $extra = array();
-        $layout = EditorFieldNavigation::layoutFromItem($issues[0]);
+        return self::extrasFromIssue($issue);
+    }
+
+    /**
+     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>}> $issues
+     * @param array<string, mixed> $request
+     * @return array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>}|null
+     */
+    private static function issueForNavigation(array $issues, array $request): ?array
+    {
+        if (count($issues) === 1) {
+            return $issues[0];
+        }
+
+        $requested = EditorFieldNavigation::requestedFieldKey($request);
+        if ($requested === '') {
+            return null;
+        }
+
+        $matches = array();
+        foreach ($issues as $issue) {
+            $key = EditorFieldNavigation::navigationId((string) ($issue['fieldKey'] ?? ''));
+            if ($key !== '' && $key === $requested) {
+                $matches[] = $issue;
+            }
+        }
+
+        if (count($matches) === 1) {
+            return $matches[0];
+        }
+
+        if (count($matches) > 1 && self::navigationTargetsAgree($matches)) {
+            return $matches[0];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>}> $issues
+     */
+    private static function navigationTargetsAgree(array $issues): bool
+    {
+        $expected = null;
+        foreach ($issues as $issue) {
+            $target = array(
+                EditorFieldNavigation::layoutFromItem($issue),
+                EditorFieldNavigation::affectedRowsFromItem($issue),
+                EditorFieldNavigation::repeaterPathFromItem($issue),
+            );
+            if ($expected === null) {
+                $expected = $target;
+                continue;
+            }
+            if ($target !== $expected) {
+                return false;
+            }
+        }
+
+        return $expected !== null;
+    }
+
+    /**
+     * @param array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>} $issue
+     * @return array{layout?: string, displayRow?: int, repeaterPath?: list<array{repeater: string, display_row: int}>}
+     */
+    private static function extrasFromIssue(array $issue): array
+    {
+        $extra  = array();
+        $layout = EditorFieldNavigation::layoutFromItem($issue);
         if ($layout !== '') {
             $extra['layout'] = $layout;
         }
 
-        $rows = EditorFieldNavigation::affectedRowsFromItem($issues[0]);
+        $rows = EditorFieldNavigation::affectedRowsFromItem($issue);
         if (count($rows) === 1) {
             $extra['displayRow'] = $rows[0];
         }
 
-        $path = EditorFieldNavigation::repeaterPathFromItem($issues[0]);
+        $path = EditorFieldNavigation::repeaterPathFromItem($issue);
         if ($path !== array()) {
             $extra['repeaterPath'] = $path;
         }
