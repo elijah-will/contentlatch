@@ -196,9 +196,9 @@ WHERE id = %d';
         $postIds = array_values(array_filter(array_map('intval', $postIds)));
         if ($postIds !== array()) {
             $placeholders = implode(',', array_fill(0, count($postIds), '%d'));
-            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN placeholders are generated as %d tokens from intval'd IDs; arguments are the same ID list.
             $wpdb->query(
                 $wpdb->prepare(
+                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN placeholders are generated as %d tokens from intval'd IDs; arguments are the same ID list.
                     'DELETE FROM %i WHERE run_id = %d AND post_id IN (' . $placeholders . ')',
                     array_merge(array(AuditSchema::findingsTable(), $runId), $postIds)
                 )
@@ -272,9 +272,9 @@ WHERE id = %d';
         $args[]         = $query->limit;
         $args[]         = $query->offset;
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
                 'SELECT * FROM %i WHERE ' . $where . ' ORDER BY id ASC LIMIT %d OFFSET %d',
                 AuditSchema::findingsTable(),
                 ...$args
@@ -302,9 +302,9 @@ WHERE id = %d';
 
         [$where, $args] = $this->findingWhere($query);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         return (int) $wpdb->get_var(
             $wpdb->prepare(
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
                 'SELECT COUNT(*) FROM %i WHERE ' . $where,
                 AuditSchema::findingsTable(),
                 ...$args
@@ -318,9 +318,9 @@ WHERE id = %d';
 
         [$where, $args] = $this->findingWhere($query);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
         return (int) $wpdb->get_var(
             $wpdb->prepare(
+                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
                 'SELECT COUNT(DISTINCT post_id) FROM %i WHERE ' . $where,
                 AuditSchema::findingsTable(),
                 ...$args

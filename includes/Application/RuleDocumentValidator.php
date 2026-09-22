@@ -94,11 +94,12 @@ final class RuleDocumentValidator
             }
 
             if (!$this->operators->has($condition->operator)) {
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     I18n::sprintf(
                         /* translators: %s: operator id */
                         I18n::translate('Unknown condition operator "%s".'),
+                        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                         $condition->operator
                     )
                 );
@@ -117,11 +118,12 @@ final class RuleDocumentValidator
             }
 
             if (!$this->validators->has($validation->type)) {
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                 throw new InvalidRuleException(
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                     I18n::sprintf(
                         /* translators: %s: validation type id */
                         I18n::translate('Unknown validation type "%s".'),
+                        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
                         $validation->type
                     )
                 );
