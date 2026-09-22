@@ -148,11 +148,17 @@ final class AuditRepeaterCoordinates
         }
 
         if (count($tokens) === 1) {
-            return sprintf('%s in row %s.', rtrim($base, '.'), $tokens[0]);
+            return sprintf(
+                /* translators: 1: base validation message. 2: row token, such as 2 or 2.3. */
+                __('%s in row %s.', 'contentguard'),
+                rtrim($base, '.'),
+                $tokens[0]
+            );
         }
 
         return sprintf(
-            '%s in %d rows (rows %s).',
+            /* translators: 1: base validation message. 2: number of rows. 3: row tokens. */
+            __('%s in %d rows (rows %s).', 'contentguard'),
             rtrim($base, '.'),
             count($tokens),
             implode(', ', $tokens)

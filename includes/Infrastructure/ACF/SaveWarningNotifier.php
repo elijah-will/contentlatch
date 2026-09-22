@@ -34,7 +34,7 @@ use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\EditorCoreNavigation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Application\I18n;
+use ContentGuard\Application\DomainMessages;
 use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
@@ -445,7 +445,7 @@ final class SaveWarningNotifier
             (string) ($warning['fieldKey'] ?? ''),
             (string) ($warning['label'] ?? ''),
             (string) ($warning['message'] ?? ''),
-            I18n::translate('Content warning.'),
+            __('Content warning.', 'contentguard'),
             $surface,
             EditorFieldNavigation::layoutFromItem($warning),
             EditorFieldNavigation::affectedRowsFromItem($warning),
@@ -556,7 +556,9 @@ final class SaveWarningNotifier
     private static function warningItem(EvaluationResult $result): array
     {
         $label   = trim((string) ($result->context['field_label'] ?? ''));
-        $message = $result->message !== '' ? $result->message : I18n::translate('Content warning.');
+        $message = $result->message !== ''
+            ? DomainMessages::present($result->message)
+            : __('Content warning.', 'contentguard');
 
         return EditorFieldNavigation::withEvaluationRowTargets(
             array(
@@ -678,7 +680,9 @@ final class SaveWarningNotifier
     private static function formatWarning(EvaluationResult $result): string
     {
         $label   = (string) ($result->context['field_label'] ?? '');
-        $message = $result->message !== '' ? $result->message : I18n::translate('Content warning.');
+        $message = $result->message !== ''
+            ? DomainMessages::present($result->message)
+            : __('Content warning.', 'contentguard');
 
         if ($label !== '' && !str_contains($message, $label)) {
             return $label . ': ' . $message;

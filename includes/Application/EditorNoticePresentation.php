@@ -18,7 +18,7 @@ final class EditorNoticePresentation
 
     public static function title(string $severity): string
     {
-        return self::translate('ContentGuard') . ' · ' . self::severityLabel($severity);
+        return __('ContentGuard', 'contentguard') . ' · ' . self::severityLabel($severity);
     }
 
     public static function countLabel(string $severity, int $count): string
@@ -28,12 +28,18 @@ final class EditorNoticePresentation
         }
 
         if ($severity === self::SEVERITY_WARNING) {
-            /* translators: %d: Number of warnings. */
-            return sprintf(self::translate('%d warnings'), $count);
+            return sprintf(
+                /* translators: %d: Number of warnings. */
+                __('%d warnings', 'contentguard'),
+                $count
+            );
         }
 
-        /* translators: %d: Number of blocking issues. */
-        return sprintf(self::translate('%d blocking issues'), $count);
+        return sprintf(
+            /* translators: %d: Number of blocking issues. */
+            __('%d blocking issues', 'contentguard'),
+            $count
+        );
     }
 
     /**
@@ -134,13 +140,13 @@ final class EditorNoticePresentation
     public static function issueLine(string $label, string $message, string $code = ''): string
     {
         $label   = trim($label);
-        $message = trim($message);
+        $message = DomainMessages::present(trim($message));
 
         if ($label !== '' && $message !== '' && str_starts_with($message, $label . ' — ')) {
             return $message;
         }
 
-        $required          = self::translate('This field is required.');
+        $required          = __('This field is required.', 'contentguard');
         $isDefaultRequired = $code === 'required'
             && ($message === '' || $message === $required || $message === 'This field is required.');
         $isLabelRequired   = $label !== '' && $message === $label . ' is required.';
@@ -155,16 +161,16 @@ final class EditorNoticePresentation
 
         $line = $message !== '' ? $message : $label;
 
-        return $line !== '' ? $line : self::translate('ContentGuard validation failed.');
+        return $line !== '' ? $line : __('ContentGuard validation failed.', 'contentguard');
     }
 
     private static function severityLabel(string $severity): string
     {
         if ($severity === self::SEVERITY_WARNING) {
-            return self::translate('Warning');
+            return __('Warning', 'contentguard');
         }
 
-        return self::translate('Blocking');
+        return __('Blocking', 'contentguard');
     }
 
     private static function rootClass(string $severity): string
@@ -172,12 +178,6 @@ final class EditorNoticePresentation
         return $severity === self::SEVERITY_WARNING
             ? 'contentguard-editor-warnings'
             : 'contentguard-audit-blockers';
-    }
-
-    private static function translate(string $text): string
-    {
-        // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Local presentation wrapper; callers pass string literals.
-        return function_exists('__') ? __($text, 'contentguard') : $text;
     }
 
     private static function escapeHtml(string $value): string

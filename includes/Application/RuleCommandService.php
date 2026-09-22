@@ -52,7 +52,7 @@ final class RuleCommandService
         if (!is_callable($canManage) || !$canManage()) {
             throw new ForbiddenRuleMutationException(
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                I18n::translate('You are not allowed to manage ContentGuard rules.')
+                __('You are not allowed to manage ContentGuard rules.', 'contentguard')
             );
         }
 
@@ -60,7 +60,7 @@ final class RuleCommandService
         if (!is_callable($verifyNonce) || !$verifyNonce($nonce)) {
             throw new ForbiddenRuleMutationException(
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                I18n::translate('Invalid rule management nonce.')
+                __('Invalid rule management nonce.', 'contentguard')
             );
         }
     }

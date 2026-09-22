@@ -14,7 +14,6 @@ namespace ContentGuard\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\I18n;
 use ContentGuard\Application\Integration\FieldCatalog;
 
 final class CoreFieldCatalog implements FieldCatalog
@@ -144,13 +143,26 @@ final class CoreFieldCatalog implements FieldCatalog
             $fields[] = array(
                 'key'         => $id,
                 'name'        => $definition['name'],
-                'label'       => I18n::translate($definition['label']),
+                'label'       => self::fieldLabel($id),
                 'type'        => $definition['type'],
-                'group_label' => I18n::translate(self::GROUP_LABEL),
+                'group_label' => __('WordPress', 'contentguard'),
             );
         }
 
         return $fields;
+    }
+
+    private static function fieldLabel(string $id): string
+    {
+        return match ($id) {
+            self::TITLE => __('Title', 'contentguard'),
+            self::CONTENT => __('Content', 'contentguard'),
+            self::EXCERPT => __('Excerpt', 'contentguard'),
+            self::SLUG => __('Slug', 'contentguard'),
+            self::FEATURED_IMAGE => __('Featured Image', 'contentguard'),
+            self::AUTHOR => __('Author', 'contentguard'),
+            default => self::FIELDS[$id]['label'] ?? $id,
+        };
     }
 
     /**

@@ -70,7 +70,7 @@ final class RuleEngine
                     $rule->id,
                     $postId,
                     null,
-                    Text::translate('Rule skipped because its conditions were not met.'),
+                    'Rule skipped because its conditions were not met.',
                     $rule->severity,
                     'conditions_not_met',
                 ),
@@ -85,7 +85,7 @@ final class RuleEngine
                         $rule->id,
                         $postId,
                         null,
-                        Text::translate('Rule applied with no validations.'),
+                        'Rule applied with no validations.',
                         $rule->severity,
                         'no_validations',
                     ),
@@ -191,7 +191,7 @@ final class RuleEngine
     {
         return $rule->message !== ''
             ? $rule->message
-            : Text::translate('This content matches the rule condition.');
+            : 'This content matches the rule condition.';
     }
 
     /**
@@ -249,7 +249,7 @@ final class RuleEngine
                     $rule->id,
                     $postId,
                     $validation->field->resolutionId(),
-                    Text::sprintf('Add at least one %s row.', $this->repeaterLabel($validation->field)),
+                    sprintf('Add at least one %s row.', $this->repeaterLabel($validation->field)),
                     $rule->severity,
                     'no_rows',
                     $context,

@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 
 use ContentGuard\Application\ContentEvaluator;
 use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Application\I18n;
+use ContentGuard\Application\DomainMessages;
 use ContentGuard\Application\Integration\FieldCatalog;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\ContentEvaluation;
@@ -103,7 +103,7 @@ final class ContentAuditService
             }
 
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('Another audit start is already in progress.'));
+            throw new AuditException(__('Another audit start is already in progress.', 'contentguard'));
         }
 
         try {
@@ -134,7 +134,7 @@ final class ContentAuditService
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('This audit run is no longer active.'));
+            throw new AuditException(__('This audit run is no longer active.', 'contentguard'));
         }
 
         try {
@@ -153,7 +153,7 @@ final class ContentAuditService
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('This audit run is no longer active.'));
+            throw new AuditException(__('This audit run is no longer active.', 'contentguard'));
         }
 
         $cancelled = $this->store->saveRun(
@@ -400,13 +400,13 @@ final class ContentAuditService
         $factory = $this->providerFactory;
         if (!is_callable($factory)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('Audit value provider is not configured.'));
+            throw new AuditException(__('Audit value provider is not configured.', 'contentguard'));
         }
 
         $provider = $factory($post->id, $post->postType, $this->fieldTypesFor($post->postType));
         if (!$provider instanceof FieldValueProviderInterface) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('Audit value provider is invalid.'));
+            throw new AuditException(__('Audit value provider is invalid.', 'contentguard'));
         }
 
         return $this->evaluator->evaluate($post->id, $post->postType, $provider);
@@ -524,8 +524,8 @@ final class ContentAuditService
             $layoutLabel = $this->layoutLabel($first);
             if ($row > 0 && $layoutLabel !== '') {
                 /* translators: 1: Base validation message. 2: Flexible Content layout label. 3: 1-based row number. */
-                return I18n::sprintf(
-                    I18n::translate('%s in %s row %d.'),
+                return sprintf(
+                    __('%s in %s row %d.', 'contentguard'),
                     rtrim($base, '.'),
                     $layoutLabel,
                     $row
@@ -534,7 +534,7 @@ final class ContentAuditService
 
             if ($row > 0) {
                 /* translators: 1: Base validation message. 2: 1-based row number. */
-                return I18n::sprintf(I18n::translate('%s in row %d.'), rtrim($base, '.'), $row);
+                return sprintf(__('%s in row %d.', 'contentguard'), rtrim($base, '.'), $row);
             }
 
             return $base;
@@ -556,8 +556,8 @@ final class ContentAuditService
         $layoutLabel = $this->layoutLabel($first);
         if ($layoutLabel !== '') {
             /* translators: 1: Base validation message. 2: Number of rows. 3: Flexible Content layout label. 4: Comma-separated row numbers. */
-            return I18n::sprintf(
-                I18n::translate('%s in %d %s rows (rows %s).'),
+            return sprintf(
+                __('%s in %d %s rows (rows %s).', 'contentguard'),
                 rtrim($base, '.'),
                 count($rows),
                 $layoutLabel,
@@ -566,8 +566,8 @@ final class ContentAuditService
         }
 
         /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row numbers. */
-        return I18n::sprintf(
-            I18n::translate('%s in %d rows (rows %s).'),
+        return sprintf(
+            __('%s in %d rows (rows %s).', 'contentguard'),
             rtrim($base, '.'),
             count($rows),
             implode(', ', $rows)
@@ -577,15 +577,15 @@ final class ContentAuditService
     private function instanceMessage(EvaluationResult $result): string
     {
         if ($result->code === 'no_rows' && $result->message !== '') {
-            return $result->message;
+            return DomainMessages::present($result->message);
         }
 
         $stockRequired = 'This field is required.';
         if ($result->message !== ''
             && $result->message !== $stockRequired
-            && $result->message !== I18n::translate('This field is required.')
+            && $result->message !== __('This field is required.', 'contentguard')
         ) {
-            return $result->message;
+            return DomainMessages::present($result->message);
         }
 
         $hasRowContext = isset($result->context['display_row'])
@@ -594,11 +594,13 @@ final class ContentAuditService
             $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
             if ($label !== '') {
                 /* translators: %s: Field label. */
-                return I18n::sprintf(I18n::translate('%s is required.'), $label);
+                return sprintf(__('%s is required.', 'contentguard'), $label);
             }
         }
 
-        return $result->message !== '' ? $result->message : I18n::translate('This field is required.');
+        return $result->message !== ''
+            ? DomainMessages::present($result->message)
+            : __('This field is required.', 'contentguard');
     }
 
     private function layoutLabel(EvaluationResult $result): string
@@ -661,13 +663,13 @@ final class ContentAuditService
     {
         if ($runId <= 0) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('Invalid audit run.'));
+            throw new AuditException(__('Invalid audit run.', 'contentguard'));
         }
 
         $run = $this->store->findRun($runId);
         if ($run === null) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(I18n::translate('Audit run not found.'));
+            throw new AuditException(__('Audit run not found.', 'contentguard'));
         }
 
         return $run;

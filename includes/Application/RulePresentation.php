@@ -23,7 +23,7 @@ final class RulePresentation
     public static function conditionsSummary(Rule $rule, array $fieldTypes = array()): string
     {
         if ($rule->conditions === array()) {
-            return I18n::translate('Always applies');
+            return __('Always applies', 'contentguard');
         }
 
         $parts = array();
@@ -35,7 +35,7 @@ final class RulePresentation
         }
 
         /* translators: Joins multiple condition summary phrases. */
-        return implode(I18n::translate(' AND '), $parts);
+        return implode(__(' AND ', 'contentguard'), $parts);
     }
 
     public static function validationsSummary(Rule $rule): string
@@ -47,7 +47,7 @@ final class RulePresentation
             }
         }
 
-        return $parts === array() ? I18n::translate('None') : implode('; ', $parts);
+        return $parts === array() ? __('None', 'contentguard') : implode('; ', $parts);
     }
 
     private static function conditionSummary(Condition $condition, ?string $fieldType): string
@@ -64,34 +64,34 @@ final class RulePresentation
         ) {
             return match ($condition->operator) {
                 /* translators: 1: Field label. 2: Yes/No value. */
-                'equals'     => I18n::sprintf(I18n::translate('%1$s is %2$s'), $field, $operand),
+                'equals'     => sprintf(__('%1$s is %2$s', 'contentguard'), $field, $operand),
                 /* translators: 1: Field label. 2: Yes/No value. */
-                'not_equals' => I18n::sprintf(I18n::translate('%1$s is not %2$s'), $field, $operand),
+                'not_equals' => sprintf(__('%1$s is not %2$s', 'contentguard'), $field, $operand),
                 default      => $field . ' ' . $condition->operator,
             };
         }
 
         return match ($condition->operator) {
             /* translators: 1: Field label. 2: Comparison value. */
-            'equals'                => I18n::sprintf(I18n::translate('%1$s equals %2$s'), $field, $operand),
+            'equals'                => sprintf(__('%1$s equals %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'not_equals'            => I18n::sprintf(I18n::translate('%1$s does not equal %2$s'), $field, $operand),
+            'not_equals'            => sprintf(__('%1$s does not equal %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'contains'              => I18n::sprintf(I18n::translate('%1$s contains %2$s'), $field, $operand),
+            'contains'              => sprintf(__('%1$s contains %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'does_not_contain'      => I18n::sprintf(I18n::translate('%1$s does not contain %2$s'), $field, $operand),
+            'does_not_contain'      => sprintf(__('%1$s does not contain %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than'          => I18n::sprintf(I18n::translate('%1$s is greater than %2$s'), $field, $operand),
+            'greater_than'          => sprintf(__('%1$s is greater than %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than_or_equal' => I18n::sprintf(I18n::translate('%1$s is at least %2$s'), $field, $operand),
+            'greater_than_or_equal' => sprintf(__('%1$s is at least %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than'             => I18n::sprintf(I18n::translate('%1$s is less than %2$s'), $field, $operand),
+            'less_than'             => sprintf(__('%1$s is less than %2$s', 'contentguard'), $field, $operand),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than_or_equal'    => I18n::sprintf(I18n::translate('%1$s is at most %2$s'), $field, $operand),
+            'less_than_or_equal'    => sprintf(__('%1$s is at most %2$s', 'contentguard'), $field, $operand),
             /* translators: %s: Field label. */
-            'is_empty'              => I18n::sprintf(I18n::translate('%s is empty'), $field),
+            'is_empty'              => sprintf(__('%s is empty', 'contentguard'), $field),
             /* translators: %s: Field label. */
-            'is_not_empty'          => I18n::sprintf(I18n::translate('%s is not empty'), $field),
+            'is_not_empty'          => sprintf(__('%s is not empty', 'contentguard'), $field),
             default                 => $field . ' ' . $condition->operator,
         };
     }
@@ -105,13 +105,13 @@ final class RulePresentation
 
         return match ($validation->type) {
             /* translators: %s: Field label. */
-            'required'       => I18n::sprintf(I18n::translate('%s is required'), $field),
+            'required'       => sprintf(__('%s is required', 'contentguard'), $field),
             /* translators: 1: Field label. 2: Minimum length. */
-            'min_length'     => I18n::sprintf(I18n::translate('%1$s min length %2$s'), $field, (string) ($validation->params['min'] ?? '')),
+            'min_length'     => sprintf(__('%1$s min length %2$s', 'contentguard'), $field, (string) ($validation->params['min'] ?? '')),
             /* translators: 1: Field label. 2: Maximum length. */
-            'max_length'     => I18n::sprintf(I18n::translate('%1$s max length %2$s'), $field, (string) ($validation->params['max'] ?? '')),
+            'max_length'     => sprintf(__('%1$s max length %2$s', 'contentguard'), $field, (string) ($validation->params['max'] ?? '')),
             /* translators: %s: Field label. */
-            'allowed_values' => I18n::sprintf(I18n::translate('%s allowed values'), $field),
+            'allowed_values' => sprintf(__('%s allowed values', 'contentguard'), $field),
             default          => $field . ' ' . $validation->type,
         };
     }

@@ -15,32 +15,32 @@ final class RulePreview
 {
     public static function needThenMessage(): string
     {
-        return I18n::translate('Add a THEN requirement to preview this rule.');
+        return __('Add a THEN requirement to preview this rule.', 'contentguard');
     }
 
     public static function needWhenOrThenMessage(): string
     {
-        return I18n::translate('Add a WHEN condition or THEN requirement to preview this rule.');
+        return __('Add a WHEN condition or THEN requirement to preview this rule.', 'contentguard');
     }
 
     public static function incompleteWhenMessage(): string
     {
-        return I18n::translate('Finish the WHEN condition to preview this rule.');
+        return __('Finish the WHEN condition to preview this rule.', 'contentguard');
     }
 
     public static function incompleteThenMessage(): string
     {
-        return I18n::translate('Finish the THEN requirement to preview this rule.');
+        return __('Finish the THEN requirement to preview this rule.', 'contentguard');
     }
 
     public static function conditionOnlyBlockingMessage(): string
     {
-        return I18n::translate('this rule blocks publishing');
+        return __('this rule blocks publishing', 'contentguard');
     }
 
     public static function conditionOnlyWarningMessage(): string
     {
-        return I18n::translate('this rule reports a warning');
+        return __('this rule reports a warning', 'contentguard');
     }
 
     /**
@@ -73,16 +73,16 @@ final class RulePreview
                 : self::conditionOnlyBlockingMessage();
 
             /* translators: 1: When conditions phrase. 2: Consequence phrase (blocks publishing / reports a warning). */
-            return I18n::sprintf(I18n::translate('When %1$s, %2$s.'), $when['text'], $consequence);
+            return sprintf(__('When %1$s, %2$s.', 'contentguard'), $when['text'], $consequence);
         }
 
         if ($when['text'] === '') {
             /* translators: %s: Then requirement phrase. */
-            return I18n::sprintf(I18n::translate('%s.'), $then['text']);
+            return sprintf(__('%s.', 'contentguard'), $then['text']);
         }
 
         /* translators: 1: When conditions phrase. 2: Then requirement phrase. */
-        return I18n::sprintf(I18n::translate('When %1$s, %2$s.'), $when['text'], $then['text']);
+        return sprintf(__('When %1$s, %2$s.', 'contentguard'), $when['text'], $then['text']);
     }
 
     /**
@@ -129,7 +129,7 @@ final class RulePreview
         return array(
             'state' => 'ready',
             /* translators: Joins multiple When condition phrases. */
-            'text'  => implode(I18n::translate(' and '), $parts),
+            'text'  => implode(__(' and ', 'contentguard'), $parts),
         );
     }
 
@@ -183,7 +183,7 @@ final class RulePreview
         return array(
             'state' => 'ready',
             /* translators: Joins multiple Then requirement phrases. */
-            'text'  => implode(I18n::translate(' and '), $parts),
+            'text'  => implode(__(' and ', 'contentguard'), $parts),
         );
     }
 
@@ -203,25 +203,25 @@ final class RulePreview
 
         return match ($operator) {
             /* translators: 1: Field label. 2: Comparison value. */
-            'equals'                => I18n::sprintf(I18n::translate('%1$s is %2$s'), $field, $value),
+            'equals'                => sprintf(__('%1$s is %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'not_equals'            => I18n::sprintf(I18n::translate('%1$s is not %2$s'), $field, $value),
+            'not_equals'            => sprintf(__('%1$s is not %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'contains'              => I18n::sprintf(I18n::translate('%1$s contains %2$s'), $field, $value),
+            'contains'              => sprintf(__('%1$s contains %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'does_not_contain'      => I18n::sprintf(I18n::translate('%1$s does not contain %2$s'), $field, $value),
+            'does_not_contain'      => sprintf(__('%1$s does not contain %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than'          => I18n::sprintf(I18n::translate('%1$s is greater than %2$s'), $field, $value),
+            'greater_than'          => sprintf(__('%1$s is greater than %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than_or_equal' => I18n::sprintf(I18n::translate('%1$s is at least %2$s'), $field, $value),
+            'greater_than_or_equal' => sprintf(__('%1$s is at least %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than'             => I18n::sprintf(I18n::translate('%1$s is less than %2$s'), $field, $value),
+            'less_than'             => sprintf(__('%1$s is less than %2$s', 'contentguard'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than_or_equal'    => I18n::sprintf(I18n::translate('%1$s is at most %2$s'), $field, $value),
+            'less_than_or_equal'    => sprintf(__('%1$s is at most %2$s', 'contentguard'), $field, $value),
             /* translators: %s: Field label. */
-            'is_empty'              => I18n::sprintf(I18n::translate('%s is empty'), $field),
+            'is_empty'              => sprintf(__('%s is empty', 'contentguard'), $field),
             /* translators: %s: Field label. */
-            'is_not_empty'          => I18n::sprintf(I18n::translate('%s is not empty'), $field),
+            'is_not_empty'          => sprintf(__('%s is not empty', 'contentguard'), $field),
             default                 => $field . ' ' . $operator,
         };
     }
@@ -230,13 +230,13 @@ final class RulePreview
     {
         return match ($type) {
             /* translators: %s: Field label. */
-            'required'       => I18n::sprintf(I18n::translate('%s is required'), $field),
+            'required'       => sprintf(__('%s is required', 'contentguard'), $field),
             /* translators: 1: Field label. 2: Minimum character count. */
-            'min_length'     => I18n::sprintf(I18n::translate('%1$s must be at least %2$s characters'), $field, $min),
+            'min_length'     => sprintf(__('%1$s must be at least %2$s characters', 'contentguard'), $field, $min),
             /* translators: 1: Field label. 2: Maximum character count. */
-            'max_length'     => I18n::sprintf(I18n::translate('%1$s must be at most %2$s characters'), $field, $max),
+            'max_length'     => sprintf(__('%1$s must be at most %2$s characters', 'contentguard'), $field, $max),
             /* translators: 1: Field label. 2: Allowed values list. */
-            'allowed_values' => I18n::sprintf(I18n::translate('%1$s must be one of: %2$s'), $field, $values),
+            'allowed_values' => sprintf(__('%1$s must be one of: %2$s', 'contentguard'), $field, $values),
             default          => $field . ' ' . $type,
         };
     }

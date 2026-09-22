@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace ContentGuard\Domain\Validators;
 
 use ContentGuard\Domain\Contracts\ValidatorInterface;
-use ContentGuard\Domain\Text;
 use ContentGuard\Domain\ValidatorOutcome;
 use ContentGuard\Domain\Value;
 
@@ -21,7 +20,7 @@ final class MinLengthValidator implements ValidatorInterface
         if (!array_key_exists('min', $params) || !is_numeric($params['min']) || (int) $params['min'] < 0) {
             return ValidatorOutcome::fail(
                 'invalid_params',
-                Text::translate('Minimum length is not configured.'),
+                'Minimum length is not configured.',
             );
         }
 
@@ -31,7 +30,7 @@ final class MinLengthValidator implements ValidatorInterface
         if ($length === null) {
             return ValidatorOutcome::fail(
                 'invalid_type',
-                Text::translate('This field cannot be measured as text.'),
+                'This field cannot be measured as text.',
                 array('min' => $min),
             );
         }
@@ -39,7 +38,7 @@ final class MinLengthValidator implements ValidatorInterface
         if ($length < $min) {
             return ValidatorOutcome::fail(
                 'min_length',
-                Text::sprintf('This field must be at least %d characters.', $min),
+                sprintf('This field must be at least %d characters.', $min),
                 array(
                     'min'    => $min,
                     'length' => $length,

@@ -20,43 +20,43 @@ final class RuleMutationPresentation
 {
     public static function addedMessage(): string
     {
-        return I18n::translate('Rule added.');
+        return __('Rule added.', 'contentguard');
     }
 
     public static function savedMessage(): string
     {
-        return I18n::translate('Rule saved.');
+        return __('Rule saved.', 'contentguard');
     }
 
     public static function saveFailureMessage(Throwable $exception, bool $creating = false): string
     {
         $prefix = $creating
-            ? I18n::translate('We could not add this rule. ')
-            : I18n::translate('We could not save this rule. ');
+            ? __('We could not add this rule. ', 'contentguard')
+            : __('We could not save this rule. ', 'contentguard');
 
         if ($exception instanceof InvalidRuleException || $exception instanceof ForbiddenRuleMutationException) {
             return $prefix . $exception->getMessage();
         }
 
         if ($exception instanceof RulePersistenceException && $exception->getMessage() === 'Rule not found.') {
-            return $prefix . I18n::translate('It is no longer available. Your entered values have been preserved so you can try again.');
+            return $prefix . __('It is no longer available. Your entered values have been preserved so you can try again.', 'contentguard');
         }
 
-        return $prefix . I18n::translate('Your entered values have been preserved so you can correct the issue and try again.');
+        return $prefix . __('Your entered values have been preserved so you can correct the issue and try again.', 'contentguard');
     }
 
     public static function unreadAfterSaveMessage(bool $creating): string
     {
         $prefix = $creating
-            ? I18n::translate('We could not add this rule. ')
-            : I18n::translate('We could not save this rule. ');
+            ? __('We could not add this rule. ', 'contentguard')
+            : __('We could not save this rule. ', 'contentguard');
 
-        return $prefix . I18n::translate('The rule could not be read after saving. Your entered values have been preserved so you can try again.');
+        return $prefix . __('The rule could not be read after saving. Your entered values have been preserved so you can try again.', 'contentguard');
     }
 
     public static function missingRuleMessage(): string
     {
-        return I18n::translate('We could not open this rule. It may have been deleted or could not be read.');
+        return __('We could not open this rule. It may have been deleted or could not be read.', 'contentguard');
     }
 
     /**

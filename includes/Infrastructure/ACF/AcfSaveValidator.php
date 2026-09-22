@@ -19,6 +19,7 @@ namespace ContentGuard\Infrastructure\ACF;
 defined('ABSPATH') || exit;
 
 use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
+use ContentGuard\Application\DomainMessages;
 use ContentGuard\Application\EditorAuditIssues;
 use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\IncomingSaveEvaluator;
@@ -358,7 +359,7 @@ final class AcfSaveValidator
     private function issueLine(EvaluationResult $result): string
     {
         if ($result->code === 'no_rows' && $result->message !== '') {
-            return $result->message;
+            return DomainMessages::present($result->message);
         }
 
         $line = EditorNoticePresentation::issueLine(
@@ -379,7 +380,12 @@ final class AcfSaveValidator
 
         $layout = trim((string) ($result->context['layout'] ?? ''));
         if ($displayRow > 0 && $layout === '') {
-            return rtrim($line, '.') . sprintf(' in row %d.', $displayRow);
+            return sprintf(
+                /* translators: 1: validation message. 2: 1-based row number. */
+                __('%1$s in row %2$d.', 'contentguard'),
+                rtrim($line, '.'),
+                $displayRow
+            );
         }
 
         return $line;

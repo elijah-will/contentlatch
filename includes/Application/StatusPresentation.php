@@ -22,17 +22,17 @@ final class StatusPresentation
     public static function label(string $status): string
     {
         return match ($status) {
-            'active'          => I18n::translate('Active'),
-            'inactive'        => I18n::translate('Inactive'),
-            'fail', 'blocking' => I18n::translate('Blocking'),
-            'warning'         => I18n::translate('Warning'),
-            'complete', 'completed' => I18n::translate('Completed'),
-            'running'         => I18n::translate('Running'),
-            'cancelled'       => I18n::translate('Cancelled'),
-            'failed'          => I18n::translate('Failed'),
-            'need_attention'  => I18n::translate('Need attention'),
-            'need_review'     => I18n::translate('Need review'),
-            'pending'         => I18n::translate('Pending'),
+            'active'          => __('Active', 'contentguard'),
+            'inactive'        => __('Inactive', 'contentguard'),
+            'fail', 'blocking' => __('Blocking', 'contentguard'),
+            'warning'         => __('Warning', 'contentguard'),
+            'complete', 'completed' => __('Completed', 'contentguard'),
+            'running'         => __('Running', 'contentguard'),
+            'cancelled'       => __('Cancelled', 'contentguard'),
+            'failed'          => __('Failed', 'contentguard'),
+            'need_attention'  => __('Need attention', 'contentguard'),
+            'need_review'     => __('Need review', 'contentguard'),
+            'pending'         => __('Pending', 'contentguard'),
             default           => $status,
         };
     }

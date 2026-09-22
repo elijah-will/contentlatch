@@ -87,23 +87,23 @@ final class RuleDocumentFactory
 
         if ($name === '') {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Rule name is required.'));
+            throw new InvalidRuleException(__('Rule name is required.', 'contentguard'));
         }
 
         $allowedTypes = $this->allowedPostTypes();
         if ($postType === '' || !isset($allowedTypes[$postType])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Unsupported post type.'));
+            throw new InvalidRuleException(__('Unsupported post type.', 'contentguard'));
         }
 
         if (!in_array($status, array('active', 'inactive'), true)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Invalid rule status.'));
+            throw new InvalidRuleException(__('Invalid rule status.', 'contentguard'));
         }
 
         if (!in_array($severity, array('fail', 'warning'), true)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Invalid rule severity.'));
+            throw new InvalidRuleException(__('Invalid rule severity.', 'contentguard'));
         }
 
         $fields      = $this->fieldsByKey($postType);
@@ -112,7 +112,7 @@ final class RuleDocumentFactory
 
         if ($conditions === array() && $validations === array()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_MISSING_WHEN_OR_THEN));
+            throw new InvalidRuleException(__('Add a WHEN condition or THEN requirement.', 'contentguard'));
         }
 
         $document = array(
@@ -174,7 +174,7 @@ final class RuleDocumentFactory
     {
         if (!isset($this->allowedPostTypes()[$postType])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Unsupported post type.'));
+            throw new InvalidRuleException(__('Unsupported post type.', 'contentguard'));
         }
 
         return array_values($this->fieldsByKey($postType));
@@ -235,7 +235,7 @@ final class RuleDocumentFactory
     {
         if (!is_array($rows)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Rule conditions must be an array.'));
+            throw new InvalidRuleException(__('Rule conditions must be an array.', 'contentguard'));
         }
 
         $conditions = array();
@@ -244,7 +244,7 @@ final class RuleDocumentFactory
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate('Rule conditions entries must be objects.'));
+                throw new InvalidRuleException(__('Rule conditions entries must be objects.', 'contentguard'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -255,7 +255,7 @@ final class RuleDocumentFactory
             $operator = (string) ($row['operator'] ?? '');
             if (!$this->operators->has($operator)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::sprintf(I18n::translate('Unknown condition operator "%s".'), $operator));
+                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentguard'), $operator));
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
@@ -265,27 +265,27 @@ final class RuleDocumentFactory
                 $operand = $row['operand'] ?? '';
                 if (!is_scalar($operand) && !is_bool($operand)) {
                     // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    throw new InvalidRuleException(I18n::translate('A condition value is required.'));
+                    throw new InvalidRuleException(__('A condition value is required.', 'contentguard'));
                 }
                 $operand = self::normalizeConditionOperand($operand, $fieldType);
                 if ($operand === '') {
                     // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    throw new InvalidRuleException(I18n::translate('A condition value is required.'));
+                    throw new InvalidRuleException(__('A condition value is required.', 'contentguard'));
                 }
                 if (ConditionOperators::isNumericComparison($operator)) {
                     if (!ConditionOperators::isNumericField($fieldType)) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(I18n::translate('Numeric comparisons can only be used with number fields.'));
+                        throw new InvalidRuleException(__('Numeric comparisons can only be used with number fields.', 'contentguard'));
                     }
                     if (Value::tryNumber($operand) === null) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(I18n::translate('A numeric condition value is required.'));
+                        throw new InvalidRuleException(__('A numeric condition value is required.', 'contentguard'));
                     }
                 }
                 if (ConditionOperators::isStringContains($operator)) {
                     if (!ConditionOperators::isStringContentField($fieldType)) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(I18n::translate('Contains conditions can only be used with text fields.'));
+                        throw new InvalidRuleException(__('Contains conditions can only be used with text fields.', 'contentguard'));
                     }
                 }
             } else {
@@ -314,7 +314,7 @@ final class RuleDocumentFactory
     {
         if (!is_array($rows)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Rule validations must be an array.'));
+            throw new InvalidRuleException(__('Rule validations must be an array.', 'contentguard'));
         }
 
         $validations = array();
@@ -323,7 +323,7 @@ final class RuleDocumentFactory
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate('Rule validations entries must be objects.'));
+                throw new InvalidRuleException(__('Rule validations entries must be objects.', 'contentguard'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -334,12 +334,12 @@ final class RuleDocumentFactory
 
             if ($type === '') {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_MISSING_THEN));
+                throw new InvalidRuleException(__('Each requirement needs a field and a validator.', 'contentguard'));
             }
 
             if (!$this->validators->has($type)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::sprintf(I18n::translate('Unknown validation type "%s".'), $type));
+                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentguard'), $type));
             }
 
             $message = trim((string) ($row['message'] ?? ''));
@@ -376,7 +376,7 @@ final class RuleDocumentFactory
             $min = $row['min'] ?? ($row['params']['min'] ?? null);
             if (!is_numeric($min) || (int) $min < 0) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate('Minimum length is not configured.'));
+                throw new InvalidRuleException(__('Minimum length is not configured.', 'contentguard'));
             }
 
             return array('min' => (int) $min);
@@ -386,7 +386,7 @@ final class RuleDocumentFactory
             $max = $row['max'] ?? ($row['params']['max'] ?? null);
             if (!is_numeric($max) || (int) $max < 0) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate('Maximum length is not configured.'));
+                throw new InvalidRuleException(__('Maximum length is not configured.', 'contentguard'));
             }
 
             return array('max' => (int) $max);
@@ -397,7 +397,7 @@ final class RuleDocumentFactory
             $values = $this->allowedValues($raw);
             if ($values === array()) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate(RuleDocumentValidator::MSG_ALLOWED_VALUES));
+                throw new InvalidRuleException(__('Enter at least one allowed value.', 'contentguard'));
             }
 
             return array('values' => $values);
@@ -445,7 +445,7 @@ final class RuleDocumentFactory
     {
         if (!isset($fields[$key])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Unsupported field.'));
+            throw new InvalidRuleException(__('Unsupported field.', 'contentguard'));
         }
 
         $field = $fields[$key];
@@ -475,7 +475,7 @@ final class RuleDocumentFactory
 
         if ($ref->resolutionId() !== $key) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(I18n::translate('Unsupported field.'));
+            throw new InvalidRuleException(__('Unsupported field.', 'contentguard'));
         }
 
         return $ref;
@@ -496,7 +496,7 @@ final class RuleDocumentFactory
         foreach ($raw as $segment) {
             if (!is_string($segment)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(I18n::translate('Invalid field path.'));
+                throw new InvalidRuleException(__('Invalid field path.', 'contentguard'));
             }
 
             $path[] = $segment;

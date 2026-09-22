@@ -106,22 +106,22 @@ final class ConditionOperators
     {
         if (self::isNumericField($fieldType)) {
             return array(
-                'equals'                => I18n::translate('is equal to'),
-                'not_equals'            => I18n::translate('is not equal to'),
-                'greater_than'          => I18n::translate('is greater than'),
-                'greater_than_or_equal' => I18n::translate('is at least'),
-                'less_than'             => I18n::translate('is less than'),
-                'less_than_or_equal'    => I18n::translate('is at most'),
-                'is_empty'              => I18n::translate('is empty'),
-                'is_not_empty'          => I18n::translate('is not empty'),
+                'equals'                => __('is equal to', 'contentguard'),
+                'not_equals'            => __('is not equal to', 'contentguard'),
+                'greater_than'          => __('is greater than', 'contentguard'),
+                'greater_than_or_equal' => __('is at least', 'contentguard'),
+                'less_than'             => __('is less than', 'contentguard'),
+                'less_than_or_equal'    => __('is at most', 'contentguard'),
+                'is_empty'              => __('is empty', 'contentguard'),
+                'is_not_empty'          => __('is not empty', 'contentguard'),
             );
         }
 
         $labels = array(
-            'equals'       => I18n::translate('is'),
-            'not_equals'   => I18n::translate('is not'),
-            'is_empty'     => I18n::translate('is empty'),
-            'is_not_empty' => I18n::translate('is not empty'),
+            'equals'       => __('is', 'contentguard'),
+            'not_equals'   => __('is not', 'contentguard'),
+            'is_empty'     => __('is empty', 'contentguard'),
+            'is_not_empty' => __('is not empty', 'contentguard'),
         );
 
         if ($fieldType !== '' && !self::isStringContentField($fieldType)) {
@@ -129,12 +129,12 @@ final class ConditionOperators
         }
 
         return array(
-            'equals'           => I18n::translate('is'),
-            'not_equals'       => I18n::translate('is not'),
-            'contains'         => I18n::translate('contains'),
-            'does_not_contain' => I18n::translate('does not contain'),
-            'is_empty'         => I18n::translate('is empty'),
-            'is_not_empty'     => I18n::translate('is not empty'),
+            'equals'           => __('is', 'contentguard'),
+            'not_equals'       => __('is not', 'contentguard'),
+            'contains'         => __('contains', 'contentguard'),
+            'does_not_contain' => __('does not contain', 'contentguard'),
+            'is_empty'         => __('is empty', 'contentguard'),
+            'is_not_empty'     => __('is not empty', 'contentguard'),
         );
     }
 
