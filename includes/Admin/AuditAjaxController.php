@@ -14,7 +14,6 @@ defined('ABSPATH') || exit;
 use ContentGuard\Application\Audit\ContentAuditService;
 use ContentGuard\Application\Exception\AuditException;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
 
 final class AuditAjaxController
 {
@@ -27,6 +26,11 @@ final class AuditAjaxController
      * @param callable(): bool       $canManage
      * @param callable(string): bool $verifyNonce
      */
+    /**
+     * @var array<string, mixed>|null
+     */
+    private ?array $dispatched = null;
+
     public function __construct(
         private ContentAuditService $audit,
         private mixed $canManage,
@@ -80,8 +84,7 @@ final class AuditAjaxController
     public function status(): void
     {
         $this->respond(function (): array {
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified and $_POST unslashed in handle() before this callback; run id is cast to int.
-            $runId = isset($_POST['run_id']) ? (int) $_POST['run_id'] : 0;
+            $runId = $this->postedInt('run_id');
             $run   = $runId > 0 ? $this->audit->getRun($runId) : $this->audit->getActiveRun();
 
             return array(
@@ -98,15 +101,32 @@ final class AuditAjaxController
      */
     public function dispatch(string $action, array $request): array
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Test helper; handle() verifies nonce before handlers read $_POST.
-        $_POST = $request;
+        $previous         = $this->dispatched;
+        $this->dispatched = $request;
+
+        try {
+            return $this->dispatchAction($action);
+        } finally {
+            $this->dispatched = $previous;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dispatchAction(string $action): array
+    {
+        $denied = $this->authorize();
+        if ($denied !== null) {
+            return $denied;
+        }
 
         return match ($action) {
             self::ACTION_START  => $this->handle(fn () => array('run' => $this->runPayload($this->audit->start($this->currentUserId())))),
             self::ACTION_BATCH  => $this->handle(fn () => array('run' => $this->runPayload($this->audit->processBatch($this->runId())))),
             self::ACTION_CANCEL => $this->handle(fn () => array('run' => $this->runPayload($this->audit->cancel($this->runId())))),
             self::ACTION_STATUS => $this->handle(function (): array {
-                $runId = isset($request['run_id']) ? (int) $request['run_id'] : 0;
+                $runId = $this->postedInt('run_id');
                 $run   = $runId > 0 ? $this->audit->getRun($runId) : $this->audit->getActiveRun();
 
                 return array(
@@ -143,18 +163,9 @@ final class AuditAjaxController
      */
     private function handle(callable $handler): array
     {
-        $canManage = $this->canManage;
-        if (!is_callable($canManage) || !$canManage()) {
-            return array('ok' => false, 'message' => __('You are not allowed to run ContentGuard audits.', 'contentguard'));
-        }
-
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce is verified immediately below via verifyNonce; $_POST is unslashed on the next line before the nonce is read.
-        $_POST = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce value is read here after unslash and verified on the next lines via verifyNonce.
-        $nonce = isset($_POST['_wpnonce']) ? (string) $_POST['_wpnonce'] : '';
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
-            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentguard'));
+        $denied = $this->authorize();
+        if ($denied !== null) {
+            return $denied;
         }
 
         try {
@@ -166,8 +177,7 @@ final class AuditAjaxController
 
     private function runId(): int
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified and $_POST unslashed in handle() before this helper; value is cast to int.
-        return isset($_POST['run_id']) ? (int) $_POST['run_id'] : 0;
+        return $this->postedInt('run_id');
     }
 
     private function currentUserId(): int
@@ -176,8 +186,46 @@ final class AuditAjaxController
             return (int) get_current_user_id();
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Nonce verified and $_POST unslashed in handle() before this helper; test-only fallback cast to int.
-        return isset($_POST['user_id']) ? (int) $_POST['user_id'] : 0;
+        return $this->postedInt('user_id');
+    }
+
+    /**
+     * @return array{ok: false, message: string}|null
+     */
+    private function authorize(): ?array
+    {
+        $canManage = $this->canManage;
+        if (!is_callable($canManage) || !$canManage()) {
+            return array('ok' => false, 'message' => __('You are not allowed to run ContentGuard audits.', 'contentguard'));
+        }
+
+        $nonce = $this->postedNonce();
+        $verify = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce)) {
+            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentguard'));
+        }
+
+        return null;
+    }
+
+    private function postedNonce(): string
+    {
+        if ($this->dispatched !== null) {
+            return sanitize_text_field((string) ($this->dispatched['_wpnonce'] ?? ''));
+        }
+
+        return isset($_POST['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+            : '';
+    }
+
+    private function postedInt(string $key): int
+    {
+        if ($this->dispatched !== null) {
+            return absint($this->dispatched[$key] ?? 0);
+        }
+
+        return isset($_POST[$key]) ? absint(wp_unslash((string) $_POST[$key])) : 0;
     }
 
     /**

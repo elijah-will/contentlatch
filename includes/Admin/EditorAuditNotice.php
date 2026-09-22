@@ -22,7 +22,6 @@ use ContentGuard\Application\EditorNoticePresentation;
 use ContentGuard\Application\EditorFieldNavigation;
 use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -183,15 +182,13 @@ final class EditorAuditNotice
 
     public function preserveAuditRunOnRedirect(string $location): string
     {
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; EditorFieldNavigation::sanitizeRunId validates the run id.
-        $runId = EditorFieldNavigation::requestedRunId(
-            HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())
-        );
+        $runId = EditorFieldNavigation::requestedRunId($this->editorNavigationQuery());
         if ($runId <= 0 && isset($_SERVER['HTTP_REFERER'])) {
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Referer is unslashed and only its query string is parsed for a digit run id.
-            $referer = (string) (function_exists('wp_unslash') ? wp_unslash($_SERVER['HTTP_REFERER']) : $_SERVER['HTTP_REFERER']);
+            $referer = esc_url_raw(wp_unslash((string) $_SERVER['HTTP_REFERER']));
             $query   = array();
-            parse_str(self::refererQueryString($referer), $query);
+            if ($referer !== '') {
+                parse_str(self::refererQueryString($referer), $query);
+            }
             $runId = EditorFieldNavigation::requestedRunId($query);
         }
 
@@ -209,8 +206,7 @@ final class EditorAuditNotice
         }
 
         $postId = $this->editorPostId();
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; issuesForRequest / EditorFieldNavigation sanitize keys they consume.
-        $request = HttpRequest::unslash(is_array($_GET) ? $_GET : array());
+        $request = $this->editorNavigationQuery();
         $issues  = $this->issuesForRequest($postId, $request);
         if ($issues === array()) {
             return;
@@ -252,8 +248,7 @@ final class EditorAuditNotice
         }
 
         $postId = $this->editorPostId();
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Unslashed via HttpRequest; issuesForRequest sanitizes the run id it consumes.
-        $request = HttpRequest::unslash(is_array($_GET) ? $_GET : array());
+        $request = $this->editorNavigationQuery();
         $issues  = $this->issuesForRequest($postId, $request);
         $html    = EditorAuditIssues::classicNoticeHtml($issues);
         if ($html === '') {
@@ -420,9 +415,7 @@ final class EditorAuditNotice
     private function editorPostId(): int
     {
         if (isset($_GET['post'])) {
-            $post = function_exists('wp_unslash') ? wp_unslash($_GET['post']) : $_GET['post'];
-
-            return (int) $post;
+            return absint(wp_unslash((string) $_GET['post']));
         }
 
         if (isset($GLOBALS['post']) && is_object($GLOBALS['post']) && isset($GLOBALS['post']->ID)) {
@@ -430,6 +423,33 @@ final class EditorAuditNotice
         }
 
         return 0;
+    }
+
+    /**
+     * Read-only editor navigation query. Not a nonce-protected mutation.
+     *
+     * @return array<string, int|string>
+     */
+    private function editorNavigationQuery(): array
+    {
+        $request = array();
+        $runArg  = EditorFieldNavigation::AUDIT_RUN_ARG;
+        $fieldArg = EditorFieldNavigation::QUERY_ARG;
+
+        if (isset($_GET[$runArg])) {
+            $request[$runArg] = sanitize_text_field(wp_unslash((string) $_GET[$runArg]));
+        } elseif (isset($_POST[$runArg])) {
+            $request[$runArg] = sanitize_text_field(wp_unslash((string) $_POST[$runArg]));
+        }
+
+        if (isset($_GET[$fieldArg])) {
+            $field = sanitize_text_field(wp_unslash((string) $_GET[$fieldArg]));
+            if (EditorFieldNavigation::isQueryTarget($field)) {
+                $request[$fieldArg] = $field;
+            }
+        }
+
+        return $request;
     }
 
     /**

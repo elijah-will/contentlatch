@@ -22,7 +22,6 @@ use ContentGuard\Domain\Exception\InvalidRuleException;
 use ContentGuard\Domain\Rule;
 use ContentGuard\Domain\RuleStatus;
 use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
 
 final class RulesController
@@ -73,43 +72,134 @@ final class RulesController
 
     public function save(): void
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
-        $request = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
+        $fallback = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
+        if (!$this->callerCanManage()) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
+        $nonce = isset($_POST['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+            : '';
+        $verify = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce)) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
+        $request = $this->postedSaveRequest($nonce);
         $payload = $this->handleSave($request);
         $this->respondAdmin($payload, $this->redirectAfterSave($request, $payload));
     }
 
     public function delete(): void
     {
+        $fallback = admin_url('admin.php?page=' . RulesPage::SLUG);
+        if (!$this->callerCanManage()) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
+        $nonce = isset($_GET['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_GET['_wpnonce']))
+            : '';
+        $verify = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce)) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
         $this->respondAdmin(
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
-            $this->handleDelete(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
-            admin_url('admin.php?page=' . RulesPage::SLUG)
+            $this->handleDelete(array(
+                '_wpnonce' => $nonce,
+                'rule_id'  => isset($_GET['rule_id']) ? absint(wp_unslash((string) $_GET['rule_id'])) : 0,
+            )),
+            $fallback
         );
     }
 
     public function status(): void
     {
+        $fallback = admin_url('admin.php?page=' . RulesPage::SLUG);
+        if (!$this->callerCanManage()) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
+        $nonce = isset($_GET['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_GET['_wpnonce']))
+            : '';
+        $verify = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce)) {
+            $this->respondAdmin(
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                $fallback
+            );
+
+            return;
+        }
+
+        $status = isset($_GET['status']) ? sanitize_key(wp_unslash((string) $_GET['status'])) : '';
         $this->respondAdmin(
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
-            $this->handleStatus(HttpRequest::unslash(is_array($_REQUEST) ? $_REQUEST : array())),
-            admin_url('admin.php?page=' . RulesPage::SLUG)
+            $this->handleStatus(array(
+                '_wpnonce' => $nonce,
+                'rule_id'  => isset($_GET['rule_id']) ? absint(wp_unslash((string) $_GET['rule_id'])) : 0,
+                'status'   => $status,
+            )),
+            $fallback
         );
     }
 
     public function fields(): void
     {
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in gate() before this handler executes.
-        $payload = $this->handleFields(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
-        if (!function_exists('wp_send_json')) {
+        if (!$this->callerCanManage()) {
+            $this->sendFields(array(
+                'ok'      => false,
+                'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard'),
+            ));
+
             return;
         }
 
-        if (!($payload['ok'] ?? false)) {
-            wp_send_json($payload, 400);
+        $nonce = isset($_POST['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+            : '';
+        $verify = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce)) {
+            $this->sendFields(array(
+                'ok'      => false,
+                'message' => __('Invalid rule management nonce.', 'contentguard'),
+            ));
+
+            return;
         }
 
-        wp_send_json($payload);
+        $this->sendFields($this->handleFields(array(
+            '_wpnonce'  => $nonce,
+            'post_type' => isset($_POST['post_type'])
+                ? sanitize_key(wp_unslash((string) $_POST['post_type']))
+                : '',
+        )));
     }
 
     /**
@@ -133,6 +223,7 @@ final class RulesController
      */
     private function handleSave(array $request): array
     {
+        $request = self::cleanSaveInput($request);
         $gated = $this->gate($request);
         if ($gated !== null) {
             return $gated;
@@ -190,6 +281,10 @@ final class RulesController
      */
     private function handleDelete(array $request): array
     {
+        $request = array(
+            '_wpnonce' => self::singleLine($request['_wpnonce'] ?? ''),
+            'rule_id'  => absint($request['rule_id'] ?? 0),
+        );
         $gated = $this->gate($request);
         if ($gated !== null) {
             return $gated;
@@ -217,6 +312,11 @@ final class RulesController
      */
     private function handleStatus(array $request): array
     {
+        $request = array(
+            '_wpnonce' => self::singleLine($request['_wpnonce'] ?? ''),
+            'rule_id'  => absint($request['rule_id'] ?? 0),
+            'status'   => sanitize_key((string) ($request['status'] ?? '')),
+        );
         $gated = $this->gate($request);
         if ($gated !== null) {
             return $gated;
@@ -258,6 +358,10 @@ final class RulesController
      */
     private function handleFields(array $request): array
     {
+        $request = array(
+            '_wpnonce'  => self::singleLine($request['_wpnonce'] ?? ''),
+            'post_type' => sanitize_key((string) ($request['post_type'] ?? '')),
+        );
         $gated = $this->gate($request);
         if ($gated !== null) {
             return $gated;
@@ -272,6 +376,203 @@ final class RulesController
         }
 
         return array('ok' => true, 'fields' => $fields);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public static function cleanSaveInput(array $input): array
+    {
+        $clean = array(
+            '_wpnonce' => self::singleLine($input['_wpnonce'] ?? ''),
+            'name'     => self::singleLine($input['name'] ?? ''),
+            'message'  => self::singleLine($input['message'] ?? ''),
+        );
+
+        if (array_key_exists('rule_id', $input) || array_key_exists('id', $input)) {
+            $clean['rule_id'] = absint($input['rule_id'] ?? $input['id'] ?? 0);
+        }
+
+        if (array_key_exists('target_post_type', $input) || array_key_exists('post_type', $input)) {
+            $clean['target_post_type'] = sanitize_key((string) ($input['target_post_type'] ?? $input['post_type'] ?? ''));
+        }
+
+        if (array_key_exists('status', $input)) {
+            $clean['status'] = sanitize_key((string) $input['status']);
+        }
+
+        if (array_key_exists('severity', $input)) {
+            $clean['severity'] = sanitize_key((string) $input['severity']);
+        }
+
+        if (array_key_exists('conditions', $input)) {
+            $clean['conditions'] = self::cleanRows($input['conditions'], array(
+                'id'        => 'key',
+                'field_key' => 'text',
+                'operator'  => 'key',
+                'operand'   => 'text',
+            ));
+        }
+
+        if (array_key_exists('validations', $input)) {
+            $clean['validations'] = self::cleanRows($input['validations'], array(
+                'id'        => 'key',
+                'field_key' => 'text',
+                'type'      => 'key',
+                'min'       => 'text',
+                'max'       => 'text',
+                'values'    => 'text',
+                'message'   => 'text',
+            ));
+        }
+
+        return $clean;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function sendFields(array $payload): void
+    {
+        if (!function_exists('wp_send_json')) {
+            return;
+        }
+
+        if (!($payload['ok'] ?? false)) {
+            wp_send_json($payload, 400);
+        }
+
+        wp_send_json($payload);
+    }
+
+    private function callerCanManage(): bool
+    {
+        $canManage = $this->canManage;
+
+        return is_callable($canManage) && (bool) $canManage();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function postedSaveRequest(string $nonce): array
+    {
+        $input = array(
+            '_wpnonce' => $nonce,
+            'name'     => isset($_POST['name']) ? sanitize_text_field(wp_unslash((string) $_POST['name'])) : '',
+            'message'  => isset($_POST['message']) ? sanitize_text_field(wp_unslash((string) $_POST['message'])) : '',
+        );
+
+        if (isset($_POST['rule_id'])) {
+            $input['rule_id'] = absint(wp_unslash((string) $_POST['rule_id']));
+        }
+        if (isset($_POST['target_post_type'])) {
+            $input['target_post_type'] = sanitize_key(wp_unslash((string) $_POST['target_post_type']));
+        }
+        if (isset($_POST['status'])) {
+            $input['status'] = sanitize_key(wp_unslash((string) $_POST['status']));
+        }
+        if (isset($_POST['severity'])) {
+            $input['severity'] = sanitize_key(wp_unslash((string) $_POST['severity']));
+        }
+        if (isset($_POST['conditions'])) {
+            $input['conditions'] = self::postedRows('conditions', array(
+                'id'        => 'key',
+                'field_key' => 'text',
+                'operator'  => 'key',
+                'operand'   => 'text',
+            ));
+        }
+        if (isset($_POST['validations'])) {
+            $input['validations'] = self::postedRows('validations', array(
+                'id'        => 'key',
+                'field_key' => 'text',
+                'type'      => 'key',
+                'min'       => 'text',
+                'max'       => 'text',
+                'values'    => 'text',
+                'message'   => 'text',
+            ));
+        }
+
+        return self::cleanSaveInput($input);
+    }
+
+    /**
+     * @param array<string, 'text'|'key'> $fields
+     * @return list<array<string, string>>
+     */
+    private static function postedRows(string $key, array $fields): array
+    {
+        if (!isset($_POST[$key]) || !is_array($_POST[$key])) {
+            return array();
+        }
+
+        $rows = array();
+        foreach (array_keys($_POST[$key]) as $index) {
+            if (!is_array($_POST[$key][$index] ?? null)) {
+                continue;
+            }
+
+            $row = array();
+            foreach ($fields as $field => $kind) {
+                if (!isset($_POST[$key][$index][$field]) || is_array($_POST[$key][$index][$field])) {
+                    $row[$field] = '';
+                    continue;
+                }
+
+                $row[$field] = $kind === 'key'
+                    ? sanitize_key(wp_unslash((string) $_POST[$key][$index][$field]))
+                    : sanitize_text_field(wp_unslash((string) $_POST[$key][$index][$field]));
+            }
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param array<string, 'text'|'key'> $fields
+     * @return list<array<string, string>>
+     */
+    private static function cleanRows(mixed $rows, array $fields): array
+    {
+        if (!is_array($rows)) {
+            return array();
+        }
+
+        $clean = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $item = array();
+            foreach ($fields as $field => $kind) {
+                $value = $row[$field] ?? '';
+                if (is_array($value)) {
+                    $item[$field] = '';
+                    continue;
+                }
+
+                $item[$field] = $kind === 'key'
+                    ? sanitize_key((string) $value)
+                    : self::singleLine($value);
+            }
+            $clean[] = $item;
+        }
+
+        return $clean;
+    }
+
+    private static function singleLine(mixed $value): string
+    {
+        if (!is_scalar($value)) {
+            return '';
+        }
+
+        return sanitize_text_field((string) $value);
     }
 
     /**

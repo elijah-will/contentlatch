@@ -50,6 +50,60 @@ final class AuditAjaxControllerTest extends TestCase
         $this->assertSame('Invalid audit run.', $invalid['message']);
     }
 
+    public function testHttpStartBatchAndCancelSanitizeNonceAndIds(): void
+    {
+        $seen = null;
+        $controller = $this->controller(
+            true,
+            true,
+            static function (string $nonce) use (&$seen): bool {
+                $seen = $nonce;
+
+                return $nonce === 'ok';
+            }
+        );
+        $previous = $_POST;
+
+        try {
+            $_POST = array(
+                '_wpnonce' => "ok<script>alert(1)</script>",
+                'user_id'  => '4',
+                'run_id'   => 'nope',
+            );
+            $denied = $this->controller(false, true);
+            $denied->start();
+            $idle = $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'));
+            $this->assertNull($idle['run']);
+
+            $controller->start();
+            $this->assertSame('ok', $seen);
+            $started = $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'));
+            $this->assertNotNull($started['run']);
+            $runId = (int) $started['run']['id'];
+
+            $_POST = array(
+                '_wpnonce' => 'ok',
+                'run_id'   => $runId . 'abc',
+            );
+            $controller->batch();
+            $controller->cancel();
+            $cancelled = $controller->dispatch(
+                AuditAjaxController::ACTION_STATUS,
+                array('_wpnonce' => 'ok', 'run_id' => (string) $runId)
+            );
+            $this->assertSame('cancelled', $cancelled['run']['status']);
+
+            $unknown = $controller->dispatch('not-an-action', array('_wpnonce' => 'ok'));
+            $this->assertFalse($unknown['ok']);
+            $this->assertSame('Unknown audit action.', $unknown['message']);
+
+            $blocked = $this->controller(false, true)->dispatch('not-an-action', array('_wpnonce' => 'ok'));
+            $this->assertSame('You are not allowed to run ContentGuard audits.', $blocked['message']);
+        } finally {
+            $_POST = $previous;
+        }
+    }
+
     public function testAuthorizedStartReturnsRun(): void
     {
         $controller = $this->controller(true, true);
@@ -63,9 +117,9 @@ final class AuditAjaxControllerTest extends TestCase
     }
 
     /**
-     * @param callable(): bool $can
+     * @param callable(string): bool|null $verifyNonce
      */
-    private function controller(bool $canManage, bool $validNonce): AuditAjaxController
+    private function controller(bool $canManage, bool $validNonce, ?callable $verifyNonce = null): AuditAjaxController
     {
         $rules = array(
             RuleFactory::rule(array('id' => 1, 'postType' => 'recipe')),
@@ -107,7 +161,7 @@ final class AuditAjaxControllerTest extends TestCase
         return new AuditAjaxController(
             $service,
             static fn (): bool => $canManage,
-            static fn (string $nonce): bool => $validNonce && $nonce === 'ok'
+            $verifyNonce ?? static fn (string $nonce): bool => $validNonce && $nonce === 'ok'
         );
     }
 }

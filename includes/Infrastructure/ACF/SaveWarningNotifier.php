@@ -207,7 +207,10 @@ final class SaveWarningNotifier
         // Only republish contentguardEditorField when there are warnings to
         // navigate. An empty extras localize overwrites Audit arrival state.
         if ($warnings !== array()) {
-            EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));
+            EditorFieldFocus::enqueueAssets(
+                EditorFieldFocus::sanitizedEditorQuery(),
+                self::navigationExtras($warnings)
+            );
         }
 
         wp_register_script(
@@ -602,12 +605,12 @@ final class SaveWarningNotifier
 
     private function editorPostId(): int
     {
-        if (isset($_GET['post']) && is_numeric($_GET['post'])) {
-            return (int) $_GET['post'];
+        if (isset($_GET['post'])) {
+            return absint(wp_unslash((string) $_GET['post']));
         }
 
-        if (isset($_GET['post_ID']) && is_numeric($_GET['post_ID'])) {
-            return (int) $_GET['post_ID'];
+        if (isset($_GET['post_ID'])) {
+            return absint(wp_unslash((string) $_GET['post_ID']));
         }
 
         if (!$this->isIndividualPostEditorScreen()) {

@@ -27,7 +27,6 @@ use ContentGuard\Application\RuleRepositoryInterface;
 use ContentGuard\Domain\EvaluationResult;
 use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentGuard\Infrastructure\WordPress\CoreIncomingPayload;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
 use Throwable;
 
 final class AcfSaveValidator
@@ -67,9 +66,79 @@ final class AcfSaveValidator
 
     public function onValidateSavePost(): void
     {
-        $request = HttpRequest::unslash(is_array($_POST) ? $_POST : array());
-        $payload = $request['acf'] ?? null;
-        $this->validate($request, $payload);
+        $request = $this->submittedAcfRequest();
+        $this->validate($request, $request['acf'] ?? null);
+    }
+
+    /**
+     * ACF already authenticated this save. Routing scalars are sanitized.
+     * The acf field tree and Core content are unslashed only so validation
+     * still sees the submitted markup.
+     *
+     * Action stays sanitize_text_field: ACF sends acf/validate_save_post,
+     * and sanitize_key would remove the slash.
+     *
+     * @return array<string, mixed>
+     */
+    private function submittedAcfRequest(): array
+    {
+        $request = array();
+
+        foreach (array('post_ID', 'post_id', '_acf_post_id') as $key) {
+            if (!isset($_POST[$key]) || !is_scalar($_POST[$key])) {
+                continue;
+            }
+
+            $raw = sanitize_text_field(wp_unslash((string) $_POST[$key]));
+            $request[$key] = is_numeric($raw) ? absint($raw) : $raw;
+        }
+
+        if (isset($_POST['post_type']) && is_scalar($_POST['post_type'])) {
+            $request['post_type'] = sanitize_key(wp_unslash((string) $_POST['post_type']));
+        }
+
+        if (isset($_POST['action']) && is_scalar($_POST['action'])) {
+            $request['action'] = sanitize_text_field(wp_unslash((string) $_POST['action']));
+        }
+
+        foreach (array('post_status', 'original_post_status', 'visibility') as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $request[$key] = sanitize_key(wp_unslash((string) $_POST[$key]));
+            }
+        }
+
+        foreach (array('publish', 'save', 'saveasdraft', 'private') as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $request[$key] = sanitize_text_field(wp_unslash((string) $_POST[$key]));
+            }
+        }
+
+        foreach (array(
+            'title',
+            'post_title',
+            'content',
+            'post_content',
+            'excerpt',
+            'post_excerpt',
+            'slug',
+            'post_name',
+            'featured_image',
+            '_thumbnail_id',
+            'thumbnail_id',
+            'featured_media',
+            'author',
+            'post_author',
+        ) as $key) {
+            if (array_key_exists($key, $_POST)) {
+                $request[$key] = wp_unslash($_POST[$key]);
+            }
+        }
+
+        if (isset($_POST['acf']) && is_array($_POST['acf'])) {
+            $request['acf'] = wp_unslash($_POST['acf']);
+        }
+
+        return $request;
     }
 
     /**

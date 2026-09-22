@@ -163,19 +163,49 @@ final class EditorAuditNoticeRefreshTest extends TestCase
     {
         $values = array();
         $notice = $this->notice($values);
-        $previous = $_REQUEST;
-        $_REQUEST = array('contentguard_run' => '7');
+        $previous = $_GET;
+        $_GET = array('contentguard_run' => '7');
 
         try {
             $location = $notice->preserveAuditRunOnRedirect(
                 'http://example.test/wp-admin/post.php?post=42&action=edit&message=1'
             );
         } finally {
-            $_REQUEST = $previous;
+            $_GET = $previous;
         }
 
         $this->assertStringContainsString('contentguard_run=7', $location);
         $this->assertStringContainsString('post.php?post=42', $location);
+    }
+
+    public function testRefererRunIdIsReadOnlyAfterUrlSanitization(): void
+    {
+        $values = array();
+        $notice = $this->notice($values);
+        $location = 'http://example.test/wp-admin/post.php?post=42&action=edit&message=1';
+        $previousGet = $_GET;
+        $previousPost = $_POST;
+        $previousServer = $_SERVER;
+        $_GET = array();
+        $_POST = array();
+
+        try {
+            $_SERVER['HTTP_REFERER'] = 'http://evil.test/wp-admin/post.php?post=9&contentguard_run=9';
+            $kept = $notice->preserveAuditRunOnRedirect($location);
+            $this->assertStringContainsString('contentguard_run=9', $kept);
+            $this->assertStringStartsWith('http://example.test/', $kept);
+            $this->assertStringNotContainsString('evil.test', $kept);
+
+            $_SERVER['HTTP_REFERER'] = 'javascript:alert(document.domain)//?contentguard_run=4';
+            $this->assertSame($location, $notice->preserveAuditRunOnRedirect($location));
+
+            $_SERVER['HTTP_REFERER'] = 'http://example.test/wp-admin/post.php?post=42&contentguard_run=9abc';
+            $this->assertSame($location, $notice->preserveAuditRunOnRedirect($location));
+        } finally {
+            $_GET = $previousGet;
+            $_POST = $previousPost;
+            $_SERVER = $previousServer;
+        }
     }
 
     /**

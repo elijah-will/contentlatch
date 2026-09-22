@@ -59,7 +59,7 @@ final class SaveWarningNotifierTest extends TestCase
             $php
         );
         $this->assertStringContainsString(
-            'EditorFieldFocus::enqueueAssets($_GET, self::navigationExtras($warnings));',
+            'EditorFieldFocus::sanitizedEditorQuery()',
             $php
         );
         $this->assertSame(

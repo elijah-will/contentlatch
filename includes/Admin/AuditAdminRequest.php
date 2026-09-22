@@ -49,6 +49,10 @@ final class AuditAdminRequest
     public static function apply(array &$get, array &$request, array &$post): bool
     {
         $page = self::scalar($get['page'] ?? $request['page'] ?? '');
+        if (function_exists('wp_unslash')) {
+            $page = (string) wp_unslash($page);
+        }
+        $page = function_exists('sanitize_key') ? sanitize_key($page) : $page;
         if ($page !== AuditPage::SLUG) {
             return false;
         }
@@ -58,6 +62,9 @@ final class AuditAdminRequest
             return false;
         }
 
+        if (function_exists('wp_unslash')) {
+            $legacy = (string) wp_unslash($legacy);
+        }
         $safe = function_exists('sanitize_key') ? sanitize_key($legacy) : $legacy;
         $existing = self::scalar($get[self::TYPE_QUERY_ARG] ?? $request[self::TYPE_QUERY_ARG] ?? '');
         if ($existing === '' && $safe !== '') {

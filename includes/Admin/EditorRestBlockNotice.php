@@ -47,7 +47,7 @@ final class EditorRestBlockNotice
             return;
         }
 
-        EditorFieldFocus::enqueueAssets(is_array($_GET) ? $_GET : array());
+        EditorFieldFocus::enqueueAssets(EditorFieldFocus::sanitizedEditorQuery());
 
         // acf-input owns validation_complete / validation_failure (ACF 6.0+ Free/Pro).
         // Declaring it as a dependency guarantees those hooks exist before this script runs.

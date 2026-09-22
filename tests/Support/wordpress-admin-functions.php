@@ -200,11 +200,23 @@ if (!function_exists('wp_kses_post')) {
 }
 
 if (!function_exists('add_query_arg')) {
-    function add_query_arg(string $key, string $value, string $url): string
+    function add_query_arg(mixed $key, mixed $value = '', mixed $url = ''): string
     {
-        $separator = str_contains($url, '?') ? '&' : '?';
+        if (is_array($key)) {
+            $url   = (string) $value;
+            $query = $key;
+        } else {
+            $url   = (string) $url;
+            $query = array((string) $key => $value);
+        }
 
-        return $url . $separator . rawurlencode($key) . '=' . rawurlencode($value);
+        $separator = str_contains($url, '?') ? '&' : '?';
+        $parts     = array();
+        foreach ($query as $name => $item) {
+            $parts[] = rawurlencode((string) $name) . '=' . rawurlencode((string) $item);
+        }
+
+        return $url . $separator . implode('&', $parts);
     }
 }
 

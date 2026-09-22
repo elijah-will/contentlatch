@@ -104,7 +104,36 @@ final class EditorFieldFocus
             return;
         }
 
-        self::enqueueAssets($_GET);
+        self::enqueueAssets(self::sanitizedEditorQuery());
+    }
+
+    /**
+     * Read-only editor query used to focus a field. Not a mutation.
+     *
+     * @return array<string, int|string>
+     */
+    public static function sanitizedEditorQuery(): array
+    {
+        $request  = array();
+        $fieldArg = EditorFieldNavigation::QUERY_ARG;
+        $runArg   = EditorFieldNavigation::AUDIT_RUN_ARG;
+
+        if (isset($_GET[$fieldArg])) {
+            $field = sanitize_text_field(wp_unslash((string) $_GET[$fieldArg]));
+            if (EditorFieldNavigation::isQueryTarget($field)) {
+                $request[$fieldArg] = $field;
+            }
+        }
+
+        if (isset($_GET[$runArg])) {
+            $request[$runArg] = sanitize_text_field(wp_unslash((string) $_GET[$runArg]));
+        }
+
+        if (isset($_GET['post'])) {
+            $request['post'] = absint(wp_unslash((string) $_GET['post']));
+        }
+
+        return $request;
     }
 
     /**

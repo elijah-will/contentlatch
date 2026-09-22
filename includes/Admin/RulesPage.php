@@ -178,14 +178,8 @@ final class RulesPage
             wp_die(esc_html__('You are not allowed to access this page.', 'contentguard'));
         }
 
-        $ruleId = isset($_GET['rule']) ? (int) wp_unslash((string) $_GET['rule']) : 0;
-        $action = '';
-        if (isset($_GET['action'])) {
-            $action = (string) wp_unslash((string) $_GET['action']);
-            $action = function_exists('sanitize_key')
-                ? sanitize_key($action)
-                : strtolower((string) preg_replace('/[^a-z0-9_\-]/', '', $action));
-        }
+        $ruleId = isset($_GET['rule']) ? absint(wp_unslash((string) $_GET['rule'])) : 0;
+        $action = isset($_GET['action']) ? sanitize_key(wp_unslash((string) $_GET['action'])) : '';
         if ($action === 'new') {
             $this->renderEditor(null, 0);
 
@@ -449,11 +443,7 @@ final class RulesPage
             return '';
         }
 
-        $action = (string) wp_unslash((string) $_GET['action']);
-
-        return function_exists('sanitize_key')
-            ? sanitize_key($action)
-            : strtolower((string) preg_replace('/[^a-z0-9_\-]/', '', $action));
+        return sanitize_key(wp_unslash((string) $_GET['action']));
     }
 
     private function requestRuleId(): int
@@ -462,7 +452,7 @@ final class RulesPage
             return 0;
         }
 
-        return (int) wp_unslash((string) $_GET['rule']);
+        return absint(wp_unslash((string) $_GET['rule']));
     }
 
     /**
@@ -528,8 +518,15 @@ final class RulesPage
      */
     private function notice(): ?array
     {
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- AdminNotice::fromQuery unslashes and sanitize_text_field's the notice keys it reads.
-        return AdminNotice::fromQuery(is_array($_GET) ? $_GET : array());
+        $query = array();
+        if (isset($_GET['contentguard_notice'])) {
+            $query['contentguard_notice'] = sanitize_key(wp_unslash((string) $_GET['contentguard_notice']));
+        }
+        if (isset($_GET['contentguard_msg'])) {
+            $query['contentguard_msg'] = sanitize_text_field(wp_unslash((string) $_GET['contentguard_msg']));
+        }
+
+        return AdminNotice::fromQuery($query);
     }
 
     /**

@@ -330,6 +330,52 @@ final class AuditPage
         return function_exists('sanitize_key') ? sanitize_key($value) : $value;
     }
 
+    /**
+     * Read-only Audit screen filters. Not a mutation and not nonce-gated.
+     *
+     * @return array<string, int|string>
+     */
+    private function auditQuery(): array
+    {
+        $query = array();
+
+        if (isset($_GET['run'])) {
+            $query['run'] = absint(wp_unslash((string) $_GET['run']));
+        }
+        if (isset($_GET['paged'])) {
+            $query['paged'] = absint(wp_unslash((string) $_GET['paged']));
+        }
+        if (isset($_GET[self::HISTORY_PAGED_ARG])) {
+            $query[self::HISTORY_PAGED_ARG] = absint(wp_unslash((string) $_GET[self::HISTORY_PAGED_ARG]));
+        }
+        if (isset($_GET['severity'])) {
+            $severity = sanitize_key(wp_unslash((string) $_GET['severity']));
+            if ($severity === 'fail' || $severity === 'warning') {
+                $query['severity'] = $severity;
+            }
+        }
+        if (isset($_GET['rule'])) {
+            $rule = absint(wp_unslash((string) $_GET['rule']));
+            if ($rule > 0) {
+                $query['rule'] = (string) $rule;
+            }
+        }
+        if (isset($_GET[AuditAdminRequest::TYPE_QUERY_ARG])) {
+            $type = sanitize_key(wp_unslash((string) $_GET[AuditAdminRequest::TYPE_QUERY_ARG]));
+            if ($type !== '') {
+                $query[AuditAdminRequest::TYPE_QUERY_ARG] = $type;
+            }
+        }
+        if (isset($_GET['post_type'])) {
+            $type = sanitize_key(wp_unslash((string) $_GET['post_type']));
+            if ($type !== '') {
+                $query['post_type'] = $type;
+            }
+        }
+
+        return $query;
+    }
+
     public function render(): void
     {
         if (!Capabilities::currentUserCanManage()) {
@@ -339,11 +385,12 @@ final class AuditPage
         $active         = $this->audit->getActiveRun();
         $latestComplete = $this->audit->getLatestCompleteRun();
         $latestRun      = $this->audit->getLatestRun();
-        $requested      = $this->requestedRun(self::requestedRunId($_GET));
+        $auditQuery     = $this->auditQuery();
+        $requested      = $this->requestedRun(self::requestedRunId($auditQuery));
         $resultsRun     = self::resolveResultsRun($latestComplete, $requested);
         $viewingHistory = self::isViewingHistory($latestComplete, $resultsRun);
         $query          = $resultsRun !== null
-            ? self::findingQueryFromRequest($resultsRun->id, $_GET)
+            ? self::findingQueryFromRequest($resultsRun->id, $auditQuery)
             : null;
         $findings       = $query !== null ? $this->audit->queryFindings($query) : array();
         $findingTotal   = $query !== null ? $this->audit->countFindings($query) : 0;
@@ -364,14 +411,14 @@ final class AuditPage
         $fieldLabels    = $this->fieldLabels($findings);
         $historyTotal      = $this->audit->countRuns();
         $historyTotalPages = self::totalPages($historyTotal, self::HISTORY_PAGE_SIZE);
-        $historyPaged      = self::clampPage(self::requestedHistoryPage($_GET), $historyTotalPages);
+        $historyPaged      = self::clampPage(self::requestedHistoryPage($auditQuery), $historyTotalPages);
         $history           = $this->audit->listRecentRuns(
             self::HISTORY_PAGE_SIZE,
             ($historyPaged - 1) * self::HISTORY_PAGE_SIZE
         );
         $paged          = $query !== null ? self::currentPage($query) : 1;
         $totalPages     = $query !== null ? self::totalPages($findingTotal, $query->limit) : 1;
-        $filterArgs     = self::filterArgs($_GET, $viewingHistory ? $resultsRun?->id : null, $historyPaged);
+        $filterArgs     = self::filterArgs($auditQuery, $viewingHistory ? $resultsRun?->id : null, $historyPaged);
         $historyArgs    = self::historyPaginationArgs($filterArgs, $paged);
 
         $view = CONTENTGUARD_DIR . 'admin/views/audit.php';

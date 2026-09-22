@@ -198,7 +198,7 @@ final class RuleDocumentSlashPersistenceTest extends TestCase
         $this->assertNotNull($loaded);
         $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $loaded->message);
         $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $loaded->validations[0]->message);
-        $this->assertSame('Avoid <script>alert(1)</script> & more', $loaded->name);
+        $this->assertSame('Avoid & more', $loaded->name);
         $this->assertStringNotContainsString('\\"', $loaded->message);
         $this->assertStringNotContainsString('\\\'', $loaded->message);
     }

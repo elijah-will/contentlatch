@@ -20,6 +20,163 @@ use PHPUnit\Framework\TestCase;
 
 final class RulesControllerTest extends TestCase
 {
+    public function testCleanSaveInputSanitizesTextAndKeepsNestedRuleData(): void
+    {
+        $clean = RulesController::cleanSaveInput(array(
+            '_wpnonce'         => "ok<script>alert(1)</script>",
+            'name'             => 'Avoid <script>alert(1)</script> & more',
+            'message'          => "Can't contain the word \"chicken\" in row 1/5.",
+            'rule_id'          => '12abc',
+            'status'           => 'ACTIVE',
+            'severity'         => 'Warning!',
+            'target_post_type' => 'Product',
+            'conditions'       => array(
+                array(
+                    'id'        => 'c1',
+                    'field_key' => 'field_66a800089403a',
+                    'operator'  => 'Equals',
+                    'operand'   => "O'Brien «Nuevo» タグ",
+                ),
+            ),
+            'validations'      => array(
+                array(
+                    'id'        => 'v1',
+                    'field_key' => 'field_page_id',
+                    'type'      => 'min_length',
+                    'min'       => '',
+                    'max'       => '',
+                    'values'    => 'a, b',
+                    'message'   => 'Mostrar «Nuevo» タグ',
+                ),
+            ),
+        ));
+
+        $this->assertSame('ok', $clean['_wpnonce']);
+        $this->assertSame('Avoid & more', $clean['name']);
+        $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $clean['message']);
+        $this->assertSame(12, $clean['rule_id']);
+        $this->assertSame('active', $clean['status']);
+        $this->assertSame('warning', $clean['severity']);
+        $this->assertSame('product', $clean['target_post_type']);
+        $this->assertSame('field_66a800089403a', $clean['conditions'][0]['field_key']);
+        $this->assertSame('equals', $clean['conditions'][0]['operator']);
+        $this->assertSame("O'Brien «Nuevo» タグ", $clean['conditions'][0]['operand']);
+        $this->assertSame('', $clean['validations'][0]['min']);
+        $this->assertSame('Mostrar «Nuevo» タグ', $clean['validations'][0]['message']);
+
+        $withoutStatus = RulesController::cleanSaveInput(array(
+            'name'    => 'Show New Tag',
+            'message' => '',
+        ));
+        $this->assertArrayNotHasKey('status', $withoutStatus);
+        $this->assertArrayNotHasKey('severity', $withoutStatus);
+    }
+
+    public function testHttpMutationsSanitizeNonceBeforeVerificationAndDoNotMutateEarly(): void
+    {
+        $repository = new InMemoryRuleRepository(array(), RuleDocumentValidator::v1());
+        $seen = null;
+        $controller = $this->controller(
+            true,
+            true,
+            $repository,
+            null,
+            static function (string $nonce) use (&$seen): bool {
+                $seen = $nonce;
+
+                return $nonce === 'ok';
+            }
+        );
+
+        $previousPost = $_POST;
+        $previousGet = $_GET;
+        $_POST = array(
+            '_wpnonce'  => "ok<script>alert(1)</script>",
+            'name'      => 'Avoid <script>alert(1)</script> & more',
+            'message'   => 'Can\'t contain the word "chicken" in row 1/5.',
+            'target_post_type' => 'product',
+            'severity'  => 'fail',
+            'conditions' => array(
+                array(
+                    'field_key' => 'field_type',
+                    'operator'  => 'equals',
+                    'operand'   => 'sauce',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'required',
+                    'min'       => '',
+                    'message'   => 'Mostrar «Nuevo» タグ',
+                ),
+            ),
+        );
+
+        try {
+            $controller->save();
+            $this->assertSame('ok', $seen);
+            $saved = $repository->find(1);
+            $this->assertNotNull($saved);
+            $this->assertSame('Avoid & more', $saved->name);
+            $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $saved->message);
+            $this->assertSame('Mostrar «Nuevo» タグ', $saved->validations[0]->message);
+            $this->assertSame('active', $saved->status->value);
+
+            $denied = $this->controller(false, true, $repository);
+            $_GET = array(
+                '_wpnonce' => 'ok',
+                'rule_id'  => '1',
+                'status'   => 'inactive',
+            );
+            $denied->delete();
+            $denied->status();
+            $this->assertNotNull($repository->find(1));
+            $this->assertSame('active', $repository->find(1)->status->value);
+
+            $_GET = array(
+                '_wpnonce' => 'nope',
+                'rule_id'  => '1',
+            );
+            $controller->delete();
+            $this->assertNotNull($repository->find(1));
+
+            $_GET = array(
+                '_wpnonce' => 'ok',
+                'rule_id'  => 'nope',
+                'status'   => 'not-a-status',
+            );
+            $controller->status();
+            $this->assertSame('active', $repository->find(1)->status->value);
+
+            $_POST = array(
+                '_wpnonce'  => 'ok',
+                'post_type' => 'Product!',
+            );
+            $controller->fields();
+        } finally {
+            $_POST = $previousPost;
+            $_GET = $previousGet;
+        }
+    }
+
+    public function testHttpBoundarySanitizesNonceBeforeVerifyCalls(): void
+    {
+        $src = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/RulesController.php');
+
+        $this->assertStringContainsString(
+            "sanitize_text_field(wp_unslash((string) \$_POST['_wpnonce']))",
+            $src
+        );
+        $this->assertStringContainsString(
+            "sanitize_text_field(wp_unslash((string) \$_GET['_wpnonce']))",
+            $src
+        );
+        $this->assertStringNotContainsString('HttpRequest::unslash', $src);
+        $this->assertDoesNotMatchRegularExpression('/\$_POST\s*=/', $src);
+        $this->assertStringNotContainsString('$_REQUEST', $src);
+    }
+
     public function testUnauthorizedAndInvalidNonceAreRejected(): void
     {
         $denied = $this->controller(false, true)->dispatch(
@@ -578,6 +735,7 @@ final class RulesControllerTest extends TestCase
         bool $validNonce,
         ?RuleRepositoryInterface $repository = null,
         ?RuleEditorDraftStore $drafts = null,
+        ?callable $verifyNonce = null,
     ): RulesController {
         $repository ??= new InMemoryRuleRepository(array(), RuleDocumentValidator::v1());
         $factory = RuleDocumentFactory::v1(
@@ -615,10 +773,11 @@ final class RulesControllerTest extends TestCase
                 ),
             )
         );
+        $verify = $verifyNonce ?? static fn (string $nonce): bool => $validNonce && $nonce === 'ok';
         $commands = new RuleCommandService(
             $repository,
             static fn (): bool => $canManage,
-            static fn (string $nonce): bool => $validNonce && $nonce === 'ok'
+            $verify
         );
 
         return new RulesController(
@@ -626,7 +785,7 @@ final class RulesControllerTest extends TestCase
             $commands,
             $factory,
             static fn (): bool => $canManage,
-            static fn (string $nonce): bool => $validNonce && $nonce === 'ok',
+            $verify,
             $drafts
         );
     }

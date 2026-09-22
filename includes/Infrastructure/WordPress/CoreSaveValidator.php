@@ -53,8 +53,19 @@ final class CoreSaveValidator
     public function onLoadPost(): void
     {
         try {
-            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified in isAuthorizedClassicSave() via validate().
-            $messages = $this->validate(HttpRequest::unslash(is_array($_POST) ? $_POST : array()));
+            $postId = isset($_POST['post_ID']) ? absint(wp_unslash((string) $_POST['post_ID'])) : 0;
+            $nonce  = isset($_POST['_wpnonce'])
+                ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+                : '';
+            $action = isset($_POST['action']) ? sanitize_key(wp_unslash((string) $_POST['action'])) : '';
+            if ($action !== 'editpost' || $this->servingRestRequest() || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
+                return;
+            }
+            if (!$this->userCanEditPost($postId) || !$this->classicUpdateNonceIsValid(array('_wpnonce' => $nonce), $postId)) {
+                return;
+            }
+
+            $messages = $this->validate($this->submittedClassicRequest($nonce, $postId, $action));
             if ($messages === null) {
                 return;
             }
@@ -65,6 +76,74 @@ final class CoreSaveValidator
                 error_log('ContentGuard Classic save validation failed safely: ' . $exception->getMessage());
             }
         }
+    }
+
+    /**
+     * Authorized Classic editpost fields. Routing scalars are sanitized.
+     * Post content and the ACF tree are unslashed only: text sanitizers would
+     * strip markup and change validation.
+     *
+     * @return array<string, mixed>
+     */
+    private function submittedClassicRequest(string $nonce, int $postId, string $action): array
+    {
+        $request = array(
+            '_wpnonce' => $nonce,
+            'post_ID'  => $postId,
+            'action'   => $action,
+        );
+
+        if (isset($_POST['post_type']) && is_scalar($_POST['post_type'])) {
+            $request['post_type'] = sanitize_key(wp_unslash((string) $_POST['post_type']));
+        }
+
+        foreach (array('post_status', 'original_post_status', 'visibility') as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $request[$key] = sanitize_key(wp_unslash((string) $_POST[$key]));
+            }
+        }
+
+        foreach (array('publish', 'save', 'saveasdraft', 'private') as $key) {
+            if (isset($_POST[$key]) && is_scalar($_POST[$key])) {
+                $request[$key] = sanitize_text_field(wp_unslash((string) $_POST[$key]));
+            }
+        }
+
+        foreach (array('post_id', '_acf_post_id') as $key) {
+            if (!isset($_POST[$key]) || !is_scalar($_POST[$key])) {
+                continue;
+            }
+
+            $raw = sanitize_text_field(wp_unslash((string) $_POST[$key]));
+            $request[$key] = is_numeric($raw) ? absint($raw) : $raw;
+        }
+
+        foreach (array(
+            'title',
+            'post_title',
+            'content',
+            'post_content',
+            'excerpt',
+            'post_excerpt',
+            'slug',
+            'post_name',
+            'featured_image',
+            '_thumbnail_id',
+            'thumbnail_id',
+            'featured_media',
+            'author',
+            'post_author',
+        ) as $key) {
+            if (array_key_exists($key, $_POST)) {
+                $request[$key] = wp_unslash($_POST[$key]);
+            }
+        }
+
+        if (isset($_POST['acf']) && is_array($_POST['acf'])) {
+            $request['acf'] = wp_unslash($_POST['acf']);
+        }
+
+        return $request;
     }
 
     /**
