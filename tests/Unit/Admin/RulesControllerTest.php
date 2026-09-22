@@ -100,7 +100,7 @@ final class RulesControllerTest extends TestCase
                 array(
                     'field_key' => 'field_type',
                     'operator'  => 'equals',
-                    'operand'   => 'sauce',
+                    'operand'   => "O\\'Brien «Nuevo» タグ",
                 ),
             ),
             'validations' => array(
@@ -121,6 +121,7 @@ final class RulesControllerTest extends TestCase
             $this->assertSame('Avoid & more', $saved->name);
             $this->assertSame('Can\'t contain the word "chicken" in row 1/5.', $saved->message);
             $this->assertSame('Mostrar «Nuevo» タグ', $saved->validations[0]->message);
+            $this->assertSame("O'Brien «Nuevo» タグ", $saved->conditions[0]->operand);
             $this->assertSame('active', $saved->status->value);
 
             $denied = $this->controller(false, true, $repository);

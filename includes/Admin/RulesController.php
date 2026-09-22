@@ -477,7 +477,8 @@ final class RulesController
             $input['severity'] = sanitize_key(wp_unslash((string) $_POST['severity']));
         }
         if (isset($_POST['conditions'])) {
-            $input['conditions'] = self::postedRows('conditions', array(
+            $conditions = wp_unslash($_POST['conditions']);
+            $input['conditions'] = self::cleanRows(is_array($conditions) ? $conditions : array(), array(
                 'id'        => 'key',
                 'field_key' => 'text',
                 'operator'  => 'key',
@@ -485,7 +486,8 @@ final class RulesController
             ));
         }
         if (isset($_POST['validations'])) {
-            $input['validations'] = self::postedRows('validations', array(
+            $validations = wp_unslash($_POST['validations']);
+            $input['validations'] = self::cleanRows(is_array($validations) ? $validations : array(), array(
                 'id'        => 'key',
                 'field_key' => 'text',
                 'type'      => 'key',
@@ -497,39 +499,6 @@ final class RulesController
         }
 
         return self::cleanSaveInput($input);
-    }
-
-    /**
-     * @param array<string, 'text'|'key'> $fields
-     * @return list<array<string, string>>
-     */
-    private static function postedRows(string $key, array $fields): array
-    {
-        if (!isset($_POST[$key]) || !is_array($_POST[$key])) {
-            return array();
-        }
-
-        $rows = array();
-        foreach (array_keys($_POST[$key]) as $index) {
-            if (!is_array($_POST[$key][$index] ?? null)) {
-                continue;
-            }
-
-            $row = array();
-            foreach ($fields as $field => $kind) {
-                if (!isset($_POST[$key][$index][$field]) || is_array($_POST[$key][$index][$field])) {
-                    $row[$field] = '';
-                    continue;
-                }
-
-                $row[$field] = $kind === 'key'
-                    ? sanitize_key(wp_unslash((string) $_POST[$key][$index][$field]))
-                    : sanitize_text_field(wp_unslash((string) $_POST[$key][$index][$field]));
-            }
-            $rows[] = $row;
-        }
-
-        return $rows;
     }
 
     /**
