@@ -93,7 +93,8 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('status=inactive', $html);
         $this->assertStringContainsString('admin-post.php?action=contentguard_delete_rule', $html);
         $this->assertStringContainsString('_wpnonce=testnonce', $html);
-        $this->assertStringContainsString('submitdelete contentguard-button--destructive', $html);
+        $this->assertStringContainsString('submitdelete contentguard-button--destructive contentguard-delete-rule', $html);
+        $this->assertStringNotContainsString('onclick=', $html);
         $item = substr($html, (int) strpos($html, 'contentguard-rule-item'));
         $this->assertLessThan(
             (int) strpos($item, 'submitdelete'),

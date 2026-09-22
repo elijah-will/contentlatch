@@ -42,7 +42,8 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('Reports an issue but does not prevent publishing.', $html);
         $this->assertStringContainsString('Enforced and included in audits.', $html);
         $this->assertStringContainsString('Not enforced and not included in audits.', $html);
-        $this->assertStringContainsString('id="contentguard-catalog-fields"', $html);
+        $this->assertStringNotContainsString('<script', $html);
+        $this->assertStringNotContainsString('contentguard-catalog-fields', $html);
         $this->assertStringContainsString('Save Rule', $html);
         $this->assertStringContainsString('admin.php?page=contentguard', $html);
         $this->assertStringNotContainsString('Add another rule', $html);
@@ -55,7 +56,6 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('<strong>Warning:</strong>', $html);
         $this->assertStringContainsString('class="contentguard-notice-label"', $html);
         $this->assertStringContainsString('class="contentguard-notice-message"', $html);
-        $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
         $this->assertStringContainsString('Repeater and Flexible Content fields can be used in WHEN and THEN', $html);
         $this->assertStringContainsString('WHEN applies when any matching row meets the condition', $html);
         $this->assertStringNotContainsString('They cannot be used in WHEN', $html);
@@ -100,7 +100,7 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('Leave the field unselected if matching the WHEN condition itself should fail the rule.', $html);
     }
 
-    public function testCatalogJsonDoesNotBreakOutOfTheScriptTag(): void
+    public function testCatalogFieldLabelsAreEscapedInOptionsAndViewHasNoScriptTags(): void
     {
         $html = $this->renderEditor(
             RuleEditorState::fromRule(null),
@@ -114,8 +114,9 @@ final class RuleEditorViewTest extends TestCase
             )
         );
 
+        $this->assertStringNotContainsString('<script', $html);
         $this->assertStringNotContainsString('</script><img', $html);
-        $this->assertStringContainsString('\u003C/script\u003E', $html);
+        $this->assertStringContainsString('&lt;/script&gt;&lt;img src=x onerror=alert(1)&gt;', $html);
     }
 
     public function testNestedFieldsUseBreadcrumbLabelsAndHideRawKeys(): void
@@ -574,8 +575,6 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('id="contentguard-rule-notice"', $html);
         $this->assertStringContainsString('role="alert"', $html);
         $this->assertStringContainsString('tabindex="-1"', $html);
-        $this->assertStringContainsString('contentguardPendingNoticeScroll', $html);
-        $this->assertStringContainsString('#contentguard-rule-notice', $html);
         $this->assertStringContainsString('id="contentguard-rule-client-notice"', $html);
         $this->assertStringContainsString('value="warning"', $html);
         $this->assertStringContainsString('value="inactive"', $html);

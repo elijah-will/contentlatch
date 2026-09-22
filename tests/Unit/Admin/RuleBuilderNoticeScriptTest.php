@@ -24,6 +24,9 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('contentguard-notice-label', $js);
         $this->assertStringContainsString('Warning:', $js);
         $this->assertStringContainsString('#contentguard-rule-notice', $js);
+        $this->assertStringContainsString('contentguardPendingNoticeScroll', $js);
+        $this->assertStringContainsString('window.history.replaceState', $js);
+        $this->assertStringContainsString('window.scrollTo(0, 0)', $js);
         $this->assertStringContainsString('field.breadcrumb', $js);
         $this->assertStringContainsString('fieldOptionLabel', $js);
         $this->assertStringContainsString('fieldPreviewLabel', $js);
@@ -31,7 +34,8 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('optgroup', $js);
         $this->assertStringContainsString('(every row)', $js);
         $this->assertStringContainsString('(every %s row)', $js);
-        $this->assertStringContainsString('contentguard-catalog-fields', $js);
+        $this->assertStringContainsString('config.catalogFields', $js);
+        $this->assertStringContainsString('readCatalogFields', $js);
         $this->assertStringContainsString('fieldOptionId', $js);
         $this->assertStringContainsString('resolution_id', $js);
         $this->assertStringContainsString('data-row', $js);

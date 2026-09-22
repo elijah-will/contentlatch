@@ -25,6 +25,30 @@
     return copy[key] || __(fallback);
   }
 
+  document.addEventListener("click", function (event) {
+    var target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    var link = target.closest("a.contentguard-delete-rule");
+    if (!link) {
+      return;
+    }
+    var message = config.deleteConfirm
+      || __("Delete this rule? Audit findings for this rule will be kept.");
+    if (!window.confirm(message)) {
+      event.preventDefault();
+    }
+  });
+
+  if (window.location.hash === "#contentguard-rule-notice") {
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    window.scrollTo(0, 0);
+    window.contentguardPendingNoticeScroll = true;
+  }
+
   var form = document.getElementById("contentguard-rule-form");
   if (!form) {
     return;
@@ -38,16 +62,7 @@
   var previewCopy = config.preview || {};
 
   function readCatalogFields() {
-    var node = document.getElementById("contentguard-catalog-fields");
-    if (!node) {
-      return [];
-    }
-    try {
-      var parsed = JSON.parse(node.textContent || "[]");
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
-    }
+    return Array.isArray(config.catalogFields) ? config.catalogFields.slice() : [];
   }
 
   function option(value, label, selected, type) {

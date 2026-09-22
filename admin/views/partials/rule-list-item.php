@@ -40,7 +40,6 @@ $ruleId        = (int) $rule->id;
 $titleId       = 'contentguard-rule-title-' . $ruleId;
 $isActive      = $rule->status === RuleStatus::Active;
 $statusLabel   = $isActive ? __('Deactivate', 'contentguard') : __('Activate', 'contentguard');
-$deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept.', 'contentguard');
 ?>
 <article class="contentguard-panel contentguard-rule-item" aria-labelledby="<?php echo esc_attr($titleId); ?>">
     <header class="contentguard-rule-item__header">
@@ -101,10 +100,9 @@ $deleteConfirm = __('Delete this rule? Audit findings for this rule will be kept
         </a>
         <span class="contentguard-rule-item__action-sep" aria-hidden="true">·</span>
         <a
-            class="submitdelete contentguard-button--destructive"
+            class="submitdelete contentguard-button--destructive contentguard-delete-rule"
             href="<?php echo esc_url($deleteUrl); ?>"
             aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Delete: %s', 'contentguard'), $rule->name)); ?>"
-            onclick="return confirm('<?php echo esc_js($deleteConfirm); ?>');"
         >
             <?php echo esc_html__('Delete', 'contentguard'); ?>
         </a>

@@ -104,49 +104,54 @@ final class RulesPage
             'contentguard-rules',
             'contentguardRules',
             array(
-                'ajaxUrl'    => admin_url('admin-ajax.php'),
-                'nonce'      => wp_create_nonce(RuleCommandService::NONCE_ACTION),
-                'fieldsAction' => RulesController::ACTION_FIELDS,
-                'operators'  => $this->operatorLabels('text'),
+                'ajaxUrl'         => admin_url('admin-ajax.php'),
+                'nonce'           => wp_create_nonce(RuleCommandService::NONCE_ACTION),
+                'fieldsAction'    => RulesController::ACTION_FIELDS,
+                'catalogFields'   => $this->catalogFieldsForRequest(),
+                'deleteConfirm'   => __(
+                    'Delete this rule? Audit findings for this rule will be kept.',
+                    'contentguard'
+                ),
+                'operators'       => $this->operatorLabels('text'),
                 'operatorsByType' => $this->operatorsByType(),
-                'validators' => array(
+                'validators'      => array(
                     'required'       => __('is required', 'contentguard'),
                     'min_length'     => __('Minimum length', 'contentguard'),
                     'max_length'     => __('Maximum length', 'contentguard'),
                     'allowed_values' => __('Allowed values', 'contentguard'),
                 ),
-                'preview'    => array(
-                    'needThen'               => RulePreview::needThenMessage(),
-                    'needWhenOrThen'         => RulePreview::needWhenOrThenMessage(),
-                    'incompleteWhen'         => RulePreview::incompleteWhenMessage(),
-                    'incompleteThen'         => RulePreview::incompleteThenMessage(),
-                    'conditionOnlyBlocking'  => RulePreview::conditionOnlyBlockingMessage(),
-                    'conditionOnlyWarning'   => RulePreview::conditionOnlyWarningMessage(),
+                'preview'         => array(
+                    'needThen'              => RulePreview::needThenMessage(),
+                    'needWhenOrThen'        => RulePreview::needWhenOrThenMessage(),
+                    'incompleteWhen'        => RulePreview::incompleteWhenMessage(),
+                    'incompleteThen'        => RulePreview::incompleteThenMessage(),
+                    'conditionOnlyBlocking' => RulePreview::conditionOnlyBlockingMessage(),
+                    'conditionOnlyWarning'  => RulePreview::conditionOnlyWarningMessage(),
                 ),
-                'i18n'       => array(
-                    'chooseField'       => __('Choose a field', 'contentguard'),
-                    'field'             => __('Field', 'contentguard'),
-                    'yes'               => __('Yes', 'contentguard'),
-                    'no'                => __('No', 'contentguard'),
-                    'remove'            => __('Remove', 'contentguard'),
-                    'whenField'         => __('WHEN field', 'contentguard'),
-                    'operator'          => __('Operator', 'contentguard'),
-                    'value'             => __('Value', 'contentguard'),
-                    'thenField'         => __('THEN field', 'contentguard'),
-                    'requirement'       => __('Requirement', 'contentguard'),
-                    'customMessage'     => __('Custom message (optional)', 'contentguard'),
-                    'characters'        => __('characters', 'contentguard'),
-                    'warning'           => __('Warning:', 'contentguard'),
+                'i18n'            => array(
+                    'chooseField'         => __('Choose a field', 'contentguard'),
+                    'field'               => __('Field', 'contentguard'),
+                    'yes'                 => __('Yes', 'contentguard'),
+                    'no'                  => __('No', 'contentguard'),
+                    'remove'              => __('Remove', 'contentguard'),
+                    'whenField'           => __('WHEN field', 'contentguard'),
+                    'operator'            => __('Operator', 'contentguard'),
+                    'value'               => __('Value', 'contentguard'),
+                    'thenField'           => __('THEN field', 'contentguard'),
+                    'requirement'         => __('Requirement', 'contentguard'),
+                    'customMessage'       => __('Custom message (optional)', 'contentguard'),
+                    'characters'          => __('characters', 'contentguard'),
+                    'warning'             => __('Warning:', 'contentguard'),
                     /* translators: %d: Condition number. */
-                    'removeCondition'   => __('Remove condition %d', 'contentguard'),
+                    'removeCondition'     => __('Remove condition %d', 'contentguard'),
                     /* translators: %d: Requirement number. */
-                    'removeRequirement' => __('Remove requirement %d', 'contentguard'),
-                    'emptyAndNotEmpty'  => __(
+                    'removeRequirement'   => __('Remove requirement %d', 'contentguard'),
+                    'emptyAndNotEmpty'    => __(
                         'This rule cannot be saved because a field cannot be both empty and not empty.',
                         'contentguard'
                     ),
-                    'missingThen'       => __('Each requirement needs a field and a validator.', 'contentguard'),
-                    'emptyAndRequired'  => __(
+                    'missingThen'         => __('Each requirement needs a field and a validator.', 'contentguard'),
+                    'emptyAndRequired'    => __(
                         'This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.',
                         'contentguard'
                     ),
@@ -154,13 +159,13 @@ final class RulesPage
                         'This rule cannot be saved because a field is already required to have a value by the WHEN condition.',
                         'contentguard'
                     ),
-                    'equalsAndRequired' => __(
+                    'equalsAndRequired'   => __(
                         'This rule cannot be saved because a field that must already have a specific value does not need to be required.',
                         'contentguard'
                     ),
-                    'allowedValues'     => __('Enter at least one allowed value.', 'contentguard'),
-                    'minGtMax'          => __('Minimum length cannot be greater than maximum length.', 'contentguard'),
-                    'missingWhenOrThen' => __('Add a WHEN condition or THEN requirement.', 'contentguard'),
+                    'allowedValues'       => __('Enter at least one allowed value.', 'contentguard'),
+                    'minGtMax'            => __('Minimum length cannot be greater than maximum length.', 'contentguard'),
+                    'missingWhenOrThen'   => __('Add a WHEN condition or THEN requirement.', 'contentguard'),
                 ),
             )
         );
@@ -399,6 +404,65 @@ final class RulesPage
         } catch (InvalidRuleException) {
             return array();
         }
+    }
+
+    /**
+     * Catalog fields for the current rule-editor request.
+     * Empty on the rules list screen.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function catalogFieldsForRequest(): array
+    {
+        if (!$this->isEditorRequest()) {
+            return array();
+        }
+
+        $ruleId = $this->requestRuleId();
+        $rule   = $ruleId > 0 ? $this->rules->find($ruleId) : null;
+        $editor = RuleEditorState::hydrate($this->drafts?->get($ruleId), $rule);
+
+        $postTypes     = $this->factory->selectablePostTypes();
+        $typeForFields = $editor->postType !== ''
+            ? $editor->postType
+            : (string) (array_key_first($postTypes) ?? '');
+
+        if ($typeForFields === '' || !isset($this->factory->allowedPostTypes()[$typeForFields])) {
+            return array();
+        }
+
+        try {
+            return array_values($this->factory->fieldsForPostType($typeForFields));
+        } catch (InvalidRuleException) {
+            return array();
+        }
+    }
+
+    private function isEditorRequest(): bool
+    {
+        return $this->requestAction() === 'new' || $this->requestRuleId() > 0;
+    }
+
+    private function requestAction(): string
+    {
+        if (!isset($_GET['action'])) {
+            return '';
+        }
+
+        $action = (string) wp_unslash((string) $_GET['action']);
+
+        return function_exists('sanitize_key')
+            ? sanitize_key($action)
+            : strtolower((string) preg_replace('/[^a-z0-9_\-]/', '', $action));
+    }
+
+    private function requestRuleId(): int
+    {
+        if (!isset($_GET['rule'])) {
+            return 0;
+        }
+
+        return (int) wp_unslash((string) $_GET['rule']);
     }
 
     /**
