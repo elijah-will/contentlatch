@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 use PHPUnit\Framework\TestCase;
 
 final class SelectablePostTypesTest extends TestCase
@@ -51,7 +51,7 @@ final class SelectablePostTypesTest extends TestCase
 
     public function testFlexibleContentScalarsMakeAPostTypeSelectableNaturally(): void
     {
-        $catalog = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog();
         $factory = RuleDocumentFactory::v1(
             static fn (): array => array(
                 'page'    => 'Page',
@@ -75,8 +75,8 @@ final class SelectablePostTypesTest extends TestCase
 
         $fields = $factory->fieldsForPostType('page');
         $keys   = array_column($fields, 'key');
-        $this->assertContains(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $keys);
-        $this->assertNotContains(\ContentGuard\Tests\Support\AcfFlexibleFixtures::ACCORDION_TITLE, $keys);
+        $this->assertContains(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $keys);
+        $this->assertNotContains(\ContentLatch\Tests\Support\AcfFlexibleFixtures::ACCORDION_TITLE, $keys);
     }
 
     private function factory(): RuleDocumentFactory

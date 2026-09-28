@@ -1,23 +1,23 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\RestSaveValidator;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 use WP_Error;
 
@@ -27,8 +27,8 @@ final class RestSaveValidatorTest extends TestCase
 {
     protected function setUp(): void
     {
-        $GLOBALS['contentguard_test_post_fields'] = array();
-        $GLOBALS['contentguard_test_thumbnails'] = array();
+        $GLOBALS['contentlatch_test_post_fields'] = array();
+        $GLOBALS['contentlatch_test_thumbnails'] = array();
     }
 
     public function testEmptyTitleOnPublishReturnsWpErrorWithHttp400(): void
@@ -628,7 +628,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostOmittingFeaturedMediaKeepsStoredThumbnail(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][42] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][42] = 123;
         $prepared = $this->gutenbergPrepared();
         $result   = $this->validator(array($this->required(CoreCatalogFixtures::featuredImageRef())))
             ->validate($prepared, array('status' => 'publish'));
@@ -647,7 +647,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostFeaturedMediaZeroClearsStoredThumbnail(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][42] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][42] = 123;
         $result = $this->validator(array($this->required(CoreCatalogFixtures::featuredImageRef())))
             ->validate($this->gutenbergPrepared(), array('status' => 'publish', 'featured_media' => 0));
 
@@ -672,7 +672,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostOmittingTitleUsesStoredTitle(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing title');
         $prepared = $this->gutenbergPrepared();
         $result   = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate($prepared, array('status' => 'publish'));
@@ -682,7 +682,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostSubmittedEmptyTitleFailsDespiteStoredTitle(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing title');
         $prepared = (object) array(
             'ID'          => 42,
             'post_type'   => 'post',
@@ -700,7 +700,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostOmittingContentUsesStoredContent(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array(
+        $GLOBALS['contentlatch_test_post_fields'][42] = array(
             'post_content' => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
         );
         $prepared = (object) array(
@@ -717,7 +717,7 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testExistingPostSubmittedEmptyContentFailsDespiteStoredContent(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array(
+        $GLOBALS['contentlatch_test_post_fields'][42] = array(
             'post_content' => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
         );
         $prepared = (object) array(
@@ -737,8 +737,8 @@ final class RestSaveValidatorTest extends TestCase
 
     public function testGutenbergPartialUpdatePassesWhenStoredTitleAndFeaturedImageRemain(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing title');
-        $GLOBALS['contentguard_test_thumbnails'][42] = 123;
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_thumbnails'][42] = 123;
         $prepared = $this->gutenbergPrepared();
         $result   = $this->validator(array(
             RuleFactory::rule(array(
@@ -893,7 +893,7 @@ final class RestSaveValidatorTest extends TestCase
     /**
      * @param array<string, mixed> $overrides
      */
-    private function required(\ContentGuard\Domain\FieldRef $field, array $overrides = array()): \ContentGuard\Domain\Rule
+    private function required(\ContentLatch\Domain\FieldRef $field, array $overrides = array()): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array_merge(
             array(

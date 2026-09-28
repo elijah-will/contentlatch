@@ -2,12 +2,12 @@
 /**
  * Reads a field value by canonical field key.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Contracts;
+namespace ContentLatch\Domain\Contracts;
 
 interface FieldValueProviderInterface
 {
@@ -20,7 +20,7 @@ interface FieldValueProviderInterface
      * children return one item per matching row. Scalars return a single
      * instance. Zero matching rows return an empty list.
      *
-     * @return list<\ContentGuard\Domain\FieldInstance>
+     * @return list<\ContentLatch\Domain\FieldInstance>
      */
     public function instances(string $fieldId): array;
 }

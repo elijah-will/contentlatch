@@ -5,12 +5,12 @@
  * Optgroups use catalog group_label. Options under a group show the leaf
  * label so hierarchy is not duplicated. Preview keeps the full breadcrumb.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
@@ -74,7 +74,7 @@ final class RuleBuilderFieldLabels
 
         if (($field['container'] ?? '') === 'repeater') {
             /* translators: Suffix appended to repeater field labels in the Rule Builder. */
-            $everyRow = __('(every row)', 'contentguard');
+            $everyRow = __('(every row)', 'contentlatch');
             if (!str_contains($label, $everyRow)) {
                 $label .= ' ' . $everyRow;
             }
@@ -83,10 +83,10 @@ final class RuleBuilderFieldLabels
         if (($field['container'] ?? '') === 'flexible_content') {
             $layoutLabel = trim((string) ($field['layout_label'] ?? ''));
             if ($layoutLabel === '') {
-                $layoutLabel = (string) ($field['layout'] ?? __('layout', 'contentguard'));
+                $layoutLabel = (string) ($field['layout'] ?? __('layout', 'contentlatch'));
             }
             /* translators: %s: Flexible Content layout label. */
-            $suffix = sprintf(__('(every %s row)', 'contentguard'), $layoutLabel);
+            $suffix = sprintf(__('(every %s row)', 'contentlatch'), $layoutLabel);
             if (!str_contains($label, $suffix)) {
                 $label .= ' ' . $suffix;
             }

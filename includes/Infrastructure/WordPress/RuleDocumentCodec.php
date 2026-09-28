@@ -9,12 +9,12 @@
  *
  * Canonical storage is post meta; post_content keeps a slashed copy.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

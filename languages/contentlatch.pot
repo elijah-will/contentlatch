@@ -1,30 +1,30 @@
-# Copyright (C) 2026 ContentGuard
+# Copyright (C) 2026 ContentLatch
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: ContentGuard 1.0.0\n"
+"Project-Id-Version: ContentLatch 1.0.0\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-22T20:14:13+00:00\n"
+"POT-Creation-Date: 2026-09-28T03:32:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
-"X-Domain: contentguard\n"
+"X-Domain: contentlatch\n"
 
 #. Plugin Name of the plugin
 #. Author of the plugin
-#: contentguard.php
+#: contentlatch.php
 #: admin/views/partials/page-header.php:17
 #: includes/Admin/RulesPage.php:60
 #: includes/Application/EditorNoticePresentation.php:21
-msgid "ContentGuard"
+msgid "ContentLatch"
 msgstr ""
 
 #. Description of the plugin
-#: contentguard.php
+#: contentlatch.php
 msgid "Define content rules for WordPress Core and ACF fields, then validate before publication."
 msgstr ""
 
@@ -48,7 +48,7 @@ msgid "Check your content"
 msgstr ""
 
 #: admin/views/audit.php:93
-msgid "Check your existing published and private content against your active rules. ContentGuard only reports issues. It does not change your content."
+msgid "Check your existing published and private content against your active rules. ContentLatch only reports issues. It does not change your content."
 msgstr ""
 
 #: admin/views/audit.php:96
@@ -641,14 +641,14 @@ msgstr[1] ""
 #: includes/Activator.php:28
 #: includes/Dependencies.php:71
 #, php-format
-msgid "ContentGuard requires PHP %s or higher."
+msgid "ContentLatch requires PHP %s or higher."
 msgstr ""
 
 #. translators: %s: minimum WordPress version
 #: includes/Activator.php:43
 #: includes/Dependencies.php:79
 #, php-format
-msgid "ContentGuard requires WordPress %s or higher."
+msgid "ContentLatch requires WordPress %s or higher."
 msgstr ""
 
 #: includes/Admin/AuditAjaxController.php:139
@@ -656,7 +656,7 @@ msgid "Unknown audit action."
 msgstr ""
 
 #: includes/Admin/AuditAjaxController.php:199
-msgid "You are not allowed to run ContentGuard audits."
+msgid "You are not allowed to run ContentLatch audits."
 msgstr ""
 
 #: includes/Admin/AuditAjaxController.php:205
@@ -727,16 +727,16 @@ msgstr ""
 #: includes/Admin/RulesController.php:108
 #: includes/Admin/RulesController.php:142
 #: includes/Admin/RulesController.php:178
-#: includes/Admin/RulesController.php:586
+#: includes/Admin/RulesController.php:555
 #: includes/Application/RuleCommandService.php:55
-msgid "You are not allowed to manage ContentGuard rules."
+msgid "You are not allowed to manage ContentLatch rules."
 msgstr ""
 
 #: includes/Admin/RulesController.php:91
 #: includes/Admin/RulesController.php:121
 #: includes/Admin/RulesController.php:155
 #: includes/Admin/RulesController.php:191
-#: includes/Admin/RulesController.php:591
+#: includes/Admin/RulesController.php:560
 #: includes/Application/RuleCommandService.php:63
 msgid "Invalid rule management nonce."
 msgstr ""
@@ -773,7 +773,7 @@ msgstr ""
 
 #: includes/Admin/RulesPage.php:59
 #: includes/Infrastructure/WordPress/RulePostType.php:30
-msgid "ContentGuard Rules"
+msgid "ContentLatch Rules"
 msgstr ""
 
 #: includes/Admin/RulesPage.php:111
@@ -855,7 +855,7 @@ msgid "Inactive Warning"
 msgstr ""
 
 #: includes/Admin/RulesPage.php:340
-msgid "None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content."
+msgid "None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentLatch to validate content."
 msgstr ""
 
 #: includes/Admin/RulesPage.php:349
@@ -1073,7 +1073,7 @@ msgid "Run an audit to see whether your existing content follows your active rul
 msgstr ""
 
 #: includes/Application/AuditPresentation.php:244
-msgid "ContentGuard only reports issues. It does not change your content."
+msgid "ContentLatch only reports issues. It does not change your content."
 msgstr ""
 
 #: includes/Application/AuditPresentation.php:249
@@ -1312,7 +1312,7 @@ msgstr ""
 
 #: includes/Application/EditorNoticePresentation.php:164
 #: includes/Infrastructure/WordPress/RestSaveValidator.php:270
-msgid "ContentGuard validation failed."
+msgid "ContentLatch validation failed."
 msgstr ""
 
 #. translators: Suffix appended to repeater field labels in the Rule Builder.
@@ -1654,13 +1654,13 @@ msgid "Pending"
 msgstr ""
 
 #: includes/Dependencies.php:85
-msgid "ContentGuard requires Advanced Custom Fields 6.0 or higher (Free or Pro)."
+msgid "ContentLatch requires Advanced Custom Fields 6.0 or higher (Free or Pro)."
 msgstr ""
 
 #. translators: %s: minimum ACF version
 #: includes/Dependencies.php:90
 #, php-format
-msgid "ContentGuard requires Advanced Custom Fields %s or higher (Free or Pro)."
+msgid "ContentLatch requires Advanced Custom Fields %s or higher (Free or Pro)."
 msgstr ""
 
 #: includes/Infrastructure/ACF/SaveWarningNotifier.php:451
@@ -1704,5 +1704,5 @@ msgid "%s is invalid."
 msgstr ""
 
 #: includes/Infrastructure/WordPress/RulePostType.php:31
-msgid "ContentGuard Rule"
+msgid "ContentLatch Rule"
 msgstr ""

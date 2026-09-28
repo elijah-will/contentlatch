@@ -2,12 +2,12 @@
 /**
  * Stored CPT row for a rule.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

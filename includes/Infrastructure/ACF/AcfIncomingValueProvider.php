@@ -2,17 +2,17 @@
 /**
  * Field values from an incoming ACF save payload (not the database).
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\FieldInstance;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\FieldInstance;
 
 final class AcfIncomingValueProvider implements FieldValueProviderInterface
 {

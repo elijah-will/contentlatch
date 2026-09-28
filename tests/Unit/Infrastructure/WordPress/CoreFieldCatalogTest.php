@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class CoreFieldCatalogTest extends TestCase

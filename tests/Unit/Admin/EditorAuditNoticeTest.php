@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\EditorAuditNotice;
-use ContentGuard\Application\EditorFieldNavigation;
+use ContentLatch\Admin\EditorAuditNotice;
+use ContentLatch\Application\EditorFieldNavigation;
 use PHPUnit\Framework\TestCase;
 
 final class EditorAuditNoticeTest extends TestCase
@@ -18,7 +18,7 @@ final class EditorAuditNoticeTest extends TestCase
         $this->assertTrue(EditorAuditNotice::shouldEnqueue('post.php'));
         $this->assertTrue(EditorAuditNotice::shouldEnqueue('post-new.php'));
         $this->assertFalse(EditorAuditNotice::shouldEnqueue('edit.php'));
-        $this->assertFalse(EditorAuditNotice::shouldEnqueue('contentguard_page_contentguard-audit'));
+        $this->assertFalse(EditorAuditNotice::shouldEnqueue('contentlatch_page_contentlatch-audit'));
     }
 
     public function testNoticeDoesNotUseSaveValidationHooks(): void
@@ -36,7 +36,7 @@ final class EditorAuditNoticeTest extends TestCase
         $this->assertStringNotContainsString('SaveWarningNotifier', $php);
         $this->assertStringNotContainsString('editor-warnings', $php);
         $this->assertStringContainsString('navigationExtras', $php);
-        $this->assertStringNotContainsString('contentguard_row', $php);
+        $this->assertStringNotContainsString('contentlatch_row', $php);
     }
 
     public function testAuditArrivalNoticeDependsOnTheRunNotTheFieldQuery(): void

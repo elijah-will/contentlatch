@@ -4,17 +4,17 @@
  *
  * This class has no WordPress, ACF, or I/O dependencies.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\Contracts\OperatorInterface;
-use ContentGuard\Domain\Operators\OperatorRegistry;
-use ContentGuard\Domain\Validators\ValidatorRegistry;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\Contracts\OperatorInterface;
+use ContentLatch\Domain\Operators\OperatorRegistry;
+use ContentLatch\Domain\Validators\ValidatorRegistry;
 
 final class RuleEngine
 {

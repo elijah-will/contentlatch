@@ -5,23 +5,23 @@
  * Targets ACF fields by leaf field key, including Group, Repeater,
  * Flexible Content, and Clone children. Row indexes are not placed in URLs.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Domain\FieldRef;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Domain\FieldRef;
 
 final class EditorFieldNavigation
 {
-    public const QUERY_ARG     = 'contentguard_field';
-    public const AUDIT_RUN_ARG = 'contentguard_run';
+    public const QUERY_ARG     = 'contentlatch_field';
+    public const AUDIT_RUN_ARG = 'contentlatch_run';
 
     public static function isSafeFieldKey(string $fieldKey): bool
     {
@@ -128,7 +128,7 @@ final class EditorFieldNavigation
 
     public static function looksLikeAuditAdminUrl(string $url): bool
     {
-        return str_contains($url, 'page=contentguard-audit');
+        return str_contains($url, 'page=contentlatch-audit');
     }
 
     public static function navigableFieldKey(?string $fieldKey): string
@@ -140,22 +140,22 @@ final class EditorFieldNavigation
 
     public static function goToFieldAria(string $label): string
     {
-        $name = $label !== '' ? $label : __('field', 'contentguard');
+        $name = $label !== '' ? $label : __('field', 'contentlatch');
 
         /* translators: %s: Field label. */
-        return sprintf(__('Go to field: %s', 'contentguard'), $name);
+        return sprintf(__('Go to field: %s', 'contentlatch'), $name);
     }
 
     public static function goToLayoutRowAria(string $label, int $row): string
     {
-        $name = $label !== '' ? $label : __('field', 'contentguard');
+        $name = $label !== '' ? $label : __('field', 'contentlatch');
         $row  = self::sanitizeDisplayRow($row);
         if ($row <= 0) {
             return self::goToFieldAria($name);
         }
 
         /* translators: 1: Field label. 2: 1-based row number. */
-        return sprintf(__('Go to %1$s, row %2$d', 'contentguard'), $name, $row);
+        return sprintf(__('Go to %1$s, row %2$d', 'contentlatch'), $name, $row);
     }
 
     public static function sanitizeDisplayRow(mixed $row): int
@@ -536,8 +536,8 @@ final class EditorFieldNavigation
     }
 
     /**
-     * Clickable issue line. ACF uses data-contentguard-field; Core uses
-     * data-contentguard-core and only when the current surface supports it.
+     * Clickable issue line. ACF uses data-contentlatch-field; Core uses
+     * data-contentlatch-core and only when the current surface supports it.
      *
      * @param list<int> $rows
      * @param list<array{repeater?: string, display_row?: int}> $repeaterPath
@@ -588,7 +588,7 @@ final class EditorFieldNavigation
             ? self::rowButtonsHtml($acf, $label, $layout, $rows)
             : '';
 
-        return '<button type="button" class="contentguard-warning-field" '
+        return '<button type="button" class="contentlatch-warning-field" '
             . $attrs
             . ' aria-label="' . self::escapeAttr($aria) . '">'
             . self::escapeHtml($label)
@@ -625,14 +625,14 @@ final class EditorFieldNavigation
             return '';
         }
 
-        $attrs = 'data-contentguard-field="' . self::escapeAttr($fieldKey) . '"';
+        $attrs = 'data-contentlatch-field="' . self::escapeAttr($fieldKey) . '"';
         if (self::isSafeLayoutName($layout)) {
-            $attrs .= ' data-contentguard-layout="' . self::escapeAttr($layout) . '"';
+            $attrs .= ' data-contentlatch-layout="' . self::escapeAttr($layout) . '"';
         }
 
         $displayRow = self::sanitizeDisplayRow($displayRow);
         if ($displayRow > 0) {
-            $attrs .= ' data-contentguard-display-row="' . $displayRow . '"';
+            $attrs .= ' data-contentlatch-display-row="' . $displayRow . '"';
         }
 
         $pathAttr = self::repeaterPathAttribute($repeaterPath, $repeaterPathBlocked);
@@ -649,7 +649,7 @@ final class EditorFieldNavigation
     public static function repeaterPathAttribute(array $repeaterPath, bool $blocked = false): string
     {
         if ($blocked) {
-            return 'data-contentguard-repeater-path="invalid"';
+            return 'data-contentlatch-repeater-path="invalid"';
         }
 
         $path = self::sanitizeRepeaterPath($repeaterPath);
@@ -662,10 +662,10 @@ final class EditorFieldNavigation
             // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Non-WP unit-test fallback when wp_json_encode is unavailable.
             : json_encode($path, JSON_UNESCAPED_SLASHES);
         if (!is_string($json) || $json === '') {
-            return 'data-contentguard-repeater-path="invalid"';
+            return 'data-contentlatch-repeater-path="invalid"';
         }
 
-        return 'data-contentguard-repeater-path="' . self::escapeAttr($json) . '"';
+        return 'data-contentlatch-repeater-path="' . self::escapeAttr($json) . '"';
     }
 
     /**
@@ -683,14 +683,14 @@ final class EditorFieldNavigation
 
         $buttons = array();
         foreach ($rows as $row) {
-            $buttons[] = '<button type="button" class="contentguard-warning-field contentguard-warning-row" '
+            $buttons[] = '<button type="button" class="contentlatch-warning-field contentlatch-warning-row" '
                 . self::fieldTriggerAttributes($fieldKey, $layout, $row)
                 . ' aria-label="' . self::escapeAttr(self::goToLayoutRowAria($label, $row)) . '">'
                 . self::escapeHtml(sprintf('Row %d', $row))
                 . '</button>';
         }
 
-        return ' <span class="contentguard-warning-rows">' . implode('<span aria-hidden="true"> · </span>', $buttons) . '</span>';
+        return ' <span class="contentlatch-warning-rows">' . implode('<span aria-hidden="true"> · </span>', $buttons) . '</span>';
     }
 
     private static function isRepeaterRowToken(string $token): bool

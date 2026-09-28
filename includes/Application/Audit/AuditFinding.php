@@ -2,16 +2,16 @@
 /**
  * Persisted fail or warning from one audit evaluation.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleSeverity;
 
 final class AuditFinding
 {

@@ -5,33 +5,33 @@
  * Recipes is an ACF field group, not an ACF Group field. The empty
  * Section Title sits on the Directions Repeater itself.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\EditorAuditIssues;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\FieldInstance;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures as HH;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\EditorAuditIssues;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\FieldInstance;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\ACF\AcfSaveValidator;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures as HH;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class HollandHouseRepeaterRowCoordinateTest extends TestCase
@@ -191,7 +191,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         $this->assertArrayNotHasKey('affectedRows', $issues[0]);
         $this->assertArrayNotHasKey('layout', $issues[0]);
         $this->assertStringNotContainsString(
-            'data-contentguard-display-row',
+            'data-contentlatch-display-row',
             EditorAuditIssues::issueHtml($issues[0])
         );
     }
@@ -225,12 +225,12 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         );
 
         $this->assertSame('', $errors[0]['input']);
-        $this->assertStringContainsString('ContentGuard · Blocking', $errors[0]['message']);
+        $this->assertStringContainsString('ContentLatch · Blocking', $errors[0]['message']);
         $this->assertStringContainsString('Section Title is required in row 2.', $errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $errors[0]['message']);
         $this->assertStringContainsString(HH::DIRECTIONS, $errors[0]['message']);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $errors[0]['message']);
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $errors[0]['message']);
         $this->assertSame(
             array(
                 'input'   => 'acf[' . HH::DIRECTIONS . '][row-1][' . HH::SECTION_TITLE . ']',
@@ -288,13 +288,13 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
             )
         );
 
-        $this->assertArrayNotHasKey('contentguard_field', array(
+        $this->assertArrayNotHasKey('contentlatch_field', array(
             'post_ID'     => 374,
             'post_type'   => 'recipes',
             'post_status' => 'publish',
         ));
         $this->assertSame('', $errors[0]['input']);
-        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $errors[0]['message']);
+        $this->assertStringContainsString("ContentLatch · Blocking\n3 blocking issues\n", $errors[0]['message']);
         $this->assertStringContainsString(
             '>Ingredients → Ingredient Title</button> — Ingredient Title is required in row 2.',
             $errors[0]['message']
@@ -307,14 +307,14 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
             '>Ingredients → Section Ingredients → Ingredient</button> — Ingredient is required in row 1/14.',
             $errors[0]['message']
         );
-        $this->assertStringContainsString('data-contentguard-field="' . HH::INGREDIENT_TITLE . '"', $errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="' . HH::INGREDIENT . '"', $errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="' . HH::INGREDIENT_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="' . HH::SECTION_TITLE . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="' . HH::INGREDIENT . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $errors[0]['message']);
         $this->assertStringContainsString(HH::INGREDIENTS, $errors[0]['message']);
         $this->assertStringContainsString(HH::SECTION_INGREDIENTS, $errors[0]['message']);
         $this->assertStringContainsString('&quot;display_row&quot;:14', $errors[0]['message']);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $errors[0]['message']);
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $errors[0]['message']);
         $this->assertCount(4, $errors);
         $this->assertNotSame('', $errors[1]['input']);
         $this->assertNotSame('', $errors[2]['input']);
@@ -368,7 +368,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
             '>Directions → Section Directions → Direction</button> — Direction is required in row 1/14.',
             $errors[0]['message']
         );
-        $this->assertStringContainsString('data-contentguard-field="' . HH::DIRECTION . '"', $errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="' . HH::DIRECTION . '"', $errors[0]['message']);
         $this->assertStringContainsString(HH::DIRECTIONS, $errors[0]['message']);
         $this->assertStringContainsString(HH::SECTION_DIRECTIONS, $errors[0]['message']);
         $this->assertStringContainsString('&quot;display_row&quot;:14', $errors[0]['message']);
@@ -449,7 +449,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         return $rows;
     }
 
-    private function sectionTitleRule(): \ContentGuard\Domain\Rule
+    private function sectionTitleRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'id'          => 74,
@@ -466,7 +466,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         ));
     }
 
-    private function directionRule(): \ContentGuard\Domain\Rule
+    private function directionRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'id'          => 75,
@@ -483,7 +483,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         ));
     }
 
-    private function ingredientTitleRule(): \ContentGuard\Domain\Rule
+    private function ingredientTitleRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'id'          => 73,
@@ -500,7 +500,7 @@ final class HollandHouseRepeaterRowCoordinateTest extends TestCase
         ));
     }
 
-    private function ingredientRule(): \ContentGuard\Domain\Rule
+    private function ingredientRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'id'          => 76,

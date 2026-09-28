@@ -1,17 +1,17 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\RuleEditorState;
-use ContentGuard\Application\RulePreview;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\RuleEditorState;
+use ContentLatch\Application\RulePreview;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEditorViewTest extends TestCase
@@ -21,7 +21,7 @@ final class RuleEditorViewTest extends TestCase
         $html = $this->renderEditor(RuleEditorState::fromRule(null), array());
 
         $this->assertStringContainsString('Add New Rule', $html);
-        $this->assertStringContainsString('id="contentguard-rule-form"', $html);
+        $this->assertStringContainsString('id="contentlatch-rule-form"', $html);
         $this->assertStringContainsString('name="name"', $html);
         $this->assertStringContainsString('name="target_post_type"', $html);
         $this->assertStringContainsString('name="severity"', $html);
@@ -43,19 +43,19 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('Enforced and included in audits.', $html);
         $this->assertStringContainsString('Not enforced and not included in audits.', $html);
         $this->assertStringNotContainsString('<script', $html);
-        $this->assertStringNotContainsString('contentguard-catalog-fields', $html);
+        $this->assertStringNotContainsString('contentlatch-catalog-fields', $html);
         $this->assertStringContainsString('Save Rule', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch', $html);
         $this->assertStringNotContainsString('Add another rule', $html);
         $this->assertStringContainsString('value="fail"', $html);
         $this->assertStringContainsString('value="warning"', $html);
         $this->assertStringContainsString('value="active"', $html);
         $this->assertStringContainsString('value="inactive"', $html);
         $this->assertStringContainsString('aria-live="polite"', $html);
-        $this->assertStringContainsString('id="contentguard-rule-client-notice"', $html);
+        $this->assertStringContainsString('id="contentlatch-rule-client-notice"', $html);
         $this->assertStringContainsString('<strong>Warning:</strong>', $html);
-        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
-        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-label"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-message"', $html);
         $this->assertStringContainsString('Repeater and Flexible Content fields can be used in WHEN and THEN', $html);
         $this->assertStringContainsString('WHEN applies when any matching row meets the condition', $html);
         $this->assertStringNotContainsString('They cannot be used in WHEN', $html);
@@ -322,20 +322,20 @@ final class RuleEditorViewTest extends TestCase
                 ),
                 'validations'      => array(
                     array(
-                        'field_key' => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                        'field_key' => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
                         'type'      => 'required',
                     ),
                 ),
             )),
             array(
                 array(
-                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+                    'key'         => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
                     'name'        => 'ingredient_title',
                     'label'       => 'Ingredient Title',
                     'type'        => 'text',
                     'path'        => array(
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Ingredients → Ingredient Title',
@@ -343,14 +343,14 @@ final class RuleEditorViewTest extends TestCase
                     'field_group' => 'Recipes',
                 ),
                 array(
-                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+                    'key'         => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
                     'name'        => 'ingredient',
                     'label'       => 'Ingredient',
                     'type'        => 'text',
                     'path'        => array(
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_INGREDIENTS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENTS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_INGREDIENTS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Ingredients → Section Ingredients → Ingredient',
@@ -358,13 +358,13 @@ final class RuleEditorViewTest extends TestCase
                     'field_group' => 'Recipes',
                 ),
                 array(
-                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                    'key'         => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
                     'name'        => 'section_title',
                     'label'       => 'Section Title',
                     'type'        => 'text',
                     'path'        => array(
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Directions → Section Title',
@@ -372,14 +372,14 @@ final class RuleEditorViewTest extends TestCase
                     'field_group' => 'Recipes',
                 ),
                 array(
-                    'key'         => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                    'key'         => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
                     'name'        => 'direction',
                     'label'       => 'Direction',
                     'type'        => 'text',
                     'path'        => array(
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_DIRECTIONS,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTIONS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_DIRECTIONS,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
                     ),
                     'container'   => 'repeater',
                     'breadcrumb'  => 'Directions → Section Directions → Direction',
@@ -414,19 +414,19 @@ final class RuleEditorViewTest extends TestCase
             $this->fail('WHEN field select missing');
         }
         $this->assertStringContainsString(
-            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
+            \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::DIRECTION,
             $match[1]
         );
         $this->assertStringContainsString(
-            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+            \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
             $match[1]
         );
         $this->assertStringContainsString(
-            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
+            \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT_TITLE,
             $match[1]
         );
         $this->assertStringContainsString(
-            \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
+            \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::INGREDIENT,
             $match[1]
         );
         if (preg_match('/name="conditions\[0\]\[operator\]"[^>]*>([\s\S]*?)<\/select>/', $html, $ops) !== 1) {
@@ -450,7 +450,7 @@ final class RuleEditorViewTest extends TestCase
                 ),
                 'validations'      => array(
                     array(
-                        'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                        'field_key' => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                         'type'      => 'required',
                     ),
                 ),
@@ -463,13 +463,13 @@ final class RuleEditorViewTest extends TestCase
                     'type'  => 'select',
                 ),
                 array(
-                    'key'          => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'key'          => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                     'name'         => 'title',
                     'label'        => 'Title',
                     'type'         => 'text',
                     'path'         => array(
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES,
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES,
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                     ),
                     'container'    => 'flexible_content',
                     'layout'       => 'hero',
@@ -488,7 +488,7 @@ final class RuleEditorViewTest extends TestCase
         if (preg_match('/name="conditions\[0\]\[field_key\]"[^>]*>([\s\S]*?)<\/select>/', $html, $match) !== 1) {
             $this->fail('WHEN field select missing');
         }
-        $this->assertStringContainsString(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $match[1]);
+        $this->assertStringContainsString(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $match[1]);
         $this->assertStringContainsString('Title (every Hero row)', $match[1]);
     }
 
@@ -531,7 +531,7 @@ final class RuleEditorViewTest extends TestCase
         $this->assertStringContainsString('Show &quot;New&quot; Tag', $html);
         $this->assertStringContainsString('When Show &quot;New&quot; Tag is Yes, PowerReviews Page ID is required.', $html);
         $this->assertStringContainsString('Add another rule', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard&amp;action=new', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch&amp;action=new', $html);
         $this->assertStringContainsString('name="rule_id"', $html);
         $this->assertStringContainsString('value="7"', $html);
         $this->assertStringContainsString('value="1"', $html);
@@ -569,13 +569,13 @@ final class RuleEditorViewTest extends TestCase
 
         $this->assertStringContainsString('Unsaved draft', $html);
         $this->assertStringContainsString('<strong>Warning:</strong>', $html);
-        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
-        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-label"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-message"', $html);
         $this->assertStringContainsString('We could not add this rule.', $html);
-        $this->assertStringContainsString('id="contentguard-rule-notice"', $html);
+        $this->assertStringContainsString('id="contentlatch-rule-notice"', $html);
         $this->assertStringContainsString('role="alert"', $html);
         $this->assertStringContainsString('tabindex="-1"', $html);
-        $this->assertStringContainsString('id="contentguard-rule-client-notice"', $html);
+        $this->assertStringContainsString('id="contentlatch-rule-client-notice"', $html);
         $this->assertStringContainsString('value="warning"', $html);
         $this->assertStringContainsString('value="inactive"', $html);
         $this->assertStringContainsString('When Show &quot;New&quot; Tag is No, PowerReviews Page ID is required.', $html);
@@ -605,10 +605,10 @@ final class RuleEditorViewTest extends TestCase
 
         $this->assertStringContainsString('Updated draft name', $html);
         $this->assertStringContainsString('<strong>Warning:</strong>', $html);
-        $this->assertStringContainsString('class="contentguard-notice-label"', $html);
-        $this->assertStringContainsString('class="contentguard-notice-message"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-label"', $html);
+        $this->assertStringContainsString('class="contentlatch-notice-message"', $html);
         $this->assertStringContainsString('We could not save this rule.', $html);
-        $this->assertStringContainsString('id="contentguard-rule-notice"', $html);
+        $this->assertStringContainsString('id="contentlatch-rule-notice"', $html);
         $this->assertStringContainsString('role="alert"', $html);
         $this->assertStringContainsString('tabindex="-1"', $html);
         $this->assertStringContainsString('value="7"', $html);
@@ -786,7 +786,7 @@ final class RuleEditorViewTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
+                    'field' => \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
                 )),
             ),
         ));
@@ -916,7 +916,7 @@ final class RuleEditorViewTest extends TestCase
     {
         $name = 'validations[' . $index . '][' . $kind . ']';
         $this->assertSame(1, preg_match(
-            '/<span class="contentguard-param-group contentguard-param-group--' . preg_quote($kind, '/') . '"([^>]*)>\s*<label[^>]*>[^<]*<\/label>\s*<input[^>]*name="' . preg_quote($name, '/') . '"([^>]*)>/',
+            '/<span class="contentlatch-param-group contentlatch-param-group--' . preg_quote($kind, '/') . '"([^>]*)>\s*<label[^>]*>[^<]*<\/label>\s*<input[^>]*name="' . preg_quote($name, '/') . '"([^>]*)>/',
             $html,
             $match
         ), $name . ' group missing');
@@ -941,7 +941,7 @@ final class RuleEditorViewTest extends TestCase
         require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
 
         $postTypes = array('product' => 'Product');
-        $view      = CONTENTGUARD_DIR . 'admin/views/rule-edit.php';
+        $view      = CONTENTLATCH_DIR . 'admin/views/rule-edit.php';
         ob_start();
         require $view;
 

@@ -2,14 +2,14 @@
 /**
  * In-memory field value provider for tests and fixtures.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
 
 final class ArrayValueProvider implements FieldValueProviderInterface
 {

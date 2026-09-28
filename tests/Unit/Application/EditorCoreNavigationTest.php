@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Domain\FieldRef;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Domain\FieldRef;
 use PHPUnit\Framework\TestCase;
 
 final class EditorCoreNavigationTest extends TestCase
@@ -70,9 +70,9 @@ final class EditorCoreNavigationTest extends TestCase
             'This field is required.',
             EditorCoreNavigation::SURFACE_GUTENBERG
         );
-        $this->assertStringContainsString('data-contentguard-core="title"', $title);
-        $this->assertStringContainsString('contentguard-warning-field', $title);
-        $this->assertStringNotContainsString('data-contentguard-field', $title);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $title);
+        $this->assertStringContainsString('contentlatch-warning-field', $title);
+        $this->assertStringNotContainsString('data-contentlatch-field', $title);
 
         $slugGutenberg = EditorFieldNavigation::clickableIssueHtml(
             'slug',
@@ -82,7 +82,7 @@ final class EditorCoreNavigationTest extends TestCase
             EditorCoreNavigation::SURFACE_GUTENBERG
         );
         $this->assertStringNotContainsString('<button', $slugGutenberg);
-        $this->assertStringNotContainsString('data-contentguard-core', $slugGutenberg);
+        $this->assertStringNotContainsString('data-contentlatch-core', $slugGutenberg);
         $this->assertSame('Slug — This field is required.', $slugGutenberg);
 
         $slugClassic = EditorFieldNavigation::clickableIssueHtml(
@@ -92,7 +92,7 @@ final class EditorCoreNavigationTest extends TestCase
             'This field is required.',
             EditorCoreNavigation::SURFACE_CLASSIC
         );
-        $this->assertStringContainsString('data-contentguard-core="slug"', $slugClassic);
+        $this->assertStringContainsString('data-contentlatch-core="slug"', $slugClassic);
 
         $authorGutenberg = EditorFieldNavigation::clickableIssueHtml(
             'author',
@@ -110,8 +110,8 @@ final class EditorCoreNavigationTest extends TestCase
             'This field is required.',
             EditorCoreNavigation::SURFACE_GUTENBERG
         );
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $acf);
-        $this->assertStringNotContainsString('data-contentguard-core', $acf);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $acf);
+        $this->assertStringNotContainsString('data-contentlatch-core', $acf);
     }
 
     public function testAuditUrlsAcceptCoreIdsWithoutTreatingThemAsAcfKeys(): void
@@ -122,16 +122,16 @@ final class EditorCoreNavigationTest extends TestCase
         $this->assertTrue(EditorFieldNavigation::isQueryTarget('field_description'));
         $this->assertFalse(EditorFieldNavigation::isQueryTarget('not-a-field'));
         $this->assertSame(
-            $edit . '&contentguard_field=title',
+            $edit . '&contentlatch_field=title',
             EditorFieldNavigation::appendToEditUrl($edit, 'title')
         );
         $this->assertSame(
             'title',
-            EditorFieldNavigation::requestedFieldKey(array('contentguard_field' => 'title'))
+            EditorFieldNavigation::requestedFieldKey(array('contentlatch_field' => 'title'))
         );
         $this->assertSame(
             '',
-            EditorFieldNavigation::requestedFieldKey(array('contentguard_field' => 'post_title'))
+            EditorFieldNavigation::requestedFieldKey(array('contentlatch_field' => 'post_title'))
         );
     }
 }

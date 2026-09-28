@@ -3,12 +3,12 @@
  * Structured result for one skipped rule, one validation, or one
  * condition-only match.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 final class EvaluationResult
 {

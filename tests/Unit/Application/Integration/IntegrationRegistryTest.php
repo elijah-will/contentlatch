@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Integration;
+namespace ContentLatch\Tests\Unit\Application\Integration;
 
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Application\Integration\IntegrationRegistry;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Application\Integration\IntegrationRegistry;
 use PHPUnit\Framework\TestCase;
 
 final class IntegrationRegistryTest extends TestCase

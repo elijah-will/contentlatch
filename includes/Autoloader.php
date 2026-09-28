@@ -2,18 +2,18 @@
 /**
  * PSR-4 autoloader used when Composer is not installed.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard;
+namespace ContentLatch;
 
 defined('ABSPATH') || exit;
 
 final class Autoloader
 {
-    private const PREFIX = 'ContentGuard\\';
+    private const PREFIX = 'ContentLatch\\';
 
     public static function register(): void
     {
@@ -27,7 +27,7 @@ final class Autoloader
         }
 
         $relative = str_replace('\\', '/', substr($class, strlen(self::PREFIX)));
-        $file     = CONTENTGUARD_DIR . 'includes/' . $relative . '.php';
+        $file     = CONTENTLATCH_DIR . 'includes/' . $relative . '.php';
 
         if (is_readable($file)) {
             require_once $file;

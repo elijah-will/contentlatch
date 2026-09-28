@@ -6,12 +6,12 @@
  * originated there must be unslashed once at the HTTP boundary before they
  * are stored or evaluated. Do not unslash already-clean in-memory data.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

@@ -1,11 +1,11 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -37,9 +37,9 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('.layout[data-layout="', $js);
         $this->assertStringContainsString('collapse-layout', $js);
         $this->assertStringContainsString('acf-flexible-content', $js);
-        $this->assertStringContainsString('data-contentguard-layout', $js);
-        $this->assertStringContainsString('data-contentguard-display-row', $js);
-        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
+        $this->assertStringContainsString('data-contentlatch-layout', $js);
+        $this->assertStringContainsString('data-contentlatch-display-row', $js);
+        $this->assertStringContainsString('data-contentlatch-repeater-path', $js);
         $this->assertStringContainsString('parseRepeaterPath', $js);
         $this->assertStringContainsString('findFieldInRepeaterPath', $js);
         $this->assertStringContainsString('realRepeaterRows', $js);
@@ -56,12 +56,12 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('.values', $js);
         $this->assertStringContainsString('displayRow', $js);
         $this->assertStringContainsString('(row "', $js);
-        $this->assertStringNotContainsString('contentguard_row', $js);
-        $this->assertStringNotContainsString('contentguard_layout=', $js);
-        $this->assertStringContainsString('contentguardNavigateToField', $js);
-        $this->assertStringContainsString('contentguardNavigateToCore', $js);
-        $this->assertStringContainsString('data-contentguard-field', $js);
-        $this->assertStringContainsString('data-contentguard-core', $js);
+        $this->assertStringNotContainsString('contentlatch_row', $js);
+        $this->assertStringNotContainsString('contentlatch_layout=', $js);
+        $this->assertStringContainsString('contentlatchNavigateToField', $js);
+        $this->assertStringContainsString('contentlatchNavigateToCore', $js);
+        $this->assertStringContainsString('data-contentlatch-field', $js);
+        $this->assertStringContainsString('data-contentlatch-core', $js);
         $this->assertStringContainsString('.editor-post-title__input', $js);
         $this->assertStringContainsString('h1.wp-block-post-title', $js);
         $this->assertStringContainsString('iframe[name="editor-canvas"]', $js);
@@ -88,7 +88,7 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringNotContainsString('css-', $js);
         $this->assertStringContainsString('autoNavigate', $js);
         $this->assertStringContainsString('scrollIntoView', $js);
-        $this->assertStringNotContainsString('contentguard-field-target', $js);
+        $this->assertStringNotContainsString('contentlatch-field-target', $js);
         $this->assertStringNotContainsString('clearHighlight', $js);
         $this->assertStringNotContainsString('4000', $js);
         $this->assertStringNotContainsString('warnings[0]', $js);
@@ -133,16 +133,16 @@ final class EditorFieldScriptTest extends TestCase
         $this->assertStringContainsString('.editor-post-featured-image', $js);
         $this->assertStringContainsString('openEditorPanel("featured-image")', $js);
         $this->assertStringContainsString('openEditorPanel("post-excerpt")', $js);
-        $this->assertStringContainsString('contentguardNavigateToField', $js);
+        $this->assertStringContainsString('contentlatchNavigateToField', $js);
         $this->assertStringContainsString('.acf-field[data-key="', $js);
         $this->assertStringContainsString('function navigateToField(', $js);
         $this->assertStringNotContainsString('toggleEditorPanelEnabled', $blockers);
-        $this->assertStringContainsString('data-contentguard-core', $blockers);
-        $this->assertStringContainsString('data-contentguard-field', $blockers);
+        $this->assertStringContainsString('data-contentlatch-core', $blockers);
+        $this->assertStringContainsString('data-contentlatch-field', $blockers);
         $this->assertStringContainsString('isClickableFailure', $blockers);
         $this->assertStringNotContainsString('toggleEditorPanelEnabled', $warnings);
-        $this->assertStringContainsString('data-contentguard-core', $warnings);
-        $this->assertStringContainsString('contentguardNavigateToField', $warnings);
+        $this->assertStringContainsString('data-contentlatch-core', $warnings);
+        $this->assertStringContainsString('contentlatchNavigateToField', $warnings);
     }
 
     public function testGutenbergCoreTitleAndContentUseCanvasDocumentsNotParentVisualEditor(): void
@@ -248,7 +248,7 @@ final class EditorFieldScriptTest extends TestCase
         preg_match('/document\.addEventListener\("click", function \(event\) \{.*?\n  \}\);/s', $js, $click);
         $this->assertNotSame(array(), $click);
         $this->assertStringContainsString('navigateToField(', $click[0]);
-        $this->assertStringContainsString('data-contentguard-repeater-path', $click[0]);
+        $this->assertStringContainsString('data-contentlatch-repeater-path', $click[0]);
         $this->assertStringNotContainsString('.edit-post-layout__metaboxes', $click[0]);
         $this->assertStringNotContainsString('stableGutenbergField', $click[0]);
         $this->assertStringNotContainsString('tryAuditArrival', $click[0]);

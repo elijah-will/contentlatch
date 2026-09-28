@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\Validation;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Validation;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class ValidationTest extends TestCase
@@ -22,7 +22,7 @@ final class ValidationTest extends TestCase
         $this->assertFalse($top->isEveryRow());
 
         $group = RuleFactory::validation(array(
-            'field' => new \ContentGuard\Domain\FieldRef(
+            'field' => new \ContentLatch\Domain\FieldRef(
                 'field_ingredients',
                 'ingredients',
                 'Product Details → Ingredients',
@@ -32,7 +32,7 @@ final class ValidationTest extends TestCase
         ));
         $this->assertArrayNotHasKey('quantifier', $group->toArray());
         $this->assertFalse($group->isEveryRow());
-        $this->assertSame(1, \ContentGuard\Domain\Rule::SCHEMA_VERSION);
+        $this->assertSame(1, \ContentLatch\Domain\Rule::SCHEMA_VERSION);
     }
 
     public function testRepeaterChildDefaultsToEveryRow(): void
@@ -58,14 +58,14 @@ final class ValidationTest extends TestCase
     public function testFlexibleChildIsEveryInstanceButNotRepeaterEveryRow(): void
     {
         $validation = RuleFactory::validation(array(
-            'field' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+            'field' => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
             'quantifier' => Validation::QUANTIFIER_EVERY,
         ));
 
         $this->assertFalse($validation->isEveryRow());
         $this->assertTrue($validation->isEveryInstance());
         $this->assertSame('every', $validation->toArray()['quantifier']);
-        $this->assertSame(1, \ContentGuard\Domain\Rule::SCHEMA_VERSION);
+        $this->assertSame(1, \ContentLatch\Domain\Rule::SCHEMA_VERSION);
     }
 
     public function testUnsupportedQuantifierIsRejected(): void

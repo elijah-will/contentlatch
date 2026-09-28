@@ -2,19 +2,19 @@
 /**
  * In-memory audit persistence for tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\Audit\AuditStoreInterface;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\Audit\AuditStoreInterface;
 
 final class InMemoryAuditStore implements AuditStoreInterface
 {

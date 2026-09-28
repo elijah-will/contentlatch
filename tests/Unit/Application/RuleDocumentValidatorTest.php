@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\Exception\UnknownOperatorException;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Exception\UnknownOperatorException;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleDocumentValidatorTest extends TestCase
@@ -70,7 +70,7 @@ final class RuleDocumentValidatorTest extends TestCase
         }
 
         $engineRule = Rule::fromArray($document);
-        $this->expectException(\ContentGuard\Domain\Exception\UnknownValidatorException::class);
+        $this->expectException(\ContentLatch\Domain\Exception\UnknownValidatorException::class);
         RuleEngine::v1()->evaluate(
             array($engineRule),
             new ArrayValueProvider(array('field_type' => 'sauce', 'field_ingredients' => 'ok'))

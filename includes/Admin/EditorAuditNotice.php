@@ -4,30 +4,30 @@
  *
  * Informational only. Save/publish validation is unchanged.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\EditorAuditIssues;
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\EditorAuditIssues;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Application\EditorNoticePresentation;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
 use WP_REST_Request;
 use WP_REST_Response;
 
 final class EditorAuditNotice
 {
-    public const REST_NAMESPACE = 'contentguard/v1';
+    public const REST_NAMESPACE = 'contentlatch/v1';
     public const REST_ROUTE     = '/editor-blockers/(?P<id>\d+)';
 
     /**
@@ -221,16 +221,16 @@ final class EditorAuditNotice
         EditorFieldFocus::enqueueAssets($request, self::navigationExtras($issues, $request));
 
         wp_register_script(
-            'contentguard-editor-audit',
-            CONTENTGUARD_URL . 'admin/js/editor-audit.js',
-            array('wp-api-fetch', 'wp-data', 'contentguard-editor-field'),
-            \ContentGuard\Plugin::VERSION,
+            'contentlatch-editor-audit',
+            CONTENTLATCH_URL . 'admin/js/editor-audit.js',
+            array('wp-api-fetch', 'wp-data', 'contentlatch-editor-field'),
+            \ContentLatch\Plugin::VERSION,
             true
         );
         $runId = EditorFieldNavigation::requestedRunId($request);
         wp_localize_script(
-            'contentguard-editor-audit',
-            'contentguardEditorAudit',
+            'contentlatch-editor-audit',
+            'contentlatchEditorAudit',
             array(
                 'html'     => EditorAuditIssues::noticeHtml($issues, EditorCoreNavigation::SURFACE_GUTENBERG),
                 'text'     => EditorAuditIssues::noticeText($issues),
@@ -238,7 +238,7 @@ final class EditorAuditNotice
                     . ($runId > 0 ? '?run=' . $runId : ''),
             )
         );
-        wp_enqueue_script('contentguard-editor-audit');
+        wp_enqueue_script('contentlatch-editor-audit');
     }
 
     public function onAdminNotices(): void
@@ -263,7 +263,7 @@ final class EditorAuditNotice
      * Navigation hints for the Audit field named in the editor URL.
      *
      * A single issue keeps its metadata. With several issues, the requested
-     * contentguard_field selects the matching issue when that match is unique
+     * contentlatch_field selects the matching issue when that match is unique
      * or every match names the same row. Differing rows are left unset.
      *
      * @param list<array{message?: string, label?: string, fieldKey?: string, layout?: string, affectedRows?: list<int>, repeaterPath?: list<array{repeater: string, display_row: int}>}> $issues

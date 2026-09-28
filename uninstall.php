@@ -1,24 +1,24 @@
 <?php
 /**
- * ContentGuard uninstall.
+ * ContentLatch uninstall.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
 defined('WP_UNINSTALL_PLUGIN') || exit;
 
-$contentguard_autoload = __DIR__ . '/vendor/autoload.php';
+$contentlatch_autoload = __DIR__ . '/vendor/autoload.php';
 
-if (is_readable($contentguard_autoload)) {
-    require_once $contentguard_autoload;
+if (is_readable($contentlatch_autoload)) {
+    require_once $contentlatch_autoload;
 } else {
     require_once __DIR__ . '/includes/Autoloader.php';
-    if (!defined('CONTENTGUARD_DIR')) {
-        define('CONTENTGUARD_DIR', __DIR__ . '/');
+    if (!defined('CONTENTLATCH_DIR')) {
+        define('CONTENTLATCH_DIR', __DIR__ . '/');
     }
-    ContentGuard\Autoloader::register();
+    ContentLatch\Autoloader::register();
 }
 
-ContentGuard\Uninstaller::run();
+ContentLatch\Uninstaller::run();

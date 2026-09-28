@@ -2,12 +2,12 @@
 /**
  * Result of a single validator invocation.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 final class ValidatorOutcome
 {

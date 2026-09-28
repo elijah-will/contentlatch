@@ -1,23 +1,23 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Audit;
+namespace ContentLatch\Tests\Unit\Application\Audit;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditFindingGroup;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\WordPress\AuditSchema;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditFindingGroup;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\WordPress\AuditSchema;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AcfCloneAuditTest extends TestCase
@@ -52,7 +52,7 @@ final class AcfCloneAuditTest extends TestCase
         );
 
         $evaluation = (new ContentEvaluator(
-            new \ContentGuard\Tests\Support\InMemoryRuleRepository($rules),
+            new \ContentLatch\Tests\Support\InMemoryRuleRepository($rules),
             RuleEngine::v1()
         ))->evaluate(
             9,
@@ -115,7 +115,7 @@ final class AcfCloneAuditTest extends TestCase
     {
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey(AcfCloneFixtures::cloneATitlePosted()));
         $this->assertStringContainsString(
-            'contentguard_field=' . AcfCloneFixtures::cloneATitlePosted(),
+            'contentlatch_field=' . AcfCloneFixtures::cloneATitlePosted(),
             EditorFieldNavigation::appendToEditUrl(
                 'http://example.test/wp-admin/post.php?post=9&action=edit',
                 AcfCloneFixtures::cloneATitlePosted()

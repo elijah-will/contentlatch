@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Infrastructure\ACF\AcfIncomingValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
 use PHPUnit\Framework\TestCase;
 
 final class AcfIncomingValueProviderTest extends TestCase

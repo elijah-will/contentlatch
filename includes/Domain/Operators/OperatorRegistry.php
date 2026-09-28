@@ -2,15 +2,15 @@
 /**
  * Condition operator registry.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Operators;
+namespace ContentLatch\Domain\Operators;
 
-use ContentGuard\Domain\Contracts\OperatorInterface;
-use ContentGuard\Domain\Exception\UnknownOperatorException;
+use ContentLatch\Domain\Contracts\OperatorInterface;
+use ContentLatch\Domain\Exception\UnknownOperatorException;
 
 final class OperatorRegistry
 {

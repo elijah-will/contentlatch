@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIncomingValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfStoredValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AcfGroupChildEvaluationTest extends TestCase
@@ -164,7 +164,7 @@ final class AcfGroupChildEvaluationTest extends TestCase
 
     /**
      * @param array<string, mixed> $store
-     * @param array<int, \ContentGuard\Domain\Rule> $rules
+     * @param array<int, \ContentLatch\Domain\Rule> $rules
      * @param array<string, string> $fieldTypes
      * @param array<string, list<string>> $fieldPaths
      */
@@ -173,7 +173,7 @@ final class AcfGroupChildEvaluationTest extends TestCase
         array $rules = array(),
         array $fieldTypes = array(),
         array $fieldPaths = array(),
-    ): \ContentGuard\Domain\ContentEvaluation {
+    ): \ContentLatch\Domain\ContentEvaluation {
         $rules = $rules === array() ? array($this->sauceIngredientsRule()) : $rules;
         $fieldTypes = $fieldTypes === array()
             ? array(
@@ -208,7 +208,7 @@ final class AcfGroupChildEvaluationTest extends TestCase
     /**
      * @param array<string, mixed> $payload
      */
-    private function evaluateIncoming(array $payload): \ContentGuard\Domain\ContentEvaluation
+    private function evaluateIncoming(array $payload): \ContentLatch\Domain\ContentEvaluation
     {
         $evaluator = new ContentEvaluator(
             new InMemoryRuleRepository(array($this->sauceIngredientsRule())),
@@ -232,7 +232,7 @@ final class AcfGroupChildEvaluationTest extends TestCase
         );
     }
 
-    private function sauceIngredientsRule(): \ContentGuard\Domain\Rule
+    private function sauceIngredientsRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(
             array(
@@ -263,7 +263,7 @@ final class AcfGroupChildEvaluationTest extends TestCase
         );
     }
 
-    private function caloriesRule(): \ContentGuard\Domain\Rule
+    private function caloriesRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(
             array(

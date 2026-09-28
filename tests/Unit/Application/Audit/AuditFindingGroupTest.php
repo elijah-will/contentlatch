@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Audit;
+namespace ContentLatch\Tests\Unit\Application\Audit;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditFindingGroup;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditFindingGroup;
+use ContentLatch\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
 final class AuditFindingGroupTest extends TestCase

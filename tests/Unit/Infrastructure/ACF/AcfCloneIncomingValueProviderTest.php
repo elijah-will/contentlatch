@@ -1,17 +1,17 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIncomingValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfCloneIncomingValueProviderTest extends TestCase

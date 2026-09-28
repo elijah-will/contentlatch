@@ -2,12 +2,12 @@
 /**
  * Admin view partial loader.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
@@ -18,7 +18,7 @@ final class AdminView
      */
     public static function partial(string $name, array $vars = array()): void
     {
-        $file = CONTENTGUARD_DIR . 'admin/views/partials/' . $name . '.php';
+        $file = CONTENTLATCH_DIR . 'admin/views/partials/' . $name . '.php';
         if (!is_readable($file)) {
             return;
         }

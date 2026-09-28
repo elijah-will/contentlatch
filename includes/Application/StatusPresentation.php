@@ -4,35 +4,35 @@
  *
  * Stored values stay unchanged. This is presentation only.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
 
 final class StatusPresentation
 {
     public static function label(string $status): string
     {
         return match ($status) {
-            'active'          => __('Active', 'contentguard'),
-            'inactive'        => __('Inactive', 'contentguard'),
-            'fail', 'blocking' => __('Blocking', 'contentguard'),
-            'warning'         => __('Warning', 'contentguard'),
-            'complete', 'completed' => __('Completed', 'contentguard'),
-            'running'         => __('Running', 'contentguard'),
-            'cancelled'       => __('Cancelled', 'contentguard'),
-            'failed'          => __('Failed', 'contentguard'),
-            'need_attention'  => __('Need attention', 'contentguard'),
-            'need_review'     => __('Need review', 'contentguard'),
-            'pending'         => __('Pending', 'contentguard'),
+            'active'          => __('Active', 'contentlatch'),
+            'inactive'        => __('Inactive', 'contentlatch'),
+            'fail', 'blocking' => __('Blocking', 'contentlatch'),
+            'warning'         => __('Warning', 'contentlatch'),
+            'complete', 'completed' => __('Completed', 'contentlatch'),
+            'running'         => __('Running', 'contentlatch'),
+            'cancelled'       => __('Cancelled', 'contentlatch'),
+            'failed'          => __('Failed', 'contentlatch'),
+            'need_attention'  => __('Need attention', 'contentlatch'),
+            'need_review'     => __('Need review', 'contentlatch'),
+            'pending'         => __('Pending', 'contentlatch'),
             default           => $status,
         };
     }

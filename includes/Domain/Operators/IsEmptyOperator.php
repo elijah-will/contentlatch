@@ -2,15 +2,15 @@
 /**
  * Field is empty.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Operators;
+namespace ContentLatch\Domain\Operators;
 
-use ContentGuard\Domain\Contracts\OperatorInterface;
-use ContentGuard\Domain\Value;
+use ContentLatch\Domain\Contracts\OperatorInterface;
+use ContentLatch\Domain\Value;
 
 final class IsEmptyOperator implements OperatorInterface
 {

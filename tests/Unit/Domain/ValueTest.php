@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\Value;
+use ContentLatch\Domain\Value;
 use PHPUnit\Framework\TestCase;
 
 final class ValueTest extends TestCase

@@ -4,16 +4,16 @@
  *
  * Inactive rules are filtered here, not in the domain engine.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Rule;
+use ContentLatch\Domain\Rule;
 
 interface RuleRepositoryInterface
 {

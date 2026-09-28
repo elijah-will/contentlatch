@@ -1,21 +1,21 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\CoreSaveValidator;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\CoreSaveValidator;
+use ContentLatch\Infrastructure\WordPress\HttpRequest;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 3) . '/Support/wordpress-rest-functions.php';
@@ -31,8 +31,8 @@ final class CoreSaveValidatorTest extends TestCase
     protected function setUp(): void
     {
         $this->deaths = array();
-        $GLOBALS['contentguard_test_post_fields'] = array();
-        $GLOBALS['contentguard_test_thumbnails'] = array();
+        $GLOBALS['contentlatch_test_post_fields'] = array();
+        $GLOBALS['contentlatch_test_thumbnails'] = array();
         $_POST = array();
     }
 
@@ -78,7 +78,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testPublishedToDraftWithInvalidTitleIsAllowed(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing Title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing Title');
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate(array(
@@ -98,7 +98,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testDraftToPublishWithInvalidTitleIsBlocked(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing Title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing Title');
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate(array(
@@ -118,7 +118,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testPublishedToDraftWithRemovedFeaturedImageIsAllowed(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][42] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][42] = 123;
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::featuredImageRef())))
             ->validate(array(
@@ -139,7 +139,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testPublishedToPrivateWithInvalidTitleIsBlocked(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing Title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing Title');
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate(array(
@@ -253,7 +253,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testExplicitEmptySubmittedTitleWinsOverStoredValue(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing title');
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate($this->publishRequest(array('post_title' => '')));
@@ -263,7 +263,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testOmittedTitleOnExistingPostUsesStoredValue(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][42] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][42] = array('post_title' => 'Existing title');
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate($this->omitting($this->publishRequest(array(
@@ -275,7 +275,7 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testOmittedFeaturedImageOnExistingPostUsesStoredThumbnail(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][42] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][42] = 123;
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::featuredImageRef())))
             ->validate($this->publishRequest(array(
@@ -287,8 +287,8 @@ final class CoreSaveValidatorTest extends TestCase
 
     public function testNewPostDoesNotInventStoredCoreValues(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][0] = array('post_title' => 'Should not be used');
-        $GLOBALS['contentguard_test_thumbnails'][0] = 99;
+        $GLOBALS['contentlatch_test_post_fields'][0] = array('post_title' => 'Should not be used');
+        $GLOBALS['contentlatch_test_thumbnails'][0] = 99;
 
         $messages = $this->validator(array($this->required(CoreCatalogFixtures::titleRef())))
             ->validate($this->omitting($this->publishRequest(array(
@@ -396,10 +396,10 @@ final class CoreSaveValidatorTest extends TestCase
             ->onLoadPost();
 
         $this->assertCount(1, $this->deaths);
-        $this->assertStringContainsString('ContentGuard · Blocking', $this->deaths[0]['message']);
+        $this->assertStringContainsString('ContentLatch · Blocking', $this->deaths[0]['message']);
         $this->assertStringContainsString('Title — This field is required.', $this->deaths[0]['message']);
-        $this->assertStringContainsString('contentguard-audit-blockers', $this->deaths[0]['message']);
-        $this->assertSame('ContentGuard · Blocking', $this->deaths[0]['title']);
+        $this->assertStringContainsString('contentlatch-audit-blockers', $this->deaths[0]['message']);
+        $this->assertSame('ContentLatch · Blocking', $this->deaths[0]['title']);
         $this->assertTrue($this->deaths[0]['args']['back_link']);
         $this->assertSame(400, $this->deaths[0]['args']['response']);
         $this->assertStringNotContainsString('blocking issues', $this->deaths[0]['message']);
@@ -420,8 +420,8 @@ final class CoreSaveValidatorTest extends TestCase
         ))->onLoadPost();
 
         $html = $this->deaths[0]['message'];
-        $this->assertSame('ContentGuard · Blocking', $this->deaths[0]['title']);
-        $this->assertStringContainsString('ContentGuard · Blocking', $html);
+        $this->assertSame('ContentLatch · Blocking', $this->deaths[0]['title']);
+        $this->assertStringContainsString('ContentLatch · Blocking', $html);
         $this->assertStringContainsString('3 blocking issues', $html);
         $this->assertStringContainsString('<li>Title — This field is required.</li>', $html);
         $this->assertStringContainsString('<li>Content — This field is required.</li>', $html);
@@ -765,7 +765,7 @@ final class CoreSaveValidatorTest extends TestCase
     /**
      * @param array<string, mixed> $overrides
      */
-    private function required(\ContentGuard\Domain\FieldRef $field, array $overrides = array()): \ContentGuard\Domain\Rule
+    private function required(\ContentLatch\Domain\FieldRef $field, array $overrides = array()): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array_merge(
             array(

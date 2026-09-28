@@ -2,12 +2,12 @@
 /**
  * Human-readable field values for admin presentation.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
@@ -21,7 +21,7 @@ final class FieldValuePresentation
     public static function label(mixed $value, ?string $fieldType): string
     {
         if (self::isTrueFalse($fieldType) && self::isTrueFalseBit($value)) {
-            return self::isYes($value) ? __('Yes', 'contentguard') : __('No', 'contentguard');
+            return self::isYes($value) ? __('Yes', 'contentlatch') : __('No', 'contentlatch');
         }
 
         return self::scalar($value);

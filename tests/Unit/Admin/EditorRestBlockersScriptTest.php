@@ -1,11 +1,11 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -15,22 +15,22 @@ final class EditorRestBlockersScriptTest extends TestCase
     {
         $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-rest-blockers.js');
 
-        $this->assertStringContainsString('contentguard_validation_failed', $js);
-        $this->assertStringContainsString('isContentGuardError', $js);
+        $this->assertStringContainsString('contentlatch_validation_failed', $js);
+        $this->assertStringContainsString('isContentLatchError', $js);
         $this->assertStringContainsString('error.code', $js);
         $this->assertStringContainsString('data.failures', $js);
-        $this->assertStringContainsString('__("ContentGuard")', $js);
+        $this->assertStringContainsString('__("ContentLatch")', $js);
         $this->assertStringContainsString('" · "', $js);
-        $this->assertStringContainsString('contentguard-audit-blockers', $js);
-        $this->assertStringContainsString('contentguard-audit-blockers__title', $js);
-        $this->assertStringContainsString('contentguard-audit-blockers__list', $js);
+        $this->assertStringContainsString('contentlatch-audit-blockers', $js);
+        $this->assertStringContainsString('contentlatch-audit-blockers__title', $js);
+        $this->assertStringContainsString('contentlatch-audit-blockers__list', $js);
         $this->assertStringContainsString('html += "<li>" + item + "</li>";', $js);
-        $this->assertStringContainsString('data-contentguard-core', $js);
-        $this->assertStringContainsString('data-contentguard-field', $js);
+        $this->assertStringContainsString('data-contentlatch-core', $js);
+        $this->assertStringContainsString('data-contentlatch-field', $js);
         $this->assertStringContainsString('failure.repeaterPath', $js);
-        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
-        $this->assertStringContainsString('data-contentguard-layout', $js);
-        $this->assertStringContainsString('contentguard-warning-field', $js);
+        $this->assertStringContainsString('data-contentlatch-repeater-path', $js);
+        $this->assertStringContainsString('data-contentlatch-layout', $js);
+        $this->assertStringContainsString('contentlatch-warning-field', $js);
         $this->assertStringContainsString('isClickableFailure', $js);
         $this->assertStringContainsString('featured_image', $js);
         $this->assertStringNotContainsString("error.message + '. '", $js);
@@ -56,9 +56,9 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringNotContainsString('status === 400', $js);
         $this->assertStringNotContainsString('status == 400', $js);
         $this->assertStringNotContainsString('createNotice("warning"', $js);
-        $this->assertStringNotContainsString('contentguard-editor-warnings', $js);
+        $this->assertStringNotContainsString('contentlatch-editor-warnings', $js);
         $this->assertStringNotContainsString('wp.element.createElement', $js);
-        $this->assertStringNotContainsString('contentguardNavigateToField', $js);
+        $this->assertStringNotContainsString('contentlatchNavigateToField', $js);
         $this->assertStringNotContainsString('equals', $js);
         $this->assertStringNotContainsString('min_length', $js);
         $this->assertStringNotContainsString('IncomingSaveEvaluator', $js);
@@ -74,27 +74,27 @@ final class EditorRestBlockersScriptTest extends TestCase
 
         $this->assertStringContainsString('acf.addFilter("validation_complete"', $js);
         $this->assertStringContainsString('acf.addAction("validation_failure"', $js);
-        $this->assertStringContainsString('error.contentguard', $js);
+        $this->assertStringContainsString('error.contentlatch', $js);
         $this->assertStringContainsString('function contentGuardIssueFromAcfError', $js);
         $this->assertStringContainsString('payload.field || payload.fieldKey', $js);
-        $this->assertStringContainsString('collectAcfContentGuardIssues', $js);
-        $this->assertStringContainsString('showAcfContentGuardNotice', $js);
+        $this->assertStringContainsString('collectAcfContentLatchIssues', $js);
+        $this->assertStringContainsString('showAcfContentLatchNotice', $js);
         $this->assertStringContainsString('bindAcfValidationHooks.bound', $js);
         $this->assertStringContainsString('DOMContentLoaded', $js);
         $this->assertStringContainsString('buildNotice({', $js);
         $this->assertStringContainsString('data: { failures: failures }', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
         $this->assertStringContainsString('id: NOTICE_ID', $js);
-        $this->assertStringContainsString('contentguard-audit-blockers', $js);
+        $this->assertStringContainsString('contentlatch-audit-blockers', $js);
         $this->assertStringContainsString('acf-validation', $js);
         $this->assertStringContainsString('suppressAcfValidationNotice', $js);
         $this->assertStringContainsString('queueAcfValidationNoticeSuppress', $js);
         $this->assertStringContainsString('shownFromAcfValidation', $js);
-        $this->assertStringContainsString('contentguard_validation_failed', $js);
+        $this->assertStringContainsString('contentlatch_validation_failed', $js);
         $this->assertStringContainsString('failure.repeaterPath', $js);
-        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
-        $this->assertStringContainsString('data-contentguard-layout', $js);
-        $this->assertStringContainsString('data-contentguard-field', $js);
+        $this->assertStringContainsString('data-contentlatch-repeater-path', $js);
+        $this->assertStringContainsString('data-contentlatch-layout', $js);
+        $this->assertStringContainsString('data-contentlatch-field', $js);
         $this->assertStringNotContainsString('innerText', $js);
         $this->assertStringNotContainsString('textContent', $js);
         $this->assertStringNotContainsString('acf-notice', $js);
@@ -102,9 +102,9 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringNotContainsString('show_in_rest', $js);
         $this->assertStringNotContainsString('setInterval', $js);
         $this->assertStringNotContainsString('acf.addFilter("validation_complete"', $field);
-        $this->assertStringNotContainsString('error.contentguard', $field);
+        $this->assertStringNotContainsString('error.contentlatch', $field);
         $this->assertStringNotContainsString('acf.addFilter("validation_complete"', $warnings);
-        $this->assertStringNotContainsString('error.contentguard', $warnings);
+        $this->assertStringNotContainsString('error.contentlatch', $warnings);
         $this->assertStringNotContainsString('acf-validation', $warnings);
     }
 
@@ -118,13 +118,13 @@ final class EditorRestBlockersScriptTest extends TestCase
         $this->assertStringContainsString('lastNoticeHtml', $js);
         $this->assertStringContainsString('afterCurrentCycle(hideBlockingNotice)', $js);
         $this->assertStringContainsString('afterCurrentCycle(function () {', $js);
-        $this->assertStringContainsString('showContentGuardError(error)', $js);
+        $this->assertStringContainsString('showContentLatchError(error)', $js);
         $this->assertStringContainsString('wasSaving = isSaving', $js);
         $this->assertStringContainsString('if (!editor || dispatchingNotice)', $js);
         $this->assertStringContainsString('afterCurrentCycle(suppressGutenbergSaveNotice)', $js);
         $this->assertStringContainsString('shouldReplaceNativeSaveNotice', $js);
         $this->assertStringContainsString('shownFromSave', $js);
-        $this->assertStringNotContainsString('showContentGuardError(lastSaveError())', $js);
+        $this->assertStringNotContainsString('showContentLatchError(lastSaveError())', $js);
     }
 
     public function testWarningAndAuditScriptsStayOnTheirOwnNotices(): void
@@ -132,12 +132,12 @@ final class EditorRestBlockersScriptTest extends TestCase
         $warnings = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-warnings.js');
         $audit    = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-audit.js');
 
-        $this->assertStringNotContainsString('contentguard_validation_failed', $warnings);
+        $this->assertStringNotContainsString('contentlatch_validation_failed', $warnings);
         $this->assertStringNotContainsString('SAVE_POST_NOTICE_ID', $warnings);
         $this->assertStringContainsString('createNotice("warning"', $warnings);
-        $this->assertStringContainsString('contentguard-editor-warnings', $warnings);
-        $this->assertStringNotContainsString('contentguard_validation_failed', $audit);
-        $this->assertStringContainsString('contentguard-audit-blockers', $audit);
+        $this->assertStringContainsString('contentlatch-editor-warnings', $warnings);
+        $this->assertStringNotContainsString('contentlatch_validation_failed', $audit);
+        $this->assertStringContainsString('contentlatch-audit-blockers', $audit);
         $this->assertStringContainsString('createNotice("error"', $audit);
     }
 }

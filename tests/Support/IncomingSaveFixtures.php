@@ -2,20 +2,20 @@
 /**
  * Incoming save-evaluation composition for tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
 
 final class IncomingSaveFixtures
 {

@@ -2,21 +2,21 @@
 /**
  * WordPress Core integration adapter.
  *
- * Native post fields become ContentGuard catalog/provider values. RuleEngine
+ * Native post fields become ContentLatch catalog/provider values. RuleEngine
  * and FieldRef stay integration-agnostic.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
 
 final class CoreIntegration implements FieldCatalog
 {

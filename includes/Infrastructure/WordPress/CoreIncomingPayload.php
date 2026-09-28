@@ -5,12 +5,12 @@
  * Does not generate slugs, query the database, or invent omitted fields.
  * An empty result means this request did not include Core values.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

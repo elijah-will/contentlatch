@@ -1,11 +1,11 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -15,9 +15,9 @@ final class EditorWarningsScriptTest extends TestCase
     {
         $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-warnings.js');
 
-        $this->assertStringContainsString('contentguardNavigateToField', $js);
-        $this->assertStringContainsString('data-contentguard-field', $js);
-        $this->assertStringContainsString('data-contentguard-core', $js);
+        $this->assertStringContainsString('contentlatchNavigateToField', $js);
+        $this->assertStringContainsString('data-contentlatch-field', $js);
+        $this->assertStringContainsString('data-contentlatch-core', $js);
         $this->assertStringContainsString('featured_image', $js);
         $this->assertStringContainsString('warning.fieldKey', $js);
         $this->assertStringContainsString('warning.message', $js);
@@ -26,14 +26,14 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('warning.layout', $js);
         $this->assertStringContainsString('warning.affectedRows', $js);
         $this->assertStringContainsString('warning.repeaterPath', $js);
-        $this->assertStringContainsString('data-contentguard-display-row', $js);
-        $this->assertStringContainsString('data-contentguard-layout', $js);
-        $this->assertStringContainsString('data-contentguard-repeater-path', $js);
+        $this->assertStringContainsString('data-contentlatch-display-row', $js);
+        $this->assertStringContainsString('data-contentlatch-layout', $js);
+        $this->assertStringContainsString('data-contentlatch-repeater-path', $js);
         $this->assertStringContainsString('field_[A-Za-z0-9]+', $js);
         $this->assertStringContainsString('payload.warnings', $js);
         $this->assertStringContainsString('didPostSaveRequestSucceed', $js);
-        $this->assertStringContainsString('contentguard-editor-warnings', $js);
-        $this->assertStringContainsString('__("ContentGuard")', $js);
+        $this->assertStringContainsString('contentlatch-editor-warnings', $js);
+        $this->assertStringContainsString('__("ContentLatch")', $js);
         $this->assertStringContainsString('" · "', $js);
         $this->assertStringContainsString('createNotice("warning", html', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
@@ -45,15 +45,15 @@ final class EditorWarningsScriptTest extends TestCase
         $this->assertStringContainsString('payload.text', $js);
         $this->assertStringNotContainsString('wp.element.createElement', $js);
         $this->assertStringNotContainsString('JSON.stringify', $js);
-        $this->assertStringNotContainsString('contentguardEditorField.fieldKey', $js);
+        $this->assertStringNotContainsString('contentlatchEditorField.fieldKey', $js);
         $this->assertStringNotContainsString('config.fieldKey', $js);
         $this->assertStringNotContainsString('warnings[0].fieldKey', $js);
         $this->assertStringNotContainsString('createNotice("warning", warning', $js);
         $this->assertStringNotContainsString("createNotice('warning', warning", $js);
         $this->assertStringContainsString('refreshFromRest', $js);
         $this->assertStringContainsString('isAutosavingPost', $js);
-        $this->assertStringNotContainsString('contentguard-audit-blockers', $js);
+        $this->assertStringNotContainsString('contentlatch-audit-blockers', $js);
         $this->assertStringNotContainsString('editor-blockers', $js);
-        $this->assertStringNotContainsString('contentguard_row', $js);
+        $this->assertStringNotContainsString('contentlatch_row', $js);
     }
 }

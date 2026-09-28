@@ -2,12 +2,12 @@
 /**
  * Runtime dependency checks (PHP, WordPress, ACF).
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard;
+namespace ContentLatch;
 
 defined('ABSPATH') || exit;
 
@@ -68,7 +68,7 @@ final class Dependencies
         if (!$this->phpMeetsMinimum()) {
             return sprintf(
                 /* translators: %s: minimum PHP version */
-                __('ContentGuard requires PHP %s or higher.', 'contentguard'),
+                __('ContentLatch requires PHP %s or higher.', 'contentlatch'),
                 Plugin::MIN_PHP
             );
         }
@@ -76,18 +76,18 @@ final class Dependencies
         if (!$this->wordpressMeetsMinimum()) {
             return sprintf(
                 /* translators: %s: minimum WordPress version */
-                __('ContentGuard requires WordPress %s or higher.', 'contentguard'),
+                __('ContentLatch requires WordPress %s or higher.', 'contentlatch'),
                 Plugin::MIN_WP
             );
         }
 
         if (!defined('ACF_VERSION')) {
-            return __('ContentGuard requires Advanced Custom Fields 6.0 or higher (Free or Pro).', 'contentguard');
+            return __('ContentLatch requires Advanced Custom Fields 6.0 or higher (Free or Pro).', 'contentlatch');
         }
 
         return sprintf(
             /* translators: %s: minimum ACF version */
-            __('ContentGuard requires Advanced Custom Fields %s or higher (Free or Pro).', 'contentguard'),
+            __('ContentLatch requires Advanced Custom Fields %s or higher (Free or Pro).', 'contentlatch'),
             Plugin::MIN_ACF
         );
     }

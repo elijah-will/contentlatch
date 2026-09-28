@@ -2,12 +2,12 @@
 /**
  * ID-only post scanner for audits.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
@@ -15,8 +15,8 @@ defined('ABSPATH') || exit;
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Cursor pagination must read live wp_posts rows, not object cache.
 // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Uses $wpdb->posts plus generated %s/%d placeholders; all values pass through $wpdb->prepare.
 
-use ContentGuard\Application\Audit\AuditPost;
-use ContentGuard\Application\Audit\AuditPostScanner;
+use ContentLatch\Application\Audit\AuditPost;
+use ContentLatch\Application\Audit\AuditPostScanner;
 
 final class WpAuditPostScanner implements AuditPostScanner
 {

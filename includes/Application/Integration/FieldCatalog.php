@@ -6,12 +6,12 @@
  * array shape RuleDocumentFactory already consumes. The factory allowlists by
  * catalog membership for the selected post type, not by a field_* prefix.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Integration;
+namespace ContentLatch\Application\Integration;
 
 defined('ABSPATH') || exit;
 

@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Dependencies;
-use ContentGuard\Plugin;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Dependencies;
+use ContentLatch\Plugin;
 use PHPUnit\Framework\TestCase;
 
 final class PluginIntegrationCompositionTest extends TestCase
@@ -34,7 +34,7 @@ final class PluginIntegrationCompositionTest extends TestCase
         $this->assertFalse($plugin->integrations()->has('yoast'));
         $this->assertSame($plugin->fieldCatalog(), $plugin->fieldCatalog());
         $this->assertInstanceOf(
-            \ContentGuard\Application\IncomingSaveEvaluator::class,
+            \ContentLatch\Application\IncomingSaveEvaluator::class,
             $plugin->incomingSaveEvaluator()
         );
     }

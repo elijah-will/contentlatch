@@ -9,31 +9,31 @@
  * hard save failure. Post-save warning notices are handled by
  * SaveWarningNotifier.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Application\DomainMessages;
-use ContentGuard\Application\EditorAuditIssues;
-use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\CoreIncomingPayload;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Application\DomainMessages;
+use ContentLatch\Application\EditorAuditIssues;
+use ContentLatch\Application\EditorNoticePresentation;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreIncomingPayload;
 use Throwable;
 
 final class AcfSaveValidator
 {
     /**
      * @param callable(string $input, string $message): void $addError
-     * @param callable(string $input, array<string, mixed> $contentguard): void|null $decorateError
+     * @param callable(string $input, array<string, mixed> $contentlatch): void|null $decorateError
      */
     public function __construct(
         private RuleRepositoryInterface $repository,
@@ -150,7 +150,7 @@ final class AcfSaveValidator
             $this->validateUnsafe($request, $acfPayload);
         } catch (Throwable $exception) {
             if (defined('WP_DEBUG') && WP_DEBUG && function_exists('error_log')) {
-                error_log('ContentGuard save validation failed safely: ' . $exception->getMessage());
+                error_log('ContentLatch save validation failed safely: ' . $exception->getMessage());
             }
         }
     }
@@ -204,7 +204,7 @@ final class AcfSaveValidator
             if ($error['input'] === '') {
                 $coreLines[] = $error['message'];
             } else {
-                $error['contentguard'] = $this->contentGuardMetadata($result);
+                $error['contentlatch'] = $this->contentGuardMetadata($result);
                 $fieldErrors[]         = $error;
             }
         }
@@ -230,16 +230,16 @@ final class AcfSaveValidator
                 continue;
             }
 
-            $this->attachContentGuardMetadata(
+            $this->attachContentLatchMetadata(
                 $error['input'],
-                is_array($error['contentguard'] ?? null) ? $error['contentguard'] : array()
+                is_array($error['contentlatch'] ?? null) ? $error['contentlatch'] : array()
             );
         }
     }
 
     /**
      * Classic post form includes post_status. Gutenberg ACF AJAX does not.
-     * contentguard_field is navigation-only and is not consulted here.
+     * contentlatch_field is navigation-only and is not consulted here.
      *
      * @param array<string, mixed> $request
      */
@@ -372,33 +372,33 @@ final class AcfSaveValidator
     }
 
     /**
-     * @param array<string, mixed> $contentguard
+     * @param array<string, mixed> $contentlatch
      */
-    private function attachContentGuardMetadata(string $input, array $contentguard): void
+    private function attachContentLatchMetadata(string $input, array $contentlatch): void
     {
-        if ($contentguard === array()) {
+        if ($contentlatch === array()) {
             return;
         }
 
         $decorate = $this->decorateError;
         if (is_callable($decorate)) {
-            $decorate($input, $contentguard);
+            $decorate($input, $contentlatch);
 
             return;
         }
 
-        self::decorateAcfValidationError($input, $contentguard);
+        self::decorateAcfValidationError($input, $contentlatch);
     }
 
     /**
      * Narrowest ACF hook: extra keys on the error object we just added.
      * ACF 6.8.9 only stores input/message; unknown keys survive JSON.
      *
-     * @param array<string, mixed> $contentguard
+     * @param array<string, mixed> $contentlatch
      */
-    private static function decorateAcfValidationError(string $input, array $contentguard): void
+    private static function decorateAcfValidationError(string $input, array $contentlatch): void
     {
-        if ($contentguard === array() || !function_exists('acf')) {
+        if ($contentlatch === array() || !function_exists('acf')) {
             return;
         }
 
@@ -415,11 +415,11 @@ final class AcfSaveValidator
             if (!is_array($error) || (string) ($error['input'] ?? '') !== $input) {
                 continue;
             }
-            if (array_key_exists('contentguard', $error)) {
+            if (array_key_exists('contentlatch', $error)) {
                 continue;
             }
 
-            $acf->validation->errors[$i]['contentguard'] = $contentguard;
+            $acf->validation->errors[$i]['contentlatch'] = $contentlatch;
 
             return;
         }
@@ -451,7 +451,7 @@ final class AcfSaveValidator
         if ($displayRow > 0 && $layout === '') {
             return sprintf(
                 /* translators: 1: validation message. 2: 1-based row number. */
-                __('%1$s in row %2$d.', 'contentguard'),
+                __('%1$s in row %2$d.', 'contentlatch'),
                 rtrim($line, '.'),
                 $displayRow
             );

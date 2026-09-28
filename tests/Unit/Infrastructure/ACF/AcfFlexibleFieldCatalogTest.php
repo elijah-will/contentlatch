@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Tests\Support\AcfFlexibleFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Tests\Support\AcfFlexibleFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfFlexibleFieldCatalogTest extends TestCase

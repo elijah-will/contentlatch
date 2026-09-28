@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\AuditAdminRequest;
-use ContentGuard\Admin\AuditPage;
+use ContentLatch\Admin\AuditAdminRequest;
+use ContentLatch\Admin\AuditPage;
 use PHPUnit\Framework\TestCase;
 
 final class AuditAdminRequestTest extends TestCase
@@ -22,8 +22,8 @@ final class AuditAdminRequestTest extends TestCase
         $this->assertTrue(AuditAdminRequest::reservedPostTypeWouldBreakAuditPage($get));
         $this->assertTrue(AuditAdminRequest::apply($get, $request, $post));
 
-        $this->assertSame('recipe', $get['cg_type']);
-        $this->assertSame('recipe', $request['cg_type']);
+        $this->assertSame('recipe', $get['cl_type']);
+        $this->assertSame('recipe', $request['cl_type']);
         $this->assertArrayNotHasKey('post_type', $get);
         $this->assertArrayNotHasKey('post_type', $request);
         $this->assertArrayNotHasKey('post_type', $post);
@@ -34,18 +34,18 @@ final class AuditAdminRequestTest extends TestCase
 
     public function testExistingSafeTypeParamIsKeptAndPostTypeIsStillRemoved(): void
     {
-        $get     = array('page' => AuditPage::SLUG, 'cg_type' => 'product', 'post_type' => 'recipe');
+        $get     = array('page' => AuditPage::SLUG, 'cl_type' => 'product', 'post_type' => 'recipe');
         $request = $get;
         $post    = array();
 
         $this->assertTrue(AuditAdminRequest::apply($get, $request, $post));
-        $this->assertSame('product', $get['cg_type']);
+        $this->assertSame('product', $get['cl_type']);
         $this->assertArrayNotHasKey('post_type', $get);
     }
 
     public function testNonAuditRequestsAreLeftAlone(): void
     {
-        $get     = array('page' => 'contentguard', 'post_type' => 'recipe');
+        $get     = array('page' => 'contentlatch', 'post_type' => 'recipe');
         $request = $get;
         $post    = array();
 
@@ -58,8 +58,8 @@ final class AuditAdminRequestTest extends TestCase
         $get = array(
             'post'             => '42',
             'action'           => 'edit',
-            'contentguard_run' => '7',
-            'contentguard_field' => 'field_123abc',
+            'contentlatch_run' => '7',
+            'contentlatch_field' => 'field_123abc',
         );
 
         $this->assertFalse(AuditAdminRequest::reservedPostTypeWouldBreakAuditPage($get));

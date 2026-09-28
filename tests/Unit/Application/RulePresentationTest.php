@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\FieldValuePresentation;
-use ContentGuard\Application\RulePresentation;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\FieldValuePresentation;
+use ContentLatch\Application\RulePresentation;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RulePresentationTest extends TestCase

@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfSaveValidator;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AcfSaveValidatorCoreTest extends TestCase
@@ -34,8 +34,8 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
         $this->assertSame('', $this->errors[0]['input']);
         $this->assertCount(1, $this->errors);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $this->errors[0]['message']);
         $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
     }
 
@@ -132,8 +132,8 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
         $this->assertSame('', $this->errors[0]['input']);
         $this->assertCount(1, $this->errors);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $this->errors[0]['message']);
         $this->assertStringContainsString('>Title</button> — Title is required.', $this->errors[0]['message']);
     }
 
@@ -163,7 +163,7 @@ final class AcfSaveValidatorCoreTest extends TestCase
         );
 
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertStringContainsString('>Ingredients</button> — Ingredients are required.', $this->errors[0]['message']);
         $this->assertSame(
             array(
@@ -192,17 +192,17 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
         $this->assertSame('', $this->errors[0]['input']);
         $this->assertCount(1, $this->errors);
-        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="featured_image"', $this->errors[0]['message']);
+        $this->assertStringContainsString("ContentLatch · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="content"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="featured_image"', $this->errors[0]['message']);
         $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringContainsString('>Content</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringContainsString('>Featured Image</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
     }
 
-    public function testClassicConditionOnlyBlockingUsesContentGuardTitle(): void
+    public function testClassicConditionOnlyBlockingUsesContentLatchTitle(): void
     {
         $this->validate(
             array(
@@ -224,8 +224,8 @@ final class AcfSaveValidatorCoreTest extends TestCase
 
         $this->assertSame('', $this->errors[0]['input']);
         $this->assertCount(1, $this->errors);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="content"', $this->errors[0]['message']);
         $this->assertStringContainsString(
             '>Content</button> — This content matches the rule condition.',
             $this->errors[0]['message']
@@ -248,10 +248,10 @@ final class AcfSaveValidatorCoreTest extends TestCase
         );
 
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringContainsString("ContentGuard · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="title"', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-core="content"', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="field_ingredients"', $this->errors[0]['message']);
+        $this->assertStringContainsString("ContentLatch · Blocking\n3 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-core="content"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="field_ingredients"', $this->errors[0]['message']);
         $this->assertStringContainsString('>Title</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringContainsString('>Content</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringContainsString('>Ingredients</button> — This field is required.', $this->errors[0]['message']);
@@ -310,12 +310,12 @@ final class AcfSaveValidatorCoreTest extends TestCase
         $validator->validate($request, $acfPayload);
     }
 
-    private function titleRequired(): \ContentGuard\Domain\Rule
+    private function titleRequired(): \ContentLatch\Domain\Rule
     {
         return $this->required(CoreCatalogFixtures::titleRef());
     }
 
-    private function required(\ContentGuard\Domain\FieldRef $field): \ContentGuard\Domain\Rule
+    private function required(\ContentLatch\Domain\FieldRef $field): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'postType'    => 'post',

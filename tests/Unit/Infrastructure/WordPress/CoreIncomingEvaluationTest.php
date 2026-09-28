@@ -2,28 +2,28 @@
 /**
  * Incoming Core values evaluate through ContentEvaluator without RuleEngine changes.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Application\ConditionOperators;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\ConditionOperators;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIncomingValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class CoreIncomingEvaluationTest extends TestCase
@@ -535,7 +535,7 @@ final class CoreIncomingEvaluationTest extends TestCase
     /**
      * @param array<string, mixed> $payload
      */
-    private function incoming(array $payload): \ContentGuard\Domain\Contracts\FieldValueProviderInterface
+    private function incoming(array $payload): \ContentLatch\Domain\Contracts\FieldValueProviderInterface
     {
         $core = CoreCatalogFixtures::integration();
 

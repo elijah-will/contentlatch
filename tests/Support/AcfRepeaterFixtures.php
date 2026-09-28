@@ -2,15 +2,15 @@
 /**
  * In-memory ACF 6.8.9 Repeater fixtures modeled on Product 636 and Recipe 12325.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 
 final class AcfRepeaterFixtures
 {

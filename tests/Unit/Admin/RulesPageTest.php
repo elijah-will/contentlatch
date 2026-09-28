@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\RulesPage;
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\RulesPage;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RulesPageTest extends TestCase
@@ -240,6 +240,6 @@ final class RulesPageTest extends TestCase
 
         $this->assertStringContainsString('None of these rules are active', $notice);
         $this->assertStringContainsString('not currently being enforced', $notice);
-        $this->assertStringContainsString('Activate a rule to allow ContentGuard to validate content', $notice);
+        $this->assertStringContainsString('Activate a rule to allow ContentLatch to validate content', $notice);
     }
 }

@@ -1,17 +1,17 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\ContentStatus;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\ContentStatus;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
 final class ContentEvaluationTest extends TestCase

@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\EditorNoticePresentation;
+use ContentLatch\Application\EditorNoticePresentation;
 use PHPUnit\Framework\TestCase;
 
 final class EditorNoticePresentationTest extends TestCase
@@ -23,24 +23,24 @@ final class EditorNoticePresentationTest extends TestCase
             array('Recipe Description — This field is required.')
         );
 
-        $this->assertStringContainsString('ContentGuard · Warning', $warningHtml);
-        $this->assertStringContainsString('ContentGuard · Blocking', $blockingHtml);
+        $this->assertStringContainsString('ContentLatch · Warning', $warningHtml);
+        $this->assertStringContainsString('ContentLatch · Blocking', $blockingHtml);
         $this->assertStringContainsString('Recipe Description — This field is required.', $warningHtml);
         $this->assertStringContainsString('Recipe Description — This field is required.', $blockingHtml);
-        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $warningHtml);
-        $this->assertStringNotContainsString('contentguard-audit-blockers__count', $blockingHtml);
-        $this->assertStringContainsString('contentguard-editor-warnings__title', $warningHtml);
-        $this->assertStringContainsString('contentguard-audit-blockers__title', $blockingHtml);
+        $this->assertStringNotContainsString('contentlatch-editor-warnings__count', $warningHtml);
+        $this->assertStringNotContainsString('contentlatch-audit-blockers__count', $blockingHtml);
+        $this->assertStringContainsString('contentlatch-editor-warnings__title', $warningHtml);
+        $this->assertStringContainsString('contentlatch-audit-blockers__title', $blockingHtml);
 
         $this->assertSame(
-            "ContentGuard · Warning\nRecipe Description — This field is required.",
+            "ContentLatch · Warning\nRecipe Description — This field is required.",
             EditorNoticePresentation::noticeText(
                 EditorNoticePresentation::SEVERITY_WARNING,
                 array('Recipe Description — This field is required.')
             )
         );
         $this->assertSame(
-            "ContentGuard · Blocking\nRecipe Description — This field is required.",
+            "ContentLatch · Blocking\nRecipe Description — This field is required.",
             EditorNoticePresentation::noticeText(
                 EditorNoticePresentation::SEVERITY_BLOCKING,
                 array('Recipe Description — This field is required.')
@@ -61,17 +61,17 @@ final class EditorNoticePresentationTest extends TestCase
             $items
         );
 
-        $this->assertStringContainsString('ContentGuard · Warning', $warningHtml);
+        $this->assertStringContainsString('ContentLatch · Warning', $warningHtml);
         $this->assertStringContainsString('3 warnings', $warningHtml);
-        $this->assertStringContainsString('ContentGuard · Blocking', $blockingHtml);
+        $this->assertStringContainsString('ContentLatch · Blocking', $blockingHtml);
         $this->assertStringContainsString('3 blocking issues', $blockingHtml);
 
         $this->assertSame(
-            "ContentGuard · Warning\n3 warnings\nOne\nTwo\nThree",
+            "ContentLatch · Warning\n3 warnings\nOne\nTwo\nThree",
             EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_WARNING, $items)
         );
         $this->assertSame(
-            "ContentGuard · Blocking\n3 blocking issues\nOne\nTwo\nThree",
+            "ContentLatch · Blocking\n3 blocking issues\nOne\nTwo\nThree",
             EditorNoticePresentation::noticeText(EditorNoticePresentation::SEVERITY_BLOCKING, $items)
         );
     }
@@ -103,7 +103,7 @@ final class EditorNoticePresentationTest extends TestCase
     public function testBlockingNoticeTextIncludesTitleForASingleIssue(): void
     {
         $this->assertSame(
-            "ContentGuard · Blocking\nTitle — This field is required.",
+            "ContentLatch · Blocking\nTitle — This field is required.",
             EditorNoticePresentation::blockingNoticeText(array('Title — This field is required.'))
         );
     }
@@ -111,7 +111,7 @@ final class EditorNoticePresentationTest extends TestCase
     public function testBlockingNoticeTextPutsMultipleIssuesOnSeparateLines(): void
     {
         $this->assertSame(
-            "ContentGuard · Blocking\n3 blocking issues\n"
+            "ContentLatch · Blocking\n3 blocking issues\n"
             . "Title — This field is required.\n"
             . "Content — This field is required.\n"
             . "Featured Image — This field is required.",
@@ -159,14 +159,14 @@ final class EditorNoticePresentationTest extends TestCase
         $allowed = EditorNoticePresentation::allowedNoticeHtml();
 
         $this->assertArrayHasKey('button', $allowed);
-        $this->assertArrayHasKey('data-contentguard-field', $allowed['button']);
-        $this->assertArrayHasKey('data-contentguard-core', $allowed['button']);
-        $this->assertArrayHasKey('data-contentguard-layout', $allowed['button']);
-        $this->assertArrayHasKey('data-contentguard-display-row', $allowed['button']);
-        $this->assertArrayHasKey('data-contentguard-repeater-path', $allowed['button']);
+        $this->assertArrayHasKey('data-contentlatch-field', $allowed['button']);
+        $this->assertArrayHasKey('data-contentlatch-core', $allowed['button']);
+        $this->assertArrayHasKey('data-contentlatch-layout', $allowed['button']);
+        $this->assertArrayHasKey('data-contentlatch-display-row', $allowed['button']);
+        $this->assertArrayHasKey('data-contentlatch-repeater-path', $allowed['button']);
         $this->assertArrayHasKey('aria-label', $allowed['button']);
 
-        $html = '<button type="button" class="contentguard-warning-field" data-contentguard-field="field_description">Title</button>';
+        $html = '<button type="button" class="contentlatch-warning-field" data-contentlatch-field="field_description">Title</button>';
         $this->assertSame($html, EditorNoticePresentation::kses($html));
     }
 }

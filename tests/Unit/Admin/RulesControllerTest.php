@@ -1,21 +1,21 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\RuleEditorDraftStore;
-use ContentGuard\Admin\RulesController;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\RuleEditorDraftStore;
+use ContentLatch\Admin\RulesController;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RulesControllerTest extends TestCase
@@ -185,7 +185,7 @@ final class RulesControllerTest extends TestCase
             $this->validRequest()
         );
         $this->assertFalse($denied['ok']);
-        $this->assertSame('You are not allowed to manage ContentGuard rules.', $denied['message']);
+        $this->assertSame('You are not allowed to manage ContentLatch rules.', $denied['message']);
 
         $badNonce = $this->controller(true, false)->dispatch(
             RulesController::ACTION_SAVE,
@@ -366,9 +366,9 @@ final class RulesControllerTest extends TestCase
         $this->assertSame('min_length', $result['draft']['validations'][0]['type']);
         $this->assertSame($result['draft'], $drafts->get(1));
         $this->assertStringContainsString(
-            '#contentguard-rule-notice',
-            \ContentGuard\Application\AdminNotice::appendTarget(
-                'admin.php?page=contentguard&rule=1',
+            '#contentlatch-rule-notice',
+            \ContentLatch\Application\AdminNotice::appendTarget(
+                'admin.php?page=contentlatch&rule=1',
                 false
             )
         );
@@ -426,7 +426,7 @@ final class RulesControllerTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertSame('Rule added.', $result['message']);
-        $this->assertSame('success', \ContentGuard\Application\AdminNotice::queryArgs(true, $result['message'])['contentguard_notice']);
+        $this->assertSame('success', \ContentLatch\Application\AdminNotice::queryArgs(true, $result['message'])['contentlatch_notice']);
         $this->assertSame('1', $result['rule']['conditions'][0]['operand']);
         $this->assertSame('field_show_new_tag', $result['rule']['conditions'][0]['field']['key']);
         $this->assertSame('field_page_id', $result['rule']['validations'][0]['field']['key']);
@@ -444,7 +444,7 @@ final class RulesControllerTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertSame('Rule added.', $result['message']);
-        $this->assertSame('success', \ContentGuard\Application\AdminNotice::queryArgs(true, $result['message'])['contentguard_notice']);
+        $this->assertSame('success', \ContentLatch\Application\AdminNotice::queryArgs(true, $result['message'])['contentlatch_notice']);
         $this->assertSame('0', $result['rule']['conditions'][0]['operand']);
         $this->assertSame('field_page_id', $result['rule']['validations'][0]['field']['key']);
     }
@@ -489,7 +489,7 @@ final class RulesControllerTest extends TestCase
         );
 
         $inner = new InMemoryRuleRepository(array(), RuleDocumentValidator::v1());
-        $repository = new class ($inner) implements \ContentGuard\Application\RuleRepositoryInterface {
+        $repository = new class ($inner) implements \ContentLatch\Application\RuleRepositoryInterface {
             public function __construct(private InMemoryRuleRepository $inner)
             {
             }
@@ -504,7 +504,7 @@ final class RulesControllerTest extends TestCase
                 return $this->inner->findActivePostTypes();
             }
 
-            public function find(int|string $id): ?\ContentGuard\Domain\Rule
+            public function find(int|string $id): ?\ContentLatch\Domain\Rule
             {
                 return null;
             }
@@ -514,7 +514,7 @@ final class RulesControllerTest extends TestCase
                 return $this->inner->findAll();
             }
 
-            public function save(\ContentGuard\Domain\Rule $rule): \ContentGuard\Domain\Rule
+            public function save(\ContentLatch\Domain\Rule $rule): \ContentLatch\Domain\Rule
             {
                 return $this->inner->save($rule);
             }
@@ -536,8 +536,8 @@ final class RulesControllerTest extends TestCase
             $result['message']
         );
         $this->assertStringNotContainsString('Rule added.', $result['message']);
-        $notice = \ContentGuard\Application\AdminNotice::queryArgs(false, $result['message']);
-        $this->assertSame('error', $notice['contentguard_notice']);
+        $notice = \ContentLatch\Application\AdminNotice::queryArgs(false, $result['message']);
+        $this->assertSame('error', $notice['contentlatch_notice']);
         $this->assertSame('1', $result['draft']['conditions'][0]['operand']);
         $this->assertSame('field_page_id', $result['draft']['validations'][0]['field_key']);
         $this->assertNotNull($inner->find(1));
@@ -555,10 +555,10 @@ final class RulesControllerTest extends TestCase
 
         $this->assertFalse($result['ok']);
         $this->assertSame(
-            'We could not add this rule. ' . \ContentGuard\Application\RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED,
+            'We could not add this rule. ' . \ContentLatch\Application\RuleDocumentValidator::MSG_EMPTY_AND_REQUIRED,
             $result['message']
         );
-        $this->assertSame('error', \ContentGuard\Application\AdminNotice::queryArgs(false, $result['message'])['contentguard_notice']);
+        $this->assertSame('error', \ContentLatch\Application\AdminNotice::queryArgs(false, $result['message'])['contentlatch_notice']);
         $this->assertStringNotContainsString('InvalidRuleException', $result['message']);
         $this->assertStringNotContainsString('JSON', $result['message']);
     }
@@ -573,10 +573,10 @@ final class RulesControllerTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertStringStartsWith('We could not add this rule.', $result['message']);
         $this->assertStringNotContainsString('Rule added.', $result['message']);
-        $notice = \ContentGuard\Application\AdminNotice::queryArgs(false, $result['message']);
-        $this->assertSame('error', $notice['contentguard_notice']);
-        $this->assertSame('notice notice-error is-dismissible', \ContentGuard\Application\AdminNotice::cssClass('error'));
-        $this->assertStringNotContainsString('notice-success', \ContentGuard\Application\AdminNotice::cssClass('error'));
+        $notice = \ContentLatch\Application\AdminNotice::queryArgs(false, $result['message']);
+        $this->assertSame('error', $notice['contentlatch_notice']);
+        $this->assertSame('notice notice-error is-dismissible', \ContentLatch\Application\AdminNotice::cssClass('error'));
+        $this->assertStringNotContainsString('notice-success', \ContentLatch\Application\AdminNotice::cssClass('error'));
     }
 
     public function testTrueFalseRequiredRuleCanBeCreated(): void

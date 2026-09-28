@@ -1,14 +1,14 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\FieldRef;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\FieldRef;
 use PHPUnit\Framework\TestCase;
 
 final class FieldRefTest extends TestCase

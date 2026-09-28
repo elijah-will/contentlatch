@@ -1,21 +1,21 @@
 <?php
 /**
- * WordPress-backed storage for contentguard_rule posts.
+ * WordPress-backed storage for contentlatch_rule posts.
  *
  * Canonical rule JSON lives in post meta. post_content keeps a slashed copy.
  * The CPT type is forced after write so reserved request keys such as
  * post_type cannot make find() miss a just-saved row.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\Exception\RulePersistenceException;
 
 final class WpRulePostStore implements RulePostStoreInterface
 {

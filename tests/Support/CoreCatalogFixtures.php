@@ -2,16 +2,16 @@
 /**
  * Deterministic Core catalog/provider fixtures for Phase 12A tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
 
 final class CoreCatalogFixtures
 {

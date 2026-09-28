@@ -1,21 +1,21 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Application\RulePresentation;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Application\RulePresentation;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleDocumentFactoryTest extends TestCase
@@ -887,14 +887,14 @@ final class RuleDocumentFactoryTest extends TestCase
             'severity'   => 'fail',
             'conditions' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
                     'operator'  => 'equals',
                     'operand'   => 'sauce',
                 ),
             ),
             'validations' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
                     'type'      => 'required',
                 ),
             ),
@@ -902,7 +902,7 @@ final class RuleDocumentFactoryTest extends TestCase
 
         $field = $rule->validations[0]->field;
         $this->assertSame(1, $rule->schemaVersion);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $field->key);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $field->key);
         $this->assertSame('repeater', $field->container);
         $this->assertSame('Product Information → Item Size → Product Size', $field->label);
         $this->assertSame('every', $rule->validations[0]->quantifier);
@@ -925,7 +925,7 @@ final class RuleDocumentFactoryTest extends TestCase
             'severity'   => 'fail',
             'validations' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                     'type'      => 'required',
                 ),
             ),
@@ -938,8 +938,8 @@ final class RuleDocumentFactoryTest extends TestCase
         $this->assertSame('Modules → Hero → Title', $field->label);
         $this->assertSame(
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES,
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
             ),
             $field->path
         );
@@ -961,13 +961,13 @@ final class RuleDocumentFactoryTest extends TestCase
             'post_type'  => 'page',
             'validations' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                     'type'      => 'required',
                 ),
             ),
             'conditions' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                     'operator'  => 'contains',
                     'operand'   => 'healthy',
                 ),
@@ -976,7 +976,7 @@ final class RuleDocumentFactoryTest extends TestCase
 
         $this->assertSame('contains', $rule->conditions[0]->operator);
         $this->assertSame('healthy', $rule->conditions[0]->operand);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $rule->conditions[0]->field->key);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $rule->conditions[0]->field->key);
         $this->assertSame('flexible_content', $rule->conditions[0]->field->container);
     }
 
@@ -988,13 +988,13 @@ final class RuleDocumentFactoryTest extends TestCase
             'post_type'  => 'product',
             'validations' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
                     'type'      => 'required',
                 ),
             ),
             'conditions' => array(
                 array(
-                    'field_key' => \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+                    'field_key' => \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
                     'operator'  => 'equals',
                     'operand'   => '8oz',
                 ),
@@ -1003,7 +1003,7 @@ final class RuleDocumentFactoryTest extends TestCase
 
         $this->assertSame('equals', $rule->conditions[0]->operator);
         $this->assertSame('8oz', $rule->conditions[0]->operand);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $rule->conditions[0]->field->key);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $rule->conditions[0]->field->key);
         $this->assertSame('repeater', $rule->conditions[0]->field->container);
     }
 
@@ -1041,7 +1041,7 @@ final class RuleDocumentFactoryTest extends TestCase
 
     private function flexibleFactory(): RuleDocumentFactory
     {
-        $catalog = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog();
 
         return RuleDocumentFactory::v1(
             static fn (): array => array('page' => 'Page'),
@@ -1058,7 +1058,7 @@ final class RuleDocumentFactoryTest extends TestCase
 
     private function repeaterFactory(): RuleDocumentFactory
     {
-        $catalog = \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfRepeaterFixtures::productCatalog();
 
         return RuleDocumentFactory::v1(
             static fn (): array => array('product' => 'Product'),

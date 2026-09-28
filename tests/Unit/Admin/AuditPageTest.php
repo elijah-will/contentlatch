@@ -1,17 +1,17 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\AuditAdminRequest;
-use ContentGuard\Admin\AuditPage;
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
+use ContentLatch\Admin\AuditAdminRequest;
+use ContentLatch\Admin\AuditPage;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
 use PHPUnit\Framework\TestCase;
 
 final class AuditPageTest extends TestCase
@@ -51,7 +51,7 @@ final class AuditPageTest extends TestCase
             array(
                 'severity' => 'fail',
                 'rule'     => '15',
-                'cg_type'  => 'recipe',
+                'cl_type'  => 'recipe',
                 'paged'    => '3',
             ),
             50
@@ -68,7 +68,7 @@ final class AuditPageTest extends TestCase
         $legacy = AuditPage::findingQueryFromRequest(7, array('post_type' => 'page'));
         $this->assertSame('page', $legacy->postType);
         $this->assertSame('recipe', AuditPage::requestPostType(array(
-            'cg_type'   => 'recipe',
+            'cl_type'   => 'recipe',
             'post_type' => 'page',
         )));
 
@@ -89,7 +89,7 @@ final class AuditPageTest extends TestCase
                 'run'      => '4',
                 'severity' => 'warning',
                 'rule'     => '8',
-                'cg_type'  => 'page',
+                'cl_type'  => 'page',
             ),
             AuditPage::filterArgs(
                 array(
@@ -103,8 +103,8 @@ final class AuditPageTest extends TestCase
         );
 
         $this->assertSame(
-            array('page' => AuditPage::SLUG, 'cg_type' => 'recipe'),
-            AuditPage::filterArgs(array('cg_type' => 'recipe'))
+            array('page' => AuditPage::SLUG, 'cl_type' => 'recipe'),
+            AuditPage::filterArgs(array('cl_type' => 'recipe'))
         );
         $this->assertArrayNotHasKey('post_type', AuditPage::filterArgs(array('post_type' => 'recipe')));
         $this->assertSame(

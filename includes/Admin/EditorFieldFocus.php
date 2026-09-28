@@ -4,18 +4,18 @@
  *
  * Used by Audit "Edit content" (URL query) and by clickable editor notices.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 
 final class EditorFieldFocus
 {
@@ -58,18 +58,18 @@ final class EditorFieldFocus
         $repeaterPath = EditorFieldNavigation::sanitizeRepeaterPath($extra['repeaterPath'] ?? array());
 
         wp_register_style(
-            'contentguard-editor-field',
-            CONTENTGUARD_URL . 'admin/css/editor.css',
+            'contentlatch-editor-field',
+            CONTENTLATCH_URL . 'admin/css/editor.css',
             array(),
-            \ContentGuard\Plugin::VERSION
+            \ContentLatch\Plugin::VERSION
         );
-        wp_enqueue_style('contentguard-editor-field');
+        wp_enqueue_style('contentlatch-editor-field');
 
         wp_register_script(
-            'contentguard-editor-field',
-            CONTENTGUARD_URL . 'admin/js/editor-field.js',
+            'contentlatch-editor-field',
+            CONTENTLATCH_URL . 'admin/js/editor-field.js',
             array(),
-            \ContentGuard\Plugin::VERSION,
+            \ContentLatch\Plugin::VERSION,
             true
         );
         $screen  = function_exists('get_current_screen') ? get_current_screen() : null;
@@ -78,8 +78,8 @@ final class EditorFieldFocus
             : EditorCoreNavigation::SURFACE_CLASSIC;
 
         wp_localize_script(
-            'contentguard-editor-field',
-            'contentguardEditorField',
+            'contentlatch-editor-field',
+            'contentlatchEditorField',
             array(
                 'fieldKey'     => $fieldKey,
                 'layout'       => $layout,
@@ -91,11 +91,11 @@ final class EditorFieldFocus
                     array('surface' => $surface)
                 ),
                 'i18n'         => array(
-                    'navigated' => __('Moved to the field that needs attention.', 'contentguard'),
+                    'navigated' => __('Moved to the field that needs attention.', 'contentlatch'),
                 ),
             )
         );
-        wp_enqueue_script('contentguard-editor-field');
+        wp_enqueue_script('contentlatch-editor-field');
     }
 
     public function enqueue(string $hook): void

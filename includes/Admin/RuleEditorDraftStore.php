@@ -2,12 +2,12 @@
 /**
  * Per-user storage for an unsaved rule builder submission.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
@@ -15,7 +15,7 @@ final class RuleEditorDraftStore
 {
     public const TTL = 900;
 
-    public const KEY_PREFIX = 'contentguard_rule_draft_';
+    public const KEY_PREFIX = 'contentlatch_rule_draft_';
 
     /**
      * @param callable(string $key, mixed $value, int $ttl): void $set
@@ -61,7 +61,7 @@ final class RuleEditorDraftStore
     }
 
     /**
-     * Remove all ContentGuard rule-editor draft transients from the options table.
+     * Remove all ContentLatch rule-editor draft transients from the options table.
      *
      * WordPress stores set_transient() values as _transient_{name} and
      * _transient_timeout_{name}. There is no registry of draft keys, so uninstall
@@ -88,7 +88,7 @@ final class RuleEditorDraftStore
             ? $wpdb->esc_like($timeoutPrefix) . '%'
             : $timeoutPrefix . '%';
 
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- No Core API deletes transient rows by key prefix; uninstall must clear ContentGuard draft keys.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- No Core API deletes transient rows by key prefix; uninstall must clear ContentLatch draft keys.
         // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Destructive uninstall cleanup must hit the options table directly.
         // phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table is $wpdb->options; LIKE values use esc_like + $wpdb->prepare %s.
         // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- {$wpdb->options} is the Core options table name, not user input.

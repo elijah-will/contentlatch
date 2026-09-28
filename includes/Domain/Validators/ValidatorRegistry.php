@@ -2,15 +2,15 @@
 /**
  * Validation type registry.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Validators;
+namespace ContentLatch\Domain\Validators;
 
-use ContentGuard\Domain\Contracts\ValidatorInterface;
-use ContentGuard\Domain\Exception\UnknownValidatorException;
+use ContentLatch\Domain\Contracts\ValidatorInterface;
+use ContentLatch\Domain\Exception\UnknownValidatorException;
 
 final class ValidatorRegistry
 {

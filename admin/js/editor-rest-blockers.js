@@ -1,11 +1,11 @@
 (function () {
-  var config = window.contentguardEditorRestBlockers || {};
+  var config = window.contentlatchEditorRestBlockers || {};
   var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
   function __(text) {
-    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+    return i18nApi ? i18nApi.__(text, "contentlatch") : text;
   }
-  var ERROR_CODE = config.errorCode || "contentguard_validation_failed";
-  var NOTICE_ID = config.noticeId || "contentguard-audit-blockers";
+  var ERROR_CODE = config.errorCode || "contentlatch_validation_failed";
+  var NOTICE_ID = config.noticeId || "contentlatch-audit-blockers";
   var SAVE_NOTICE_ID = config.saveNoticeId || "SAVE_POST_NOTICE_ID";
   var SAVE_NOTICE_IDS = Array.isArray(config.saveNoticeIds) && config.saveNoticeIds.length
     ? config.saveNoticeIds
@@ -16,7 +16,7 @@
   var shownFromAcfValidation = false;
   var lastNoticeHtml = null;
   var dispatchingNotice = false;
-  var acfContentGuardIssues = [];
+  var acfContentLatchIssues = [];
 
   function editorSelect() {
     return window.wp && wp.data && wp.data.select ? wp.data.select("core/editor") : null;
@@ -69,7 +69,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  function isContentGuardError(error) {
+  function isContentLatchError(error) {
     if (!error || typeof error !== "object") {
       return false;
     }
@@ -114,7 +114,7 @@
   }
 
   function gutenbergCoreIds() {
-    var core = window.contentguardEditorField && window.contentguardEditorField.core;
+    var core = window.contentlatchEditorField && window.contentlatchEditorField.core;
     if (core && Array.isArray(core.gutenberg)) {
       return core.gutenberg;
     }
@@ -150,18 +150,18 @@
 
   function fieldTriggerAttributes(fieldKey, layout, displayRow, repeaterPath, pathBlocked) {
     if (isSupportedCore(fieldKey) && !isSafeFieldKey(fieldKey)) {
-      return 'data-contentguard-core="' + escapeHtml(fieldKey) + '"';
+      return 'data-contentlatch-core="' + escapeHtml(fieldKey) + '"';
     }
 
-    var attrs = 'data-contentguard-field="' + escapeHtml(fieldKey) + '"';
+    var attrs = 'data-contentlatch-field="' + escapeHtml(fieldKey) + '"';
     if (safeLayout(layout)) {
-      attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';
+      attrs += ' data-contentlatch-layout="' + escapeHtml(layout) + '"';
     }
     if (displayRow > 0 && !(Array.isArray(repeaterPath) && repeaterPath.length) && !pathBlocked) {
-      attrs += ' data-contentguard-display-row="' + displayRow + '"';
+      attrs += ' data-contentlatch-display-row="' + displayRow + '"';
     }
     if (pathBlocked) {
-      attrs += ' data-contentguard-repeater-path="invalid"';
+      attrs += ' data-contentlatch-repeater-path="invalid"';
     } else if (Array.isArray(repeaterPath) && repeaterPath.length) {
       var encoded = [];
       for (var i = 0; i < repeaterPath.length; i++) {
@@ -178,7 +178,7 @@
         encoded.push('{"repeater":"' + step.repeater + '","display_row":' + row + '}');
       }
       if (encoded.length) {
-        attrs += ' data-contentguard-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
+        attrs += ' data-contentlatch-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
       }
     }
     return attrs;
@@ -242,7 +242,7 @@
     var attr = fieldTriggerAttributes(fieldId, layout, displayRow, repeaterPath, pathBlocked);
 
     return (
-      '<button type="button" class="contentguard-warning-field" ' +
+      '<button type="button" class="contentlatch-warning-field" ' +
       attr +
       ' aria-label="' +
       escapeHtml(goTo.replace("%s", label)) +
@@ -254,7 +254,7 @@
   }
 
   function noticeTitle() {
-    return __("ContentGuard") + " · " + ((config.i18n && config.i18n.blocking) || __("Blocking"));
+    return __("ContentLatch") + " · " + ((config.i18n && config.i18n.blocking) || __("Blocking"));
   }
 
   function noticeCount(count) {
@@ -284,13 +284,13 @@
       return { html: "", text: "" };
     }
 
-    var html = '<div class="contentguard-audit-blockers">';
-    html += '<p class="contentguard-audit-blockers__title">' + escapeHtml(noticeTitle()) + "</p>";
+    var html = '<div class="contentlatch-audit-blockers">';
+    html += '<p class="contentlatch-audit-blockers__title">' + escapeHtml(noticeTitle()) + "</p>";
     var count = noticeCount(items.length);
     if (count !== "") {
-      html += '<p class="contentguard-audit-blockers__count">' + escapeHtml(count) + "</p>";
+      html += '<p class="contentlatch-audit-blockers__count">' + escapeHtml(count) + "</p>";
     }
-    html += '<ul class="contentguard-audit-blockers__list">';
+    html += '<ul class="contentlatch-audit-blockers__list">';
     items.forEach(function (item) {
       html += "<li>" + item + "</li>";
     });
@@ -409,7 +409,7 @@
       return null;
     }
 
-    var payload = error.contentguard;
+    var payload = error.contentlatch;
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       return null;
     }
@@ -421,8 +421,8 @@
     return payload;
   }
 
-  function collectAcfContentGuardIssues(data) {
-    acfContentGuardIssues = [];
+  function collectAcfContentLatchIssues(data) {
+    acfContentLatchIssues = [];
     if (!data || typeof data !== "object" || !Array.isArray(data.errors)) {
       return data;
     }
@@ -430,20 +430,20 @@
     data.errors.forEach(function (error) {
       var issue = contentGuardIssueFromAcfError(error);
       if (issue) {
-        acfContentGuardIssues.push(issue);
+        acfContentLatchIssues.push(issue);
       }
     });
 
     return data;
   }
 
-  function showAcfContentGuardNotice() {
-    if (!acfContentGuardIssues.length) {
+  function showAcfContentLatchNotice() {
+    if (!acfContentLatchIssues.length) {
       return;
     }
 
-    var failures = acfContentGuardIssues.slice();
-    acfContentGuardIssues = [];
+    var failures = acfContentLatchIssues.slice();
+    acfContentLatchIssues = [];
     var built = buildNotice({
       code: ERROR_CODE,
       data: { failures: failures }
@@ -468,9 +468,9 @@
 
     bindAcfValidationHooks.bound = true;
     acf.addFilter("validation_complete", function (data) {
-      return collectAcfContentGuardIssues(data);
+      return collectAcfContentLatchIssues(data);
     });
-    acf.addAction("validation_failure", showAcfContentGuardNotice);
+    acf.addAction("validation_failure", showAcfContentLatchNotice);
   }
 
   bindAcfValidationHooks();
@@ -479,7 +479,7 @@
   }
 
   function shouldReplaceNativeSaveNotice() {
-    return shownFromSave && isContentGuardError(lastSaveError());
+    return shownFromSave && isContentLatchError(lastSaveError());
   }
 
   function suppressGutenbergSaveNotice() {
@@ -511,8 +511,8 @@
     }
   }
 
-  function showContentGuardError(error) {
-    if (!isContentGuardError(error)) {
+  function showContentLatchError(error) {
+    if (!isContentLatchError(error)) {
       return;
     }
 
@@ -552,10 +552,10 @@
   if (window.wp && wp.apiFetch && typeof wp.apiFetch.use === "function") {
     wp.apiFetch.use(function (options, next) {
       return next(options).catch(function (error) {
-        if (isContentGuardError(error) && !isAutosaving()) {
+        if (isContentLatchError(error) && !isAutosaving()) {
           capturedError = error;
           afterCurrentCycle(function () {
-            showContentGuardError(error);
+            showContentLatchError(error);
           });
         }
         return Promise.reject(error);
@@ -591,7 +591,7 @@
     if (typeof editor.didPostSaveRequestFail === "function" && editor.didPostSaveRequestFail()) {
       var error = lastSaveError();
       afterCurrentCycle(function () {
-        showContentGuardError(error);
+        showContentLatchError(error);
       });
     }
   });

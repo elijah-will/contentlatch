@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\RulePresentation;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\RulePresentation;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RulesListViewTest extends TestCase
@@ -23,11 +23,11 @@ final class RulesListViewTest extends TestCase
         $html = $this->renderList(array());
 
         $this->assertStringNotContainsString('widefat', $html);
-        $this->assertStringContainsString('contentguard-empty', $html);
+        $this->assertStringContainsString('contentlatch-empty', $html);
         $this->assertStringContainsString('No rules yet', $html);
         $this->assertStringContainsString('Create a rule to start validating content.', $html);
         $this->assertStringContainsString('Add Rule', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard&amp;action=new', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch&amp;action=new', $html);
         $this->assertStringNotContainsString('None of these rules are active', $html);
     }
 
@@ -66,15 +66,15 @@ final class RulesListViewTest extends TestCase
         );
 
         $this->assertStringNotContainsString('widefat', $html);
-        $this->assertStringContainsString('contentguard-rule-list', $html);
+        $this->assertStringContainsString('contentlatch-rule-list', $html);
         $this->assertStringContainsString('<article', $html);
-        $this->assertStringContainsString('<h3 class="contentguard-rule-item__title"', $html);
+        $this->assertStringContainsString('<h3 class="contentlatch-rule-item__title"', $html);
         $this->assertStringContainsString('New Products need Page ID', $html);
         $this->assertStringContainsString('Applies to', $html);
         $this->assertStringContainsString('Product', $html);
-        $this->assertStringContainsString('contentguard-status--success', $html);
+        $this->assertStringContainsString('contentlatch-status--success', $html);
         $this->assertStringContainsString('Active', $html);
-        $this->assertStringContainsString('contentguard-status--danger', $html);
+        $this->assertStringContainsString('contentlatch-status--danger', $html);
         $this->assertStringContainsString('Blocking', $html);
         $this->assertSame('Show "New" Tag is Yes', $summary['conditions']);
         $this->assertStringContainsString('Show &quot;New&quot; Tag is Yes', $html);
@@ -83,19 +83,19 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('<dt>THEN</dt>', $html);
         $this->assertStringContainsString('No completed audit yet', $html);
         $this->assertStringNotContainsString('View affected content', $html);
-        $this->assertStringContainsString('contentguard-button--link', $html);
+        $this->assertStringContainsString('contentlatch-button--link', $html);
         $this->assertStringContainsString('Applies to: Product', $html);
         $this->assertStringContainsString('aria-label="Edit: New Products need Page ID"', $html);
         $this->assertStringContainsString('aria-label="Deactivate: New Products need Page ID"', $html);
         $this->assertStringContainsString('aria-label="Delete: New Products need Page ID"', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard&amp;rule=7', $html);
-        $this->assertStringContainsString('admin-post.php?action=contentguard_rule_status', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch&amp;rule=7', $html);
+        $this->assertStringContainsString('admin-post.php?action=contentlatch_rule_status', $html);
         $this->assertStringContainsString('status=inactive', $html);
-        $this->assertStringContainsString('admin-post.php?action=contentguard_delete_rule', $html);
+        $this->assertStringContainsString('admin-post.php?action=contentlatch_delete_rule', $html);
         $this->assertStringContainsString('_wpnonce=testnonce', $html);
-        $this->assertStringContainsString('submitdelete contentguard-button--destructive contentguard-delete-rule', $html);
+        $this->assertStringContainsString('submitdelete contentlatch-button--destructive contentlatch-delete-rule', $html);
         $this->assertStringNotContainsString('onclick=', $html);
-        $item = substr($html, (int) strpos($html, 'contentguard-rule-item'));
+        $item = substr($html, (int) strpos($html, 'contentlatch-rule-item'));
         $this->assertLessThan(
             (int) strpos($item, 'submitdelete'),
             (int) strpos($item, 'aria-label="Edit: New Products need Page ID"')
@@ -122,7 +122,7 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('Inactive', $html);
         $this->assertStringContainsString('aria-label="Activate: Inactive page ID"', $html);
         $this->assertStringContainsString('status=active', $html);
-        $this->assertStringContainsString('contentguard-rule-item', $html);
+        $this->assertStringContainsString('contentlatch-rule-item', $html);
     }
 
     public function testActiveRulesRenderBeforeInactiveRules(): void
@@ -150,8 +150,8 @@ final class RulesListViewTest extends TestCase
         $this->assertNotFalse($activePos);
         $this->assertNotFalse($inactivePos);
         $this->assertLessThan($inactivePos, $activePos);
-        $this->assertStringContainsString('contentguard-status--success', $html);
-        $this->assertStringContainsString('contentguard-status--neutral', $html);
+        $this->assertStringContainsString('contentlatch-status--success', $html);
+        $this->assertStringContainsString('contentlatch-status--neutral', $html);
         $this->assertStringContainsString('Applies to', $html);
         $this->assertStringContainsString('Product', $html);
     }
@@ -195,10 +195,10 @@ final class RulesListViewTest extends TestCase
             array('product' => 'Product')
         );
 
-        $activeBlocking  = strpos($html, 'id="contentguard-rule-group-active-blocking"');
-        $activeWarning   = strpos($html, 'id="contentguard-rule-group-active-warning"');
-        $inactiveBlocking = strpos($html, 'id="contentguard-rule-group-inactive-blocking"');
-        $inactiveWarning = strpos($html, 'id="contentguard-rule-group-inactive-warning"');
+        $activeBlocking  = strpos($html, 'id="contentlatch-rule-group-active-blocking"');
+        $activeWarning   = strpos($html, 'id="contentlatch-rule-group-active-warning"');
+        $inactiveBlocking = strpos($html, 'id="contentlatch-rule-group-inactive-blocking"');
+        $inactiveWarning = strpos($html, 'id="contentlatch-rule-group-inactive-warning"');
 
         $this->assertNotFalse($activeBlocking);
         $this->assertNotFalse($activeWarning);
@@ -221,10 +221,10 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('1 rule', $html);
         $this->assertStringNotContainsString('0 rules', $html);
 
-        $this->assertMatchesRegularExpression('/<details class="contentguard-rule-group__details" open>/', $html);
+        $this->assertMatchesRegularExpression('/<details class="contentlatch-rule-group__details" open>/', $html);
         $this->assertStringContainsString('aria-label="Edit: Active blocking first"', $html);
         $this->assertStringContainsString('aria-label="Activate: Inactive warning rule"', $html);
-        $this->assertStringContainsString('admin-post.php?action=contentguard_delete_rule', $html);
+        $this->assertStringContainsString('admin-post.php?action=contentlatch_delete_rule', $html);
     }
 
     public function testEmptyGroupsAreOmittedAndWarningOnlyListHidesBlocking(): void
@@ -254,7 +254,7 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('Off warning', $html);
         $this->assertStringNotContainsString('Active Blocking', $html);
         $this->assertStringNotContainsString('Inactive Blocking', $html);
-        $this->assertStringNotContainsString('contentguard-rule-group-active-blocking', $html);
+        $this->assertStringNotContainsString('contentlatch-rule-group-active-blocking', $html);
         $this->assertStringNotContainsString('0 rules', $html);
     }
 
@@ -280,20 +280,20 @@ final class RulesListViewTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/<section class="contentguard-rule-group"[^>]*aria-labelledby="contentguard-rule-group-active-blocking">\s*<details class="contentguard-rule-group__details" open>/',
+            '/<section class="contentlatch-rule-group"[^>]*aria-labelledby="contentlatch-rule-group-active-blocking">\s*<details class="contentlatch-rule-group__details" open>/',
             $html
         );
         $this->assertMatchesRegularExpression(
-            '/<section class="contentguard-rule-group"[^>]*aria-labelledby="contentguard-rule-group-inactive-blocking">\s*<details class="contentguard-rule-group__details">/',
+            '/<section class="contentlatch-rule-group"[^>]*aria-labelledby="contentlatch-rule-group-inactive-blocking">\s*<details class="contentlatch-rule-group__details">/',
             $html
         );
-        $this->assertStringContainsString('<summary class="contentguard-rule-group__summary">', $html);
-        $this->assertStringContainsString('<h2 class="contentguard-rule-group__title"', $html);
+        $this->assertStringContainsString('<summary class="contentlatch-rule-group__summary">', $html);
+        $this->assertStringContainsString('<h2 class="contentlatch-rule-group__title"', $html);
 
         $css = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/rules.css');
-        $this->assertStringContainsString('.contentguard-rule-group__summary::before', $css);
+        $this->assertStringContainsString('.contentlatch-rule-group__summary::before', $css);
         $this->assertStringContainsString(
-            '.contentguard-rule-group__details[open] > .contentguard-rule-group__summary::before',
+            '.contentlatch-rule-group__details[open] > .contentlatch-rule-group__summary::before',
             $css
         );
         $this->assertStringContainsString('transform: rotate(90deg)', $css);
@@ -332,11 +332,11 @@ final class RulesListViewTest extends TestCase
         $this->assertStringContainsString('2 content items failing', $html);
         $this->assertStringContainsString('View affected content', $html);
         $this->assertStringContainsString('aria-label="View affected content: Failing products"', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;rule=9', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit&amp;rule=9', $html);
     }
 
     /**
-     * @param \ContentGuard\Domain\Rule[] $rules
+     * @param \ContentLatch\Domain\Rule[] $rules
      * @param array<string, array{conditions: string, validations: string}> $summaries
      * @param array<string, string> $postTypeLabels
      * @param array<string, AuditRuleImpact> $impacts
@@ -352,7 +352,7 @@ final class RulesListViewTest extends TestCase
     ): string {
         require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
 
-        $view = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
+        $view = CONTENTLATCH_DIR . 'admin/views/rules-list.php';
         ob_start();
         require $view;
 

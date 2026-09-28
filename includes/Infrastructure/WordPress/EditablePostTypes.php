@@ -1,13 +1,13 @@
 <?php
 /**
- * WordPress post types that can receive ContentGuard rules.
+ * WordPress post types that can receive ContentLatch rules.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

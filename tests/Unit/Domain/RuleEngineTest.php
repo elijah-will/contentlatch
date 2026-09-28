@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\ContentStatus;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\Exception\UnknownOperatorException;
-use ContentGuard\Domain\Exception\UnknownValidatorException;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\ContentStatus;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\Exception\UnknownOperatorException;
+use ContentLatch\Domain\Exception\UnknownValidatorException;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEngineTest extends TestCase
@@ -759,7 +759,7 @@ final class RuleEngineTest extends TestCase
             )
         );
 
-        $restored = \ContentGuard\Domain\Rule::fromArray($rule->toArray());
+        $restored = \ContentLatch\Domain\Rule::fromArray($rule->toArray());
         $this->assertSame($rule->name, $restored->name);
         $this->assertSame($rule->postType, $restored->postType);
         $this->assertSame($rule->conditions[0]->operator, $restored->conditions[0]->operator);
@@ -770,7 +770,7 @@ final class RuleEngineTest extends TestCase
             'validations' => array(),
             'message'     => 'Please avoid the term "healthy" in recipe content.',
         ));
-        $restoredMessage = \ContentGuard\Domain\Rule::fromArray($withMessage->toArray());
+        $restoredMessage = \ContentLatch\Domain\Rule::fromArray($withMessage->toArray());
         $this->assertSame('Please avoid the term "healthy" in recipe content.', $restoredMessage->message);
         $this->assertSame(array(), $restoredMessage->validations);
     }

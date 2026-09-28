@@ -2,16 +2,16 @@
 /**
  * Minimum string length.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Validators;
+namespace ContentLatch\Domain\Validators;
 
-use ContentGuard\Domain\Contracts\ValidatorInterface;
-use ContentGuard\Domain\ValidatorOutcome;
-use ContentGuard\Domain\Value;
+use ContentLatch\Domain\Contracts\ValidatorInterface;
+use ContentLatch\Domain\ValidatorOutcome;
+use ContentLatch\Domain\Value;
 
 final class MinLengthValidator implements ValidatorInterface
 {

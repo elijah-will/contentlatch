@@ -2,18 +2,18 @@
 /**
  * Application entry point for save-time validation and audit.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\RuleEngine;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\RuleEngine;
 
 final class ContentEvaluator
 {

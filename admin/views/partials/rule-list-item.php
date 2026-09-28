@@ -3,9 +3,9 @@
 /**
  * One stacked Rules list item.
  *
- * @package ContentGuard
+ * @package ContentLatch
  *
- * @var \ContentGuard\Domain\Rule $rule
+ * @var \ContentLatch\Domain\Rule $rule
  * @var array{conditions: string, validations: string} $summary
  * @var string $postTypeLabel
  * @var string $impactLabel
@@ -18,9 +18,9 @@
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\AdminView;
-use ContentGuard\Application\StatusPresentation;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Admin\AdminView;
+use ContentLatch\Application\StatusPresentation;
+use ContentLatch\Domain\RuleStatus;
 
 $rule          = $rule ?? null;
 $summary       = isset($summary) && is_array($summary) ? $summary : array('conditions' => '', 'validations' => '');
@@ -32,79 +32,79 @@ $deleteUrl     = isset($deleteUrl) && is_string($deleteUrl) ? $deleteUrl : '';
 $affectedUrl   = isset($affectedUrl) && is_string($affectedUrl) ? $affectedUrl : '';
 $showAffected  = !empty($showAffected);
 
-if (!$rule instanceof \ContentGuard\Domain\Rule) {
+if (!$rule instanceof \ContentLatch\Domain\Rule) {
     return;
 }
 
 $ruleId        = (int) $rule->id;
-$titleId       = 'contentguard-rule-title-' . $ruleId;
+$titleId       = 'contentlatch-rule-title-' . $ruleId;
 $isActive      = $rule->status === RuleStatus::Active;
-$statusLabel   = $isActive ? __('Deactivate', 'contentguard') : __('Activate', 'contentguard');
+$statusLabel   = $isActive ? __('Deactivate', 'contentlatch') : __('Activate', 'contentlatch');
 ?>
-<article class="contentguard-panel contentguard-rule-item" aria-labelledby="<?php echo esc_attr($titleId); ?>">
-    <header class="contentguard-rule-item__header">
-        <h3 class="contentguard-rule-item__title" id="<?php echo esc_attr($titleId); ?>">
+<article class="contentlatch-panel contentlatch-rule-item" aria-labelledby="<?php echo esc_attr($titleId); ?>">
+    <header class="contentlatch-rule-item__header">
+        <h3 class="contentlatch-rule-item__title" id="<?php echo esc_attr($titleId); ?>">
             <a href="<?php echo esc_url($editUrl); ?>"><?php echo esc_html($rule->name); ?></a>
         </h3>
-        <div class="contentguard-rule-item__status">
+        <div class="contentlatch-rule-item__status">
             <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromRuleStatus($rule->status))); ?>
             <?php AdminView::partial('status-pill', array('status' => StatusPresentation::fromSeverity($rule->severity))); ?>
         </div>
     </header>
 
-    <p class="contentguard-rule-item__applies">
-        <?php echo esc_html(sprintf(/* translators: %s: post type label */ __('Applies to: %s', 'contentguard'), $postTypeLabel)); ?>
+    <p class="contentlatch-rule-item__applies">
+        <?php echo esc_html(sprintf(/* translators: %s: post type label */ __('Applies to: %s', 'contentlatch'), $postTypeLabel)); ?>
     </p>
 
-    <dl class="contentguard-rule-item__logic">
+    <dl class="contentlatch-rule-item__logic">
         <div>
-            <dt><?php echo esc_html__('WHEN', 'contentguard'); ?></dt>
+            <dt><?php echo esc_html__('WHEN', 'contentlatch'); ?></dt>
             <dd><?php echo esc_html((string) ($summary['conditions'] ?? '')); ?></dd>
         </div>
         <div>
-            <dt><?php echo esc_html__('THEN', 'contentguard'); ?></dt>
+            <dt><?php echo esc_html__('THEN', 'contentlatch'); ?></dt>
             <dd><?php echo esc_html((string) ($summary['validations'] ?? '')); ?></dd>
         </div>
     </dl>
 
-    <p class="contentguard-rule-item__impact">
+    <p class="contentlatch-rule-item__impact">
         <?php echo esc_html($impactLabel); ?>
         <?php if ($showAffected) : ?>
             <span aria-hidden="true"> · </span>
             <a
                 href="<?php echo esc_url($affectedUrl); ?>"
-                aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('View affected content: %s', 'contentguard'), $rule->name)); ?>"
+                aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('View affected content: %s', 'contentlatch'), $rule->name)); ?>"
             >
-                <?php echo esc_html__('View affected content', 'contentguard'); ?>
+                <?php echo esc_html__('View affected content', 'contentlatch'); ?>
             </a>
         <?php endif; ?>
     </p>
 
-    <div class="contentguard-rule-item__actions">
+    <div class="contentlatch-rule-item__actions">
         <a
-            class="contentguard-button--link"
+            class="contentlatch-button--link"
             href="<?php echo esc_url($editUrl); ?>"
-            aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Edit: %s', 'contentguard'), $rule->name)); ?>"
+            aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Edit: %s', 'contentlatch'), $rule->name)); ?>"
         >
-            <?php echo esc_html__('Edit', 'contentguard'); ?>
+            <?php echo esc_html__('Edit', 'contentlatch'); ?>
         </a>
-        <span class="contentguard-rule-item__action-sep" aria-hidden="true">·</span>
+        <span class="contentlatch-rule-item__action-sep" aria-hidden="true">·</span>
         <a
-            class="contentguard-button--link"
+            class="contentlatch-button--link"
             href="<?php echo esc_url($statusUrl); ?>"
             aria-label="<?php echo esc_attr($isActive
-                ? sprintf(/* translators: %s: rule name */ __('Deactivate: %s', 'contentguard'), $rule->name)
-                : sprintf(/* translators: %s: rule name */ __('Activate: %s', 'contentguard'), $rule->name)); ?>"
+                ? sprintf(/* translators: %s: rule name */ __('Deactivate: %s', 'contentlatch'), $rule->name)
+                : sprintf(/* translators: %s: rule name */ __('Activate: %s', 'contentlatch'), $rule->name)); ?>"
         >
             <?php echo esc_html($statusLabel); ?>
         </a>
-        <span class="contentguard-rule-item__action-sep" aria-hidden="true">·</span>
+        <span class="contentlatch-rule-item__action-sep" aria-hidden="true">·</span>
         <a
-            class="submitdelete contentguard-button--destructive contentguard-delete-rule"
+            class="submitdelete contentlatch-button--destructive contentlatch-delete-rule"
             href="<?php echo esc_url($deleteUrl); ?>"
-            aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Delete: %s', 'contentguard'), $rule->name)); ?>"
+            aria-label="<?php echo esc_attr(sprintf(/* translators: %s: rule name */ __('Delete: %s', 'contentlatch'), $rule->name)); ?>"
         >
-            <?php echo esc_html__('Delete', 'contentguard'); ?>
+            <?php echo esc_html__('Delete', 'contentlatch'); ?>
         </a>
     </div>
 </article>

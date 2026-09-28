@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Infrastructure\ACF\AcfStoredValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfNestedRepeaterStoredValueProviderTest extends TestCase

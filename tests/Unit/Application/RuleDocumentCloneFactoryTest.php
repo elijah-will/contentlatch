@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class RuleDocumentCloneFactoryTest extends TestCase
@@ -89,7 +89,7 @@ final class RuleDocumentCloneFactoryTest extends TestCase
             'post_type' => 'page',
             'conditions' => array(
                 array(
-                    'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
+                    'field_key' => \ContentLatch\Domain\FieldRef::resolutionIdFor(
                         AcfCloneFixtures::CLONE_REP,
                         AcfCloneFixtures::TITLE
                     ),
@@ -114,7 +114,7 @@ final class RuleDocumentCloneFactoryTest extends TestCase
             'post_type' => 'page',
             'conditions' => array(
                 array(
-                    'field_key' => \ContentGuard\Domain\FieldRef::resolutionIdFor(
+                    'field_key' => \ContentLatch\Domain\FieldRef::resolutionIdFor(
                         AcfCloneFixtures::CLONE_FLEX,
                         AcfCloneFixtures::TITLE
                     ),

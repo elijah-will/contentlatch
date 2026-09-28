@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfSaveValidator;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AcfCloneSaveValidatorTest extends TestCase
@@ -72,7 +72,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
         );
 
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::CLONE_GROUP . '][' . AcfCloneFixtures::cloneGroupDetailsPosted() . '][' . AcfCloneFixtures::INGREDIENTS . ']',
             $this->errors[1]['input']
@@ -100,7 +100,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
         );
 
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::REPEATER . '][row-0][' . AcfCloneFixtures::CLONE_REP . '][' . AcfCloneFixtures::cloneRepTitlePosted() . ']',
             $this->errors[1]['input']
@@ -124,7 +124,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
         );
 
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             'acf[' . AcfCloneFixtures::FLEX . '][row-2][' . AcfCloneFixtures::CLONE_FLEX . '][' . AcfCloneFixtures::cloneFlexTitlePosted() . ']',
             $this->errors[1]['input']
@@ -176,7 +176,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
     {
         $this->assertNotSame(array(), $this->errors);
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertSame(
             array(
                 array(
@@ -232,7 +232,7 @@ final class AcfCloneSaveValidatorTest extends TestCase
     }
 
     private function requiredRule(
-        \ContentGuard\Domain\FieldRef $field,
+        \ContentLatch\Domain\FieldRef $field,
         string $quantifier = '',
         RuleSeverity $severity = RuleSeverity::Fail
     ): Rule {

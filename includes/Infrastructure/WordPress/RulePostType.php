@@ -2,20 +2,20 @@
 /**
  * Hidden CPT for rule persistence.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
 final class RulePostType
 {
-    public const POST_TYPE = 'contentguard_rule';
-    public const TARGET_META_KEY = '_contentguard_post_type';
-    public const DOCUMENT_META_KEY = '_contentguard_rule_document';
+    public const POST_TYPE = 'contentlatch_rule';
+    public const TARGET_META_KEY = '_contentlatch_post_type';
+    public const DOCUMENT_META_KEY = '_contentlatch_rule_document';
 
     public static function register(): void
     {
@@ -27,8 +27,8 @@ final class RulePostType
             self::POST_TYPE,
             array(
                 'labels'              => array(
-                    'name'          => __('ContentGuard Rules', 'contentguard'),
-                    'singular_name' => __('ContentGuard Rule', 'contentguard'),
+                    'name'          => __('ContentLatch Rules', 'contentlatch'),
+                    'singular_name' => __('ContentLatch Rule', 'contentlatch'),
                 ),
                 'public'              => false,
                 'publicly_queryable'  => false,

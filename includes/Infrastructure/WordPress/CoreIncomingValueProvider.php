@@ -5,17 +5,17 @@
  * Accepts Core resolution ids and WordPress post-field aliases. Does not
  * read request superglobals and does not query stored post values.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\FieldInstance;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\FieldInstance;
 
 final class CoreIncomingValueProvider implements FieldValueProviderInterface
 {

@@ -2,25 +2,25 @@
 /**
  * Capability- and nonce-gated audit AJAX actions.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\Exception\AuditException;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
 
 final class AuditAjaxController
 {
-    public const ACTION_START  = 'contentguard_audit_start';
-    public const ACTION_BATCH  = 'contentguard_audit_batch';
-    public const ACTION_CANCEL = 'contentguard_audit_cancel';
-    public const ACTION_STATUS = 'contentguard_audit_status';
+    public const ACTION_START  = 'contentlatch_audit_start';
+    public const ACTION_BATCH  = 'contentlatch_audit_batch';
+    public const ACTION_CANCEL = 'contentlatch_audit_cancel';
+    public const ACTION_STATUS = 'contentlatch_audit_status';
 
     /**
      * @param callable(): bool       $canManage
@@ -136,7 +136,7 @@ final class AuditAjaxController
                         : null,
                 );
             }),
-            default => array('ok' => false, 'message' => __('Unknown audit action.', 'contentguard')),
+            default => array('ok' => false, 'message' => __('Unknown audit action.', 'contentlatch')),
         };
     }
 
@@ -196,13 +196,13 @@ final class AuditAjaxController
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
-            return array('ok' => false, 'message' => __('You are not allowed to run ContentGuard audits.', 'contentguard'));
+            return array('ok' => false, 'message' => __('You are not allowed to run ContentLatch audits.', 'contentlatch'));
         }
 
         $nonce = $this->postedNonce();
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
-            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentguard'));
+            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentlatch'));
         }
 
         return null;
@@ -231,7 +231,7 @@ final class AuditAjaxController
     /**
      * @return array<string, mixed>
      */
-    private function runPayload(\ContentGuard\Application\Audit\AuditRun $run): array
+    private function runPayload(\ContentLatch\Application\Audit\AuditRun $run): array
     {
         return array(
             'id'                  => $run->id,

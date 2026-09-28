@@ -2,12 +2,12 @@
 /**
  * Audit request or state error.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Exception;
+namespace ContentLatch\Application\Exception;
 
 defined('ABSPATH') || exit;
 

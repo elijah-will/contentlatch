@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Application\RuleMutationPresentation;
-use ContentGuard\Domain\Exception\InvalidRuleException;
+use ContentLatch\Application\Exception\ForbiddenRuleMutationException;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\RuleMutationPresentation;
+use ContentLatch\Domain\Exception\InvalidRuleException;
 use PHPUnit\Framework\TestCase;
 
 final class RuleMutationPresentationTest extends TestCase
@@ -25,9 +25,9 @@ final class RuleMutationPresentationTest extends TestCase
             )
         );
         $this->assertSame(
-            'We could not save this rule. You are not allowed to manage ContentGuard rules.',
+            'We could not save this rule. You are not allowed to manage ContentLatch rules.',
             RuleMutationPresentation::saveFailureMessage(
-                new ForbiddenRuleMutationException('You are not allowed to manage ContentGuard rules.')
+                new ForbiddenRuleMutationException('You are not allowed to manage ContentLatch rules.')
             )
         );
         $this->assertSame('Rule added.', RuleMutationPresentation::addedMessage());

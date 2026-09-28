@@ -2,12 +2,12 @@
 /**
  * Human-readable Rule Builder preview. Presentation only.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
@@ -15,32 +15,32 @@ final class RulePreview
 {
     public static function needThenMessage(): string
     {
-        return __('Add a THEN requirement to preview this rule.', 'contentguard');
+        return __('Add a THEN requirement to preview this rule.', 'contentlatch');
     }
 
     public static function needWhenOrThenMessage(): string
     {
-        return __('Add a WHEN condition or THEN requirement to preview this rule.', 'contentguard');
+        return __('Add a WHEN condition or THEN requirement to preview this rule.', 'contentlatch');
     }
 
     public static function incompleteWhenMessage(): string
     {
-        return __('Finish the WHEN condition to preview this rule.', 'contentguard');
+        return __('Finish the WHEN condition to preview this rule.', 'contentlatch');
     }
 
     public static function incompleteThenMessage(): string
     {
-        return __('Finish the THEN requirement to preview this rule.', 'contentguard');
+        return __('Finish the THEN requirement to preview this rule.', 'contentlatch');
     }
 
     public static function conditionOnlyBlockingMessage(): string
     {
-        return __('this rule blocks publishing', 'contentguard');
+        return __('this rule blocks publishing', 'contentlatch');
     }
 
     public static function conditionOnlyWarningMessage(): string
     {
-        return __('this rule reports a warning', 'contentguard');
+        return __('this rule reports a warning', 'contentlatch');
     }
 
     /**
@@ -73,16 +73,16 @@ final class RulePreview
                 : self::conditionOnlyBlockingMessage();
 
             /* translators: 1: When conditions phrase. 2: Consequence phrase (blocks publishing / reports a warning). */
-            return sprintf(__('When %1$s, %2$s.', 'contentguard'), $when['text'], $consequence);
+            return sprintf(__('When %1$s, %2$s.', 'contentlatch'), $when['text'], $consequence);
         }
 
         if ($when['text'] === '') {
             /* translators: %s: Then requirement phrase. */
-            return sprintf(__('%s.', 'contentguard'), $then['text']);
+            return sprintf(__('%s.', 'contentlatch'), $then['text']);
         }
 
         /* translators: 1: When conditions phrase. 2: Then requirement phrase. */
-        return sprintf(__('When %1$s, %2$s.', 'contentguard'), $when['text'], $then['text']);
+        return sprintf(__('When %1$s, %2$s.', 'contentlatch'), $when['text'], $then['text']);
     }
 
     /**
@@ -129,7 +129,7 @@ final class RulePreview
         return array(
             'state' => 'ready',
             /* translators: Joins multiple When condition phrases. */
-            'text'  => implode(__(' and ', 'contentguard'), $parts),
+            'text'  => implode(__(' and ', 'contentlatch'), $parts),
         );
     }
 
@@ -183,7 +183,7 @@ final class RulePreview
         return array(
             'state' => 'ready',
             /* translators: Joins multiple Then requirement phrases. */
-            'text'  => implode(__(' and ', 'contentguard'), $parts),
+            'text'  => implode(__(' and ', 'contentlatch'), $parts),
         );
     }
 
@@ -203,25 +203,25 @@ final class RulePreview
 
         return match ($operator) {
             /* translators: 1: Field label. 2: Comparison value. */
-            'equals'                => sprintf(__('%1$s is %2$s', 'contentguard'), $field, $value),
+            'equals'                => sprintf(__('%1$s is %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'not_equals'            => sprintf(__('%1$s is not %2$s', 'contentguard'), $field, $value),
+            'not_equals'            => sprintf(__('%1$s is not %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'contains'              => sprintf(__('%1$s contains %2$s', 'contentguard'), $field, $value),
+            'contains'              => sprintf(__('%1$s contains %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'does_not_contain'      => sprintf(__('%1$s does not contain %2$s', 'contentguard'), $field, $value),
+            'does_not_contain'      => sprintf(__('%1$s does not contain %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than'          => sprintf(__('%1$s is greater than %2$s', 'contentguard'), $field, $value),
+            'greater_than'          => sprintf(__('%1$s is greater than %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'greater_than_or_equal' => sprintf(__('%1$s is at least %2$s', 'contentguard'), $field, $value),
+            'greater_than_or_equal' => sprintf(__('%1$s is at least %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than'             => sprintf(__('%1$s is less than %2$s', 'contentguard'), $field, $value),
+            'less_than'             => sprintf(__('%1$s is less than %2$s', 'contentlatch'), $field, $value),
             /* translators: 1: Field label. 2: Comparison value. */
-            'less_than_or_equal'    => sprintf(__('%1$s is at most %2$s', 'contentguard'), $field, $value),
+            'less_than_or_equal'    => sprintf(__('%1$s is at most %2$s', 'contentlatch'), $field, $value),
             /* translators: %s: Field label. */
-            'is_empty'              => sprintf(__('%s is empty', 'contentguard'), $field),
+            'is_empty'              => sprintf(__('%s is empty', 'contentlatch'), $field),
             /* translators: %s: Field label. */
-            'is_not_empty'          => sprintf(__('%s is not empty', 'contentguard'), $field),
+            'is_not_empty'          => sprintf(__('%s is not empty', 'contentlatch'), $field),
             default                 => $field . ' ' . $operator,
         };
     }
@@ -230,13 +230,13 @@ final class RulePreview
     {
         return match ($type) {
             /* translators: %s: Field label. */
-            'required'       => sprintf(__('%s is required', 'contentguard'), $field),
+            'required'       => sprintf(__('%s is required', 'contentlatch'), $field),
             /* translators: 1: Field label. 2: Minimum character count. */
-            'min_length'     => sprintf(__('%1$s must be at least %2$s characters', 'contentguard'), $field, $min),
+            'min_length'     => sprintf(__('%1$s must be at least %2$s characters', 'contentlatch'), $field, $min),
             /* translators: 1: Field label. 2: Maximum character count. */
-            'max_length'     => sprintf(__('%1$s must be at most %2$s characters', 'contentguard'), $field, $max),
+            'max_length'     => sprintf(__('%1$s must be at most %2$s characters', 'contentlatch'), $field, $max),
             /* translators: 1: Field label. 2: Allowed values list. */
-            'allowed_values' => sprintf(__('%1$s must be one of: %2$s', 'contentguard'), $field, $values),
+            'allowed_values' => sprintf(__('%1$s must be one of: %2$s', 'contentlatch'), $field, $values),
             default          => $field . ' ' . $type,
         };
     }

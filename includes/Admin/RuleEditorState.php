@@ -2,18 +2,18 @@
 /**
  * Rule builder form state, including invalid submissions.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
 
 final class RuleEditorState
 {

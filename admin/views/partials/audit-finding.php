@@ -3,7 +3,7 @@
 /**
  * One audit finding (or grouped findings) as a compact content-first row.
  *
- * @package ContentGuard
+ * @package ContentLatch
  *
  * @var string $title
  * @var string $message
@@ -23,10 +23,10 @@
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\AdminView;
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\EditorFieldNavigation;
+use ContentLatch\Admin\AdminView;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\EditorFieldNavigation;
 
 $title    = isset($title) && is_string($title) ? $title : '';
 $field    = isset($field) && is_string($field) ? $field : '';
@@ -49,7 +49,7 @@ $issueCount  = isset($issueCount) ? (int) $issueCount : ($fieldIssues !== array(
 $blockingCount = isset($blockingCount) ? (int) $blockingCount : 0;
 $warningCount  = isset($warningCount) ? (int) $warningCount : 0;
 $display       = AuditPresentation::postTitle($title);
-$headingId     = 'contentguard-finding-title-' . $uid;
+$headingId     = 'contentlatch-finding-title-' . $uid;
 $primary       = $statuses[0] ?? 'blocking';
 $modifier      = $primary === 'warning' ? 'warning' : 'blocking';
 $multiple      = $issueCount > 1;
@@ -85,17 +85,17 @@ if ($visibleFields === array() && $field !== '') {
 $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
 ?>
 <article
-    class="contentguard-finding contentguard-finding--<?php echo esc_attr($modifier); ?><?php echo $multiple ? ' contentguard-finding--grouped' : ''; ?>"
+    class="contentlatch-finding contentlatch-finding--<?php echo esc_attr($modifier); ?><?php echo $multiple ? ' contentlatch-finding--grouped' : ''; ?>"
     aria-labelledby="<?php echo esc_attr($headingId); ?>"
 >
-    <div class="contentguard-finding__headline">
-        <h3 class="contentguard-finding__title" id="<?php echo esc_attr($headingId); ?>"><?php echo esc_html($display); ?></h3>
+    <div class="contentlatch-finding__headline">
+        <h3 class="contentlatch-finding__title" id="<?php echo esc_attr($headingId); ?>"><?php echo esc_html($display); ?></h3>
         <?php if ($multiple) : ?>
-            <span class="contentguard-finding__sep" aria-hidden="true">·</span>
-            <span class="contentguard-finding__count"><?php echo esc_html($countLabel); ?></span>
+            <span class="contentlatch-finding__sep" aria-hidden="true">·</span>
+            <span class="contentlatch-finding__count"><?php echo esc_html($countLabel); ?></span>
         <?php endif; ?>
         <?php foreach ($statuses as $statusKey) : ?>
-            <span class="contentguard-finding__sep" aria-hidden="true">·</span>
+            <span class="contentlatch-finding__sep" aria-hidden="true">·</span>
             <?php AdminView::partial('status-pill', array('status' => $statusKey)); ?>
         <?php endforeach; ?>
         <?php if ($multiple && $blockingCount > 0 && $warningCount > 0) : ?>
@@ -105,13 +105,13 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
         <?php endif; ?>
     </div>
     <?php if ($postType !== '' || $visibleFields !== array()) : ?>
-        <p class="contentguard-finding__meta">
+        <p class="contentlatch-finding__meta">
             <?php if ($postType !== '') : ?>
-                <span class="contentguard-finding__type"><?php echo esc_html($postType); ?></span>
+                <span class="contentlatch-finding__type"><?php echo esc_html($postType); ?></span>
             <?php endif; ?>
             <?php if ($allFieldNames !== array()) : ?>
                 <span class="screen-reader-text">
-                    <?php echo esc_html(sprintf(/* translators: %s: comma-separated field names */ __('Affected fields: %s', 'contentguard'), implode(', ', $allFieldNames))); ?>
+                    <?php echo esc_html(sprintf(/* translators: %s: comma-separated field names */ __('Affected fields: %s', 'contentlatch'), implode(', ', $allFieldNames))); ?>
                 </span>
             <?php endif; ?>
             <?php foreach ($visibleFields as $index => $issue) : ?>
@@ -122,21 +122,21 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
                 $canLink    = $issueEdit !== '' && EditorFieldNavigation::isQueryTarget($issueKey);
                 ?>
                 <?php if ($postType !== '' || $index > 0) : ?>
-                    <span class="contentguard-finding__sep" aria-hidden="true">·</span>
+                    <span class="contentlatch-finding__sep" aria-hidden="true">·</span>
                 <?php endif; ?>
                 <?php if ($canLink) : ?>
                     <a
-                        class="contentguard-finding__field"
+                        class="contentlatch-finding__field"
                         href="<?php echo esc_url($issueEdit); ?>"
                         aria-label="<?php echo esc_attr(AuditPresentation::goToFieldEditAria($issueLabel)); ?>"
                     ><?php echo esc_html($issueLabel); ?></a>
                 <?php else : ?>
-                    <span class="contentguard-finding__field"><?php echo esc_html($issueLabel); ?></span>
+                    <span class="contentlatch-finding__field"><?php echo esc_html($issueLabel); ?></span>
                 <?php endif; ?>
             <?php endforeach; ?>
             <?php if ($hiddenFields > 0) : ?>
-                <span class="contentguard-finding__sep" aria-hidden="true">·</span>
-                <span class="contentguard-finding__more"><?php echo esc_html(AuditPresentation::moreFieldsLabel($hiddenFields)); ?></span>
+                <span class="contentlatch-finding__sep" aria-hidden="true">·</span>
+                <span class="contentlatch-finding__more"><?php echo esc_html(AuditPresentation::moreFieldsLabel($hiddenFields)); ?></span>
             <?php endif; ?>
         </p>
     <?php endif; ?>
@@ -165,36 +165,36 @@ $hiddenFields = max(0, count($allFieldNames) - count($visibleFields));
     }
     ?>
     <?php if ($summaryDisplay !== '') : ?>
-        <p class="contentguard-finding__issue">
+        <p class="contentlatch-finding__issue">
             <?php echo esc_html($summaryDisplay); ?>
             <?php if ($nestedTokens !== array()) : ?>
-                <span class="contentguard-finding__rows">
-                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentguard'); ?></span>
+                <span class="contentlatch-finding__rows">
+                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentlatch'); ?></span>
                     <?php foreach ($nestedTokens as $index => $token) : ?>
                         <?php if ($index > 0) : ?><span aria-hidden="true"> · </span><?php endif; ?>
                         <span><?php echo esc_html($token); ?></span>
                     <?php endforeach; ?>
                 </span>
             <?php elseif ($affectedRows !== array()) : ?>
-                <span class="contentguard-finding__rows">
-                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentguard'); ?></span>
+                <span class="contentlatch-finding__rows">
+                    <span class="screen-reader-text"><?php echo esc_html__('Affected rows:', 'contentlatch'); ?></span>
                     <?php foreach ($affectedRows as $index => $row) : ?>
                         <?php if ($index > 0) : ?><span aria-hidden="true"> · </span><?php endif; ?>
-                        <span><?php echo esc_html(sprintf(/* translators: %d: 1-based Flexible Content row number */ __('Row %d', 'contentguard'), $row)); ?></span>
+                        <span><?php echo esc_html(sprintf(/* translators: %d: 1-based Flexible Content row number */ __('Row %d', 'contentlatch'), $row)); ?></span>
                     <?php endforeach; ?>
                 </span>
             <?php endif; ?>
         </p>
     <?php endif; ?>
-    <p class="contentguard-finding__footer">
+    <p class="contentlatch-finding__footer">
         <?php if ($rule !== '') : ?>
-            <span class="contentguard-finding__rule">
-                <?php echo esc_html(sprintf(/* translators: %s: rule name */ __('Rule: %s', 'contentguard'), $rule)); ?>
+            <span class="contentlatch-finding__rule">
+                <?php echo esc_html(sprintf(/* translators: %s: rule name */ __('Rule: %s', 'contentlatch'), $rule)); ?>
             </span>
         <?php endif; ?>
         <?php if ($editUrl !== '') : ?>
             <a
-                class="contentguard-button--link contentguard-finding__action"
+                class="contentlatch-button--link contentlatch-finding__action"
                 href="<?php echo esc_url($editUrl); ?>"
                 aria-label="<?php echo esc_attr(AuditPresentation::editContentAria($title)); ?>"
             >

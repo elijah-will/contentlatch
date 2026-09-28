@@ -2,17 +2,17 @@
 /**
  * Field values from stored ACF post meta.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\FieldInstance;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\FieldInstance;
 
 final class AcfStoredValueProvider implements FieldValueProviderInterface
 {

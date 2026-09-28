@@ -2,16 +2,16 @@
 /**
  * Clean field metadata for the application. Not a raw ACF field array.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\FieldRef;
+use ContentLatch\Domain\FieldRef;
 
 final class FieldDefinition
 {

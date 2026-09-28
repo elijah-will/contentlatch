@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain\Validators;
+namespace ContentLatch\Tests\Unit\Domain\Validators;
 
-use ContentGuard\Domain\Validators\AllowedValuesValidator;
+use ContentLatch\Domain\Validators\AllowedValuesValidator;
 use PHPUnit\Framework\TestCase;
 
 final class AllowedValuesValidatorTest extends TestCase

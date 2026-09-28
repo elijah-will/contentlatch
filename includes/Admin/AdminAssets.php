@@ -1,27 +1,27 @@
 <?php
 /**
- * Shared ContentGuard admin assets.
+ * Shared ContentLatch admin assets.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
 final class AdminAssets
 {
-    public const STYLE = 'contentguard-admin';
+    public const STYLE = 'contentlatch-admin';
 
     public static function enqueueShared(): void
     {
         wp_register_style(
             self::STYLE,
-            CONTENTGUARD_URL . 'admin/css/contentguard.css',
+            CONTENTLATCH_URL . 'admin/css/contentlatch.css',
             array(),
-            \ContentGuard\Plugin::VERSION
+            \ContentLatch\Plugin::VERSION
         );
         wp_enqueue_style(self::STYLE);
     }

@@ -1,5 +1,5 @@
 {
-    "name": "contentguard/contentguard",
+    "name": "contentlatch/contentlatch",
     "description": "Content quality-control rules for ACF-backed WordPress content.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
@@ -11,12 +11,12 @@
     },
     "autoload": {
         "psr-4": {
-            "ContentGuard\\": "includes/"
+            "ContentLatch\\": "includes/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "ContentGuard\\Tests\\": "tests/"
+            "ContentLatch\\Tests\\": "tests/"
         }
     },
     "config": {

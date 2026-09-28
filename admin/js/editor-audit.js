@@ -1,6 +1,6 @@
 (function () {
-  var config = window.contentguardEditorAudit || {};
-  var NOTICE_ID = "contentguard-audit-blockers";
+  var config = window.contentlatchEditorAudit || {};
+  var NOTICE_ID = "contentlatch-audit-blockers";
   var html = typeof config.html === "string" ? config.html : "";
   var text = typeof config.text === "string" ? config.text : "";
 

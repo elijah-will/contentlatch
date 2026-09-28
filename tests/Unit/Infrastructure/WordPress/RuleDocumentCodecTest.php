@@ -1,18 +1,18 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
-use ContentGuard\Infrastructure\WordPress\RuleDocumentCodec;
-use ContentGuard\Infrastructure\WordPress\RulePostRecord;
-use ContentGuard\Tests\Support\FakeRulePostStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Infrastructure\WordPress\RuleDocumentCodec;
+use ContentLatch\Infrastructure\WordPress\RulePostRecord;
+use ContentLatch\Tests\Support\FakeRulePostStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleDocumentCodecTest extends TestCase
@@ -165,7 +165,7 @@ final class RuleDocumentCodecTest extends TestCase
         );
     }
 
-    private function encodeRule(\ContentGuard\Domain\Rule $rule): string
+    private function encodeRule(\ContentLatch\Domain\Rule $rule): string
     {
         $json = json_encode($rule->toArray(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $this->assertIsString($json);
@@ -178,7 +178,7 @@ final class RuleDocumentCodecTest extends TestCase
         return $this->encodeRule($this->showNewTagRule($operand));
     }
 
-    private function showNewTagRule(string $operand): \ContentGuard\Domain\Rule
+    private function showNewTagRule(string $operand): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(
             array(

@@ -1,19 +1,19 @@
 <?php
 /**
- * ContentGuard capabilities.
+ * ContentLatch capabilities.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
 final class Capabilities
 {
-    public const MANAGE = 'manage_contentguard';
+    public const MANAGE = 'manage_contentlatch';
 
     public static function grant(): void
     {

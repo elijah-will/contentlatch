@@ -1,6 +1,6 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ if (!function_exists('get_post_field')) {
         unset($context);
         $id = is_numeric($post) ? (int) $post : 0;
 
-        return $GLOBALS['contentguard_test_post_fields'][$id][$field] ?? false;
+        return $GLOBALS['contentlatch_test_post_fields'][$id][$field] ?? false;
     }
 }
 
@@ -58,6 +58,6 @@ if (!function_exists('get_post_thumbnail_id')) {
     {
         $id = is_object($post) && isset($post->ID) ? (int) $post->ID : (int) $post;
 
-        return (int) ($GLOBALS['contentguard_test_thumbnails'][$id] ?? 0);
+        return (int) ($GLOBALS['contentlatch_test_thumbnails'][$id] ?? 0);
     }
 }

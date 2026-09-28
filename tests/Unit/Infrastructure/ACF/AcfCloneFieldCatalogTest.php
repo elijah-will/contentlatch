@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfCloneFieldCatalogTest extends TestCase

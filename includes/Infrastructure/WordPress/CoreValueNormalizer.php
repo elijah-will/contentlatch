@@ -5,12 +5,12 @@
  * Core-specific: empty Gutenberg markup becomes empty, missing thumbnails
  * become empty, and author 0 becomes empty. ACF normalization is unchanged.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 

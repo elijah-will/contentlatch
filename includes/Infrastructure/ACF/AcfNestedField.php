@@ -3,12 +3,12 @@
  * Trusted Group-child path helpers. Paths must come from the catalog or a
  * validated FieldRef — never from an arbitrary user-supplied string.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 

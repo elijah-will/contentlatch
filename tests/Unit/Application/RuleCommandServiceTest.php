@@ -1,18 +1,18 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Exception\ForbiddenRuleMutationException;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleCommandServiceTest extends TestCase

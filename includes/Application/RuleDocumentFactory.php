@@ -10,22 +10,22 @@
  * Duplicate resolution ids are omitted from the selectable map rather than
  * last-win. Adapters must choose unique ids; colliding ids cannot be persisted.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Operators\OperatorRegistry;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\Validators\ValidatorRegistry;
-use ContentGuard\Domain\Value;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Operators\OperatorRegistry;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\Validators\ValidatorRegistry;
+use ContentLatch\Domain\Value;
 
 final class RuleDocumentFactory
 {
@@ -87,23 +87,23 @@ final class RuleDocumentFactory
 
         if ($name === '') {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Rule name is required.', 'contentguard'));
+            throw new InvalidRuleException(__('Rule name is required.', 'contentlatch'));
         }
 
         $allowedTypes = $this->allowedPostTypes();
         if ($postType === '' || !isset($allowedTypes[$postType])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Unsupported post type.', 'contentguard'));
+            throw new InvalidRuleException(__('Unsupported post type.', 'contentlatch'));
         }
 
         if (!in_array($status, array('active', 'inactive'), true)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Invalid rule status.', 'contentguard'));
+            throw new InvalidRuleException(__('Invalid rule status.', 'contentlatch'));
         }
 
         if (!in_array($severity, array('fail', 'warning'), true)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Invalid rule severity.', 'contentguard'));
+            throw new InvalidRuleException(__('Invalid rule severity.', 'contentlatch'));
         }
 
         $fields      = $this->fieldsByKey($postType);
@@ -112,7 +112,7 @@ final class RuleDocumentFactory
 
         if ($conditions === array() && $validations === array()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Add a WHEN condition or THEN requirement.', 'contentguard'));
+            throw new InvalidRuleException(__('Add a WHEN condition or THEN requirement.', 'contentlatch'));
         }
 
         $document = array(
@@ -174,7 +174,7 @@ final class RuleDocumentFactory
     {
         if (!isset($this->allowedPostTypes()[$postType])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Unsupported post type.', 'contentguard'));
+            throw new InvalidRuleException(__('Unsupported post type.', 'contentlatch'));
         }
 
         return array_values($this->fieldsByKey($postType));
@@ -235,7 +235,7 @@ final class RuleDocumentFactory
     {
         if (!is_array($rows)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Rule conditions must be an array.', 'contentguard'));
+            throw new InvalidRuleException(__('Rule conditions must be an array.', 'contentlatch'));
         }
 
         $conditions = array();
@@ -244,7 +244,7 @@ final class RuleDocumentFactory
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Rule conditions entries must be objects.', 'contentguard'));
+                throw new InvalidRuleException(__('Rule conditions entries must be objects.', 'contentlatch'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -255,7 +255,7 @@ final class RuleDocumentFactory
             $operator = (string) ($row['operator'] ?? '');
             if (!$this->operators->has($operator)) {
                 /* translators: %s: Condition operator key. */
-                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentguard'), $operator)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
+                throw new InvalidRuleException(sprintf(__('Unknown condition operator "%s".', 'contentlatch'), $operator)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
 
             $field     = $this->fieldRef($fieldKey, $fields);
@@ -265,27 +265,27 @@ final class RuleDocumentFactory
                 $operand = $row['operand'] ?? '';
                 if (!is_scalar($operand) && !is_bool($operand)) {
                     // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    throw new InvalidRuleException(__('A condition value is required.', 'contentguard'));
+                    throw new InvalidRuleException(__('A condition value is required.', 'contentlatch'));
                 }
                 $operand = self::normalizeConditionOperand($operand, $fieldType);
                 if ($operand === '') {
                     // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                    throw new InvalidRuleException(__('A condition value is required.', 'contentguard'));
+                    throw new InvalidRuleException(__('A condition value is required.', 'contentlatch'));
                 }
                 if (ConditionOperators::isNumericComparison($operator)) {
                     if (!ConditionOperators::isNumericField($fieldType)) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(__('Numeric comparisons can only be used with number fields.', 'contentguard'));
+                        throw new InvalidRuleException(__('Numeric comparisons can only be used with number fields.', 'contentlatch'));
                     }
                     if (Value::tryNumber($operand) === null) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(__('A numeric condition value is required.', 'contentguard'));
+                        throw new InvalidRuleException(__('A numeric condition value is required.', 'contentlatch'));
                     }
                 }
                 if (ConditionOperators::isStringContains($operator)) {
                     if (!ConditionOperators::isStringContentField($fieldType)) {
                         // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                        throw new InvalidRuleException(__('Contains conditions can only be used with text fields.', 'contentguard'));
+                        throw new InvalidRuleException(__('Contains conditions can only be used with text fields.', 'contentlatch'));
                     }
                 }
             } else {
@@ -314,7 +314,7 @@ final class RuleDocumentFactory
     {
         if (!is_array($rows)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Rule validations must be an array.', 'contentguard'));
+            throw new InvalidRuleException(__('Rule validations must be an array.', 'contentlatch'));
         }
 
         $validations = array();
@@ -323,7 +323,7 @@ final class RuleDocumentFactory
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Rule validations entries must be objects.', 'contentguard'));
+                throw new InvalidRuleException(__('Rule validations entries must be objects.', 'contentlatch'));
             }
 
             $fieldKey = (string) ($row['field_key'] ?? '');
@@ -334,12 +334,12 @@ final class RuleDocumentFactory
 
             if ($type === '') {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Each requirement needs a field and a validator.', 'contentguard'));
+                throw new InvalidRuleException(__('Each requirement needs a field and a validator.', 'contentlatch'));
             }
 
             if (!$this->validators->has($type)) {
                 /* translators: %s: Validation type key. */
-                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentguard'), $type)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
+                throw new InvalidRuleException(sprintf(__('Unknown validation type "%s".', 'contentlatch'), $type)); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception text is not HTML; the admin notice escapes it before display.
             }
 
             $message = trim((string) ($row['message'] ?? ''));
@@ -357,7 +357,7 @@ final class RuleDocumentFactory
                 'message' => $message,
             );
             if ($field->isRepeaterChild() || $field->isFlexibleChild()) {
-                $item['quantifier'] = \ContentGuard\Domain\Validation::QUANTIFIER_EVERY;
+                $item['quantifier'] = \ContentLatch\Domain\Validation::QUANTIFIER_EVERY;
             }
             $validations[] = $item;
             ++$index;
@@ -376,7 +376,7 @@ final class RuleDocumentFactory
             $min = $row['min'] ?? ($row['params']['min'] ?? null);
             if (!is_numeric($min) || (int) $min < 0) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Minimum length is not configured.', 'contentguard'));
+                throw new InvalidRuleException(__('Minimum length is not configured.', 'contentlatch'));
             }
 
             return array('min' => (int) $min);
@@ -386,7 +386,7 @@ final class RuleDocumentFactory
             $max = $row['max'] ?? ($row['params']['max'] ?? null);
             if (!is_numeric($max) || (int) $max < 0) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Maximum length is not configured.', 'contentguard'));
+                throw new InvalidRuleException(__('Maximum length is not configured.', 'contentlatch'));
             }
 
             return array('max' => (int) $max);
@@ -397,7 +397,7 @@ final class RuleDocumentFactory
             $values = $this->allowedValues($raw);
             if ($values === array()) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Enter at least one allowed value.', 'contentguard'));
+                throw new InvalidRuleException(__('Enter at least one allowed value.', 'contentlatch'));
             }
 
             return array('values' => $values);
@@ -445,7 +445,7 @@ final class RuleDocumentFactory
     {
         if (!isset($fields[$key])) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Unsupported field.', 'contentguard'));
+            throw new InvalidRuleException(__('Unsupported field.', 'contentlatch'));
         }
 
         $field = $fields[$key];
@@ -475,7 +475,7 @@ final class RuleDocumentFactory
 
         if ($ref->resolutionId() !== $key) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new InvalidRuleException(__('Unsupported field.', 'contentguard'));
+            throw new InvalidRuleException(__('Unsupported field.', 'contentlatch'));
         }
 
         return $ref;
@@ -496,7 +496,7 @@ final class RuleDocumentFactory
         foreach ($raw as $segment) {
             if (!is_string($segment)) {
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                throw new InvalidRuleException(__('Invalid field path.', 'contentguard'));
+                throw new InvalidRuleException(__('Invalid field path.', 'contentlatch'));
             }
 
             $path[] = $segment;

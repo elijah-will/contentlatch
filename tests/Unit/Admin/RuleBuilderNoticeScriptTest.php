@@ -1,11 +1,11 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -20,11 +20,11 @@ final class RuleBuilderNoticeScriptTest extends TestCase
         $this->assertStringContainsString('"smooth"', $js);
         $this->assertStringContainsString('"auto"', $js);
         $this->assertStringContainsString('preventScroll: true', $js);
-        $this->assertStringContainsString('contentguard-notice-message', $js);
-        $this->assertStringContainsString('contentguard-notice-label', $js);
+        $this->assertStringContainsString('contentlatch-notice-message', $js);
+        $this->assertStringContainsString('contentlatch-notice-label', $js);
         $this->assertStringContainsString('Warning:', $js);
-        $this->assertStringContainsString('#contentguard-rule-notice', $js);
-        $this->assertStringContainsString('contentguardPendingNoticeScroll', $js);
+        $this->assertStringContainsString('#contentlatch-rule-notice', $js);
+        $this->assertStringContainsString('contentlatchPendingNoticeScroll', $js);
         $this->assertStringContainsString('window.history.replaceState', $js);
         $this->assertStringContainsString('window.scrollTo(0, 0)', $js);
         $this->assertStringContainsString('field.breadcrumb', $js);

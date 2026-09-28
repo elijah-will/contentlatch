@@ -5,12 +5,12 @@
  * Empty means: null, false, '', or [].
  * Integer 0 and string "0" are not empty.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 final class Value
 {

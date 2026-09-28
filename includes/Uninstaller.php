@@ -2,19 +2,19 @@
 /**
  * Removes plugin data on uninstall.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard;
+namespace ContentLatch;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\RuleEditorDraftStore;
-use ContentGuard\Infrastructure\WordPress\AuditSchema;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Admin\RuleEditorDraftStore;
+use ContentLatch\Infrastructure\WordPress\AuditSchema;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
 
 final class Uninstaller
 {

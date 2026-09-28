@@ -2,16 +2,16 @@
 /**
  * In-memory CPT store for repository tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Infrastructure\WordPress\RulePostRecord;
-use ContentGuard\Infrastructure\WordPress\RulePostStoreInterface;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Infrastructure\WordPress\RulePostRecord;
+use ContentLatch\Infrastructure\WordPress\RulePostStoreInterface;
 
 final class FakeRulePostStore implements RulePostStoreInterface
 {

@@ -2,27 +2,27 @@
 /**
  * Audit table installation via dbDelta.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom tables have no Core API equivalent.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema existence checks are not object-cache data.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange -- dbDelta install and uninstall DROP TABLE are intentional.
-// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentGuard table constants; SHOW/DROP use prepare (%s/%i); dbDelta CREATE strings are intentionally interpolated.
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentLatch table constants; SHOW/DROP use prepare (%s/%i); dbDelta CREATE strings are intentionally interpolated.
 
 final class AuditSchema
 {
     public const VERSION        = '2';
-    public const OPTION_KEY     = 'contentguard_db_version';
-    public const RUNS_TABLE     = 'contentguard_audit_runs';
-    public const FINDINGS_TABLE = 'contentguard_audit_findings';
-    public const LOCK_OPTION    = 'contentguard_audit_lock';
+    public const OPTION_KEY     = 'contentlatch_db_version';
+    public const RUNS_TABLE     = 'contentlatch_audit_runs';
+    public const FINDINGS_TABLE = 'contentlatch_audit_findings';
+    public const LOCK_OPTION    = 'contentlatch_audit_lock';
     public const CURSOR_COLUMN  = 'scan_cursor';
 
     public static function tableName(string $suffix): string

@@ -7,17 +7,17 @@
  * Stored reads use get_post_field( ..., 'raw' ) so REST/display filters
  * cannot make a valid Core value look empty.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\FieldInstance;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\FieldInstance;
 
 final class CoreStoredValueProvider implements FieldValueProviderInterface
 {

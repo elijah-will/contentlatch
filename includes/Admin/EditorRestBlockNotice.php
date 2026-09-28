@@ -1,26 +1,26 @@
 <?php
 /**
- * Gutenberg presentation for ContentGuard REST save blocking errors.
+ * Gutenberg presentation for ContentLatch REST save blocking errors.
  *
  * Does not change REST validation. HTTP 400 with
- * contentguard_validation_failed remains the source of truth. This class
+ * contentlatch_validation_failed remains the source of truth. This class
  * only enqueues the editor script that replaces Gutenberg's generic save
- * notice with the existing ContentGuard blocking notice chrome.
+ * notice with the existing ContentLatch blocking notice chrome.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
+use ContentLatch\Infrastructure\WordPress\RestSaveValidator;
 
 final class EditorRestBlockNotice
 {
-    public const NOTICE_ID       = 'contentguard-audit-blockers';
+    public const NOTICE_ID       = 'contentlatch-audit-blockers';
     public const SAVE_NOTICE_ID  = 'SAVE_POST_NOTICE_ID';
     public const SAVE_NOTICE_IDS = array('SAVE_POST_NOTICE_ID', 'editor-save');
 
@@ -51,39 +51,39 @@ final class EditorRestBlockNotice
 
         // acf-input owns validation_complete / validation_failure (ACF 6.0+ Free/Pro).
         // Declaring it as a dependency guarantees those hooks exist before this script runs.
-        $deps = array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field');
+        $deps = array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentlatch-editor-field');
         if (function_exists('wp_script_is') && wp_script_is('acf-input', 'registered')) {
             $deps[] = 'acf-input';
         }
 
         wp_register_script(
-            'contentguard-editor-rest-blockers',
-            CONTENTGUARD_URL . 'admin/js/editor-rest-blockers.js',
+            'contentlatch-editor-rest-blockers',
+            CONTENTLATCH_URL . 'admin/js/editor-rest-blockers.js',
             $deps,
-            \ContentGuard\Plugin::VERSION,
+            \ContentLatch\Plugin::VERSION,
             true
         );
         if (function_exists('wp_set_script_translations')) {
-            wp_set_script_translations('contentguard-editor-rest-blockers', 'contentguard', CONTENTGUARD_DIR . 'languages');
+            wp_set_script_translations('contentlatch-editor-rest-blockers', 'contentlatch', CONTENTLATCH_DIR . 'languages');
         }
         wp_localize_script(
-            'contentguard-editor-rest-blockers',
-            'contentguardEditorRestBlockers',
+            'contentlatch-editor-rest-blockers',
+            'contentlatchEditorRestBlockers',
             array(
                 'errorCode'     => RestSaveValidator::ERROR_CODE,
                 'noticeId'      => self::NOTICE_ID,
                 'saveNoticeId'  => self::SAVE_NOTICE_ID,
                 'saveNoticeIds' => self::SAVE_NOTICE_IDS,
                 'i18n'         => array(
-                    'blocking' => __('Blocking', 'contentguard'),
+                    'blocking' => __('Blocking', 'contentlatch'),
                     /* translators: %d: Number of blocking issues. */
-                    'count'    => __('%d blocking issues', 'contentguard'),
-                    'required' => __('This field is required.', 'contentguard'),
+                    'count'    => __('%d blocking issues', 'contentlatch'),
+                    'required' => __('This field is required.', 'contentlatch'),
                     /* translators: %s: Field label. */
-                    'goToField' => __('Go to field: %s', 'contentguard'),
+                    'goToField' => __('Go to field: %s', 'contentlatch'),
                 ),
             )
         );
-        wp_enqueue_script('contentguard-editor-rest-blockers');
+        wp_enqueue_script('contentlatch-editor-rest-blockers');
     }
 }

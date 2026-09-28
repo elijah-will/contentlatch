@@ -7,26 +7,26 @@
  * Blocking failures return WP_Error with HTTP 400. Warnings never reject
  * the request. Drafts, autosaves, and revisions are not blocked.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Application\DomainMessages;
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Application\DomainMessages;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
 use Throwable;
 use WP_Error;
 
 final class RestSaveValidator
 {
-    public const ERROR_CODE = 'contentguard_validation_failed';
+    public const ERROR_CODE = 'contentlatch_validation_failed';
 
     public function __construct(
         private IncomingSaveEvaluator $incoming,
@@ -73,7 +73,7 @@ final class RestSaveValidator
             return $this->validate($preparedPost, $request, $registeredType);
         } catch (Throwable $exception) {
             if (defined('WP_DEBUG') && WP_DEBUG && function_exists('error_log')) {
-                error_log('ContentGuard REST save validation failed safely: ' . $exception->getMessage());
+                error_log('ContentLatch REST save validation failed safely: ' . $exception->getMessage());
             }
 
             return $preparedPost;
@@ -247,12 +247,12 @@ final class RestSaveValidator
         $stockRequired = 'This field is required.';
 
         if ($result->code === 'required'
-            && ($message === $stockRequired || $message === __('This field is required.', 'contentguard'))
+            && ($message === $stockRequired || $message === __('This field is required.', 'contentlatch'))
             && $label !== ''
         ) {
             return sprintf(
                 /* translators: %s: Field label. */
-                __('%s is required.', 'contentguard'),
+                __('%s is required.', 'contentlatch'),
                 $label
             );
         }
@@ -264,9 +264,9 @@ final class RestSaveValidator
         return $label !== ''
             ? sprintf(
                 /* translators: %s: Field label. */
-                __('%s is invalid.', 'contentguard'),
+                __('%s is invalid.', 'contentlatch'),
                 $label
             )
-            : __('ContentGuard validation failed.', 'contentguard');
+            : __('ContentLatch validation failed.', 'contentlatch');
     }
 }

@@ -1,11 +1,11 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +15,7 @@ final class EditorAuditScriptTest extends TestCase
     {
         $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/editor-audit.js');
 
-        $this->assertStringContainsString('contentguardEditorAudit', $js);
+        $this->assertStringContainsString('contentlatchEditorAudit', $js);
         $this->assertStringContainsString('typeof config.html === "string"', $js);
         $this->assertStringContainsString('typeof config.text === "string"', $js);
         $this->assertStringContainsString('__unstableHTML', $js);
@@ -29,11 +29,11 @@ final class EditorAuditScriptTest extends TestCase
         $this->assertStringNotContainsString('wp.element.createElement', $js);
         $this->assertStringNotContainsString('JSON.stringify', $js);
         $this->assertStringNotContainsString('createNotice("error", config', $js);
-        $this->assertStringNotContainsString('contentguardNavigateToField', $js);
+        $this->assertStringNotContainsString('contentlatchNavigateToField', $js);
         $this->assertStringNotContainsString('equals', $js);
         $this->assertStringNotContainsString('min_length', $js);
-        $this->assertStringContainsString('contentguard-audit-blockers', $js);
-        $this->assertStringNotContainsString('contentguard-warning-', $js);
+        $this->assertStringContainsString('contentlatch-audit-blockers', $js);
+        $this->assertStringNotContainsString('contentlatch-warning-', $js);
         $this->assertStringNotContainsString('createNotice("warning"', $js);
     }
 }

@@ -7,12 +7,12 @@
  * RuleDocumentFactory omits colliding ids from the selectable/persistable map
  * rather than last-win, so the builder cannot store ambiguous FieldRefs.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Integration;
+namespace ContentLatch\Application\Integration;
 
 defined('ABSPATH') || exit;
 

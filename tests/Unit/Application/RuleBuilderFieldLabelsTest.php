@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleBuilderFieldLabels;
+use ContentLatch\Application\RuleBuilderFieldLabels;
 use PHPUnit\Framework\TestCase;
 
 final class RuleBuilderFieldLabelsTest extends TestCase

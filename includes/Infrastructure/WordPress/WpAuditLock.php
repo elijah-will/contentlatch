@@ -2,16 +2,16 @@
 /**
  * Atomic audit start lock via add_option().
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditLockInterface;
+use ContentLatch\Application\Audit\AuditLockInterface;
 
 final class WpAuditLock implements AuditLockInterface
 {

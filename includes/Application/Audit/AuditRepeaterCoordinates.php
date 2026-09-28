@@ -6,16 +6,16 @@
  * A collapsed finding stores every failed chain under context.repeater_rows.
  * Snapshot text encodes display-row pairs so coordinates survive schema v2.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\EvaluationResult;
+use ContentLatch\Domain\EvaluationResult;
 
 final class AuditRepeaterCoordinates
 {
@@ -150,7 +150,7 @@ final class AuditRepeaterCoordinates
         if (count($tokens) === 1) {
             return sprintf(
                 /* translators: 1: Base validation message. 2: Row token, such as 2 or 2.3. */
-                __('%1$s in row %2$s.', 'contentguard'),
+                __('%1$s in row %2$s.', 'contentlatch'),
                 rtrim($base, '.'),
                 $tokens[0]
             );
@@ -158,7 +158,7 @@ final class AuditRepeaterCoordinates
 
         return sprintf(
             /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row tokens. */
-            __('%1$s in %2$d rows (rows %3$s).', 'contentguard'),
+            __('%1$s in %2$d rows (rows %3$s).', 'contentlatch'),
             rtrim($base, '.'),
             count($tokens),
             implode(', ', $tokens)

@@ -5,16 +5,16 @@
  * Presentation only. Does not change FieldRef, catalogs, or evaluation.
  * ACF field-key navigation stays in EditorFieldNavigation.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
 
 final class EditorCoreNavigation
 {
@@ -122,7 +122,7 @@ final class EditorCoreNavigation
 
         $attr = self::escapeAttr($fieldId);
 
-        return 'data-contentguard-core="' . $attr . '"';
+        return 'data-contentlatch-core="' . $attr . '"';
     }
 
     private static function escapeAttr(string $value): string

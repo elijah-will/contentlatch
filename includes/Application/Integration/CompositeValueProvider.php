@@ -11,16 +11,16 @@
  * FieldValueProviderInterface cannot distinguish "unavailable" from "missing";
  * evaluating a required rule against a missing id still fails as empty.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Integration;
+namespace ContentLatch\Application\Integration;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
 
 final class CompositeValueProvider implements FieldValueProviderInterface
 {

@@ -2,7 +2,7 @@
 /**
  * Minimal WordPress admin helpers for view tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', '/tmp/');
 }
 
-if (!defined('CONTENTGUARD_DIR')) {
-    define('CONTENTGUARD_DIR', dirname(__DIR__, 2) . '/');
+if (!defined('CONTENTLATCH_DIR')) {
+    define('CONTENTLATCH_DIR', dirname(__DIR__, 2) . '/');
 }
 
 if (!function_exists('wp_slash')) {
@@ -162,7 +162,7 @@ if (!function_exists('disabled')) {
 if (!function_exists('get_the_title')) {
     function get_the_title(int|string $post = 0): string
     {
-        $titles = $GLOBALS['contentguard_test_titles'] ?? array();
+        $titles = $GLOBALS['contentlatch_test_titles'] ?? array();
 
         return (string) ($titles[(int) $post] ?? '');
     }
@@ -172,7 +172,7 @@ if (!function_exists('get_edit_post_link')) {
     function get_edit_post_link(int|string $post = 0, string $context = 'display'): string|null
     {
         unset($context);
-        $links = $GLOBALS['contentguard_test_edit_links'] ?? array();
+        $links = $GLOBALS['contentlatch_test_edit_links'] ?? array();
         if (!array_key_exists((int) $post, $links)) {
             return null;
         }

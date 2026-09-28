@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain\Operators;
+namespace ContentLatch\Tests\Unit\Domain\Operators;
 
-use ContentGuard\Domain\Operators\NotEqualsOperator;
+use ContentLatch\Domain\Operators\NotEqualsOperator;
 use PHPUnit\Framework\TestCase;
 
 final class NotEqualsOperatorTest extends TestCase

@@ -1,0 +1,366 @@
+/**
+ * ContentLatch shared design system.
+ *
+ * Tokens prefer WordPress admin variables. Screens inherit admin theme color.
+ */
+
+.contentlatch {
+    --cl-space-1: 4px;
+    --cl-space-2: 8px;
+    --cl-space-3: 12px;
+    --cl-space-4: 16px;
+    --cl-space-5: 24px;
+    --cl-space-6: 32px;
+
+    --cl-radius: 2px;
+    --cl-border-color: #c3c4c7;
+    --cl-border: 1px solid var(--cl-border-color);
+    --cl-shadow: none;
+
+    --cl-font-size: 13px;
+    --cl-font-size-sm: 12px;
+    --cl-font-size-lg: 22px;
+    --cl-line-height: 1.5;
+    --cl-line-height-tight: 1.3;
+
+    --cl-text: #1d2327;
+    --cl-muted: #646970;
+    --cl-surface: #fff;
+    --cl-surface-subtle: #f6f7f7;
+    --cl-page: #f0f0f1;
+
+    --cl-accent: var(--wp-admin-theme-color, #2271b1);
+    --cl-accent-rgb: var(--wp-admin-theme-color--rgb, 34, 113, 177);
+    --cl-focus: var(--wp-admin-theme-color, #2271b1);
+
+    --cl-danger: #8a2424;
+    --cl-danger-surface: #fcf0f1;
+    --cl-danger-border: #d63638;
+    --cl-caution: #614200;
+    --cl-caution-surface: #fcf9e8;
+    --cl-caution-border: #dba617;
+    --cl-success: #1e4620;
+    --cl-success-surface: #edfaef;
+    --cl-success-border: #00a32a;
+    --cl-info: #0a4b78;
+    --cl-info-surface: #f0f6fc;
+    --cl-info-border: var(--wp-admin-theme-color, #2271b1);
+
+    --cl-content-width: 72rem;
+}
+
+/* -------------------------------------------------------------------------
+ * Typography & surfaces
+ * ------------------------------------------------------------------------- */
+
+.contentlatch {
+    color: var(--cl-text);
+}
+
+.contentlatch [hidden] {
+    display: none !important;
+}
+
+.contentlatch .contentlatch-muted,
+.contentlatch .description {
+    color: var(--cl-muted);
+}
+
+.contentlatch-panel {
+    background: var(--cl-surface);
+    border: var(--cl-border);
+    border-radius: var(--cl-radius);
+    box-shadow: var(--cl-shadow);
+    box-sizing: border-box;
+    max-width: var(--cl-content-width);
+    padding: var(--cl-space-4);
+}
+
+/* -------------------------------------------------------------------------
+ * Page header
+ * ------------------------------------------------------------------------- */
+
+.contentlatch-page-header {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: var(--cl-space-3);
+    justify-content: flex-start;
+    margin: 0 0 var(--cl-space-4);
+    max-width: none;
+    width: 100%;
+}
+
+.contentlatch-page-header__text {
+    flex: 0 1 auto;
+    max-width: 40rem;
+    min-width: 0;
+}
+
+.contentlatch-page-header__eyebrow {
+    color: var(--cl-muted);
+    font-size: var(--cl-font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: var(--cl-line-height-tight);
+    margin: 0 0 var(--cl-space-1);
+    text-transform: uppercase;
+}
+
+.contentlatch-page-header__title {
+    font-size: 1.65em;
+    font-weight: 600;
+    line-height: var(--cl-line-height-tight);
+    margin: 0;
+    padding: 0;
+}
+
+.contentlatch-page-header__description {
+    color: var(--cl-muted);
+    font-size: var(--cl-font-size);
+    line-height: var(--cl-line-height);
+    margin: var(--cl-space-2) 0 0;
+    max-width: 40rem;
+}
+
+.contentlatch-page-header__actions {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: var(--cl-space-2);
+    justify-content: flex-start;
+    padding-top: 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Status pills — text is required; color is reinforcement only
+ * ------------------------------------------------------------------------- */
+
+.contentlatch-status {
+    background: var(--cl-surface-subtle);
+    border: var(--cl-border);
+    border-radius: var(--cl-radius);
+    color: var(--cl-text);
+    display: inline-block;
+    font-size: var(--cl-font-size-sm);
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+
+.contentlatch-status--success {
+    background: var(--cl-success-surface);
+    border-color: var(--cl-success-border);
+    color: var(--cl-success);
+}
+
+.contentlatch-status--danger {
+    background: var(--cl-danger-surface);
+    border-color: var(--cl-danger-border);
+    color: var(--cl-danger);
+}
+
+.contentlatch-status--caution {
+    background: var(--cl-caution-surface);
+    border-color: var(--cl-caution-border);
+    color: var(--cl-caution);
+}
+
+.contentlatch-status--info {
+    background: var(--cl-info-surface);
+    border-color: var(--cl-info-border);
+    color: var(--cl-info);
+}
+
+.contentlatch-status--neutral {
+    background: var(--cl-surface-subtle);
+    border-color: var(--cl-border-color);
+    color: #50575e;
+}
+
+.contentlatch-status__text {
+    display: inline;
+}
+
+/* -------------------------------------------------------------------------
+ * Stat card foundation (for later Audit use)
+ * ------------------------------------------------------------------------- */
+
+.contentlatch-stat-card {
+    background: var(--cl-surface);
+    border: var(--cl-border);
+    border-left: 4px solid var(--cl-accent);
+    border-radius: var(--cl-radius);
+    box-sizing: border-box;
+    min-width: 10rem;
+    padding: var(--cl-space-3) var(--cl-space-4);
+}
+
+.contentlatch-stat-card--success {
+    border-left-color: var(--cl-success-border);
+}
+
+.contentlatch-stat-card--danger {
+    border-left-color: var(--cl-danger-border);
+}
+
+.contentlatch-stat-card--caution {
+    border-left-color: var(--cl-caution-border);
+}
+
+.contentlatch-stat-card--neutral {
+    border-left-color: #50575e;
+}
+
+.contentlatch-stat-card__label {
+    color: var(--cl-muted);
+    display: block;
+    font-size: var(--cl-font-size-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.contentlatch-stat-card__value {
+    display: block;
+    font-size: var(--cl-font-size-lg);
+    font-weight: 600;
+    line-height: var(--cl-line-height-tight);
+    margin-top: var(--cl-space-1);
+}
+
+.contentlatch-stat-card__helper {
+    color: var(--cl-muted);
+    display: block;
+    font-size: var(--cl-font-size-sm);
+    line-height: var(--cl-line-height);
+    margin-top: var(--cl-space-1);
+}
+
+.contentlatch-stat-card__status {
+    display: block;
+    margin-top: var(--cl-space-2);
+}
+
+/* -------------------------------------------------------------------------
+ * Empty state foundation
+ * ------------------------------------------------------------------------- */
+
+.contentlatch-empty {
+    background: var(--cl-surface);
+    border: var(--cl-border);
+    border-radius: var(--cl-radius);
+    box-sizing: border-box;
+    max-width: 36rem;
+    padding: var(--cl-space-5) var(--cl-space-4);
+}
+
+.contentlatch-empty__heading {
+    font-size: 1.15em;
+    font-weight: 600;
+    line-height: var(--cl-line-height-tight);
+    margin: 0 0 var(--cl-space-2);
+}
+
+.contentlatch-empty__text {
+    color: var(--cl-muted);
+    line-height: var(--cl-line-height);
+    margin: 0 0 var(--cl-space-4);
+}
+
+.contentlatch-empty__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cl-space-2);
+}
+
+/* -------------------------------------------------------------------------
+ * Buttons / actions
+ * ------------------------------------------------------------------------- */
+
+.contentlatch .contentlatch-button--link,
+.contentlatch a.contentlatch-button--link,
+.contentlatch a.button.contentlatch-button--link {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--cl-accent);
+    cursor: pointer;
+    min-height: 0;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.contentlatch .contentlatch-button--link:hover,
+.contentlatch a.contentlatch-button--link:hover {
+    color: var(--wp-admin-theme-color-darker-10, #135e96);
+}
+
+.contentlatch .contentlatch-button--destructive,
+.contentlatch a.contentlatch-button--destructive,
+.contentlatch .submitdelete {
+    color: #b32d2e;
+}
+
+.contentlatch .contentlatch-button--destructive:hover,
+.contentlatch a.contentlatch-button--destructive:hover,
+.contentlatch .submitdelete:hover {
+    color: #8a2424;
+}
+
+/* -------------------------------------------------------------------------
+ * Accessibility
+ * ------------------------------------------------------------------------- */
+
+.contentlatch :where(a, button, input, select, textarea, .button, .page-title-action):focus {
+    outline: 2px solid var(--cl-focus);
+    outline-offset: 2px;
+}
+
+.contentlatch :where(a, button, input, select, textarea, .button, .page-title-action):focus:not(:focus-visible) {
+    outline: none;
+}
+
+.contentlatch :where(a, button, input, select, textarea, .button, .page-title-action):focus-visible {
+    outline: 2px solid var(--cl-focus);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contentlatch *,
+    .contentlatch *::before,
+    .contentlatch *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * Responsive foundation
+ * ------------------------------------------------------------------------- */
+
+.contentlatch,
+.contentlatch .widefat {
+    max-width: 100%;
+}
+
+@media screen and (max-width: 782px) {
+    .contentlatch-page-header {
+        flex-direction: column;
+    }
+
+    .contentlatch-page-header__actions {
+        padding-top: 0;
+        width: 100%;
+    }
+
+    .contentlatch-panel,
+    .contentlatch-empty {
+        max-width: 100%;
+    }
+}

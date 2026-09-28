@@ -5,12 +5,12 @@
  *
  * Row identity lives here only. It is never stored as FieldRef.key or finding identity.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 final class FieldInstance
 {

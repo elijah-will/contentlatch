@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Domain\Value;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\CoreValueNormalizer;
+use ContentLatch\Domain\Value;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreValueNormalizer;
 use PHPUnit\Framework\TestCase;
 
 final class CoreValueNormalizerTest extends TestCase

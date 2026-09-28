@@ -3,23 +3,23 @@
  * Capability- and nonce-gated rule mutations.
  *
  * Evaluation reads go through RuleRepositoryInterface directly so editors
- * can be validated without manage_contentguard.
+ * can be validated without manage_contentlatch.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
-use ContentGuard\Domain\Rule;
+use ContentLatch\Application\Exception\ForbiddenRuleMutationException;
+use ContentLatch\Domain\Rule;
 
 final class RuleCommandService
 {
-    public const NONCE_ACTION = 'contentguard_manage_rule';
+    public const NONCE_ACTION = 'contentlatch_manage_rule';
 
     /**
      * @param callable(): bool           $canManage
@@ -52,7 +52,7 @@ final class RuleCommandService
         if (!is_callable($canManage) || !$canManage()) {
             throw new ForbiddenRuleMutationException(
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                __('You are not allowed to manage ContentGuard rules.', 'contentguard')
+                __('You are not allowed to manage ContentLatch rules.', 'contentlatch')
             );
         }
 
@@ -60,7 +60,7 @@ final class RuleCommandService
         if (!is_callable($verifyNonce) || !$verifyNonce($nonce)) {
             throw new ForbiddenRuleMutationException(
                 // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-                __('Invalid rule management nonce.', 'contentguard')
+                __('Invalid rule management nonce.', 'contentlatch')
             );
         }
     }

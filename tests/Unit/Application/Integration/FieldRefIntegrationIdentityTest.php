@@ -2,35 +2,35 @@
 /**
  * Phase 11C: FieldRef does not persist integration. Resolution ids must be unique.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Integration;
+namespace ContentLatch\Tests\Unit\Application\Integration;
 
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
-use ContentGuard\Tests\Support\AcfFlexibleFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\FakeIntegration;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Tests\Support\AcfFlexibleFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\FakeIntegration;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class FieldRefIntegrationIdentityTest extends TestCase

@@ -1,12 +1,12 @@
 (function () {
-  var config = window.contentguardRules;
+  var config = window.contentlatchRules;
   if (!config) {
     return;
   }
 
   var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
   function __(text) {
-    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+    return i18nApi ? i18nApi.__(text, "contentlatch") : text;
   }
   function sprintf(fmt) {
     if (i18nApi && typeof i18nApi.sprintf === "function") {
@@ -30,7 +30,7 @@
     if (!(target instanceof Element)) {
       return;
     }
-    var link = target.closest("a.contentguard-delete-rule");
+    var link = target.closest("a.contentlatch-delete-rule");
     if (!link) {
       return;
     }
@@ -41,23 +41,23 @@
     }
   });
 
-  if (window.location.hash === "#contentguard-rule-notice") {
+  if (window.location.hash === "#contentlatch-rule-notice") {
     if (window.history && window.history.replaceState) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
     window.scrollTo(0, 0);
-    window.contentguardPendingNoticeScroll = true;
+    window.contentlatchPendingNoticeScroll = true;
   }
 
-  var form = document.getElementById("contentguard-rule-form");
+  var form = document.getElementById("contentlatch-rule-form");
   if (!form) {
     return;
   }
 
-  var postType = document.getElementById("contentguard-rule-post-type");
-  var conditions = document.getElementById("contentguard-conditions");
-  var validations = document.getElementById("contentguard-validations");
-  var preview = document.getElementById("contentguard-rule-preview");
+  var postType = document.getElementById("contentlatch-rule-post-type");
+  var conditions = document.getElementById("contentlatch-conditions");
+  var validations = document.getElementById("contentlatch-validations");
+  var preview = document.getElementById("contentlatch-rule-preview");
   var fields = readCatalogFields();
   var previewCopy = config.preview || {};
 
@@ -161,7 +161,7 @@
   function fieldSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
-    select.className = "contentguard-field";
+    select.className = "contentlatch-field";
     if (id) {
       select.id = id;
     }
@@ -223,7 +223,7 @@
   function operatorSelect(name, selected, id, fieldType) {
     var select = document.createElement("select");
     select.name = name;
-    select.className = "contentguard-operator";
+    select.className = "contentlatch-operator";
     if (id) {
       select.id = id;
     }
@@ -237,7 +237,7 @@
   function validatorSelect(name, selected, id) {
     var select = document.createElement("select");
     select.name = name;
-    select.className = "contentguard-validator";
+    select.className = "contentlatch-validator";
     if (id) {
       select.id = id;
     }
@@ -250,7 +250,7 @@
   function operandControl(name, value, fieldType, hidden, id) {
     if (fieldType === "true_false") {
       var select = document.createElement("select");
-      select.className = "contentguard-operand";
+      select.className = "contentlatch-operand";
       select.name = name;
       if (id) {
         select.id = id;
@@ -266,7 +266,7 @@
     if (input.type === "number") {
       input.step = "any";
     }
-    input.className = "contentguard-operand";
+    input.className = "contentlatch-operand";
     input.name = name;
     input.value = value;
     input.hidden = hidden;
@@ -278,13 +278,13 @@
 
   function paramGroup(kind, name, value, hidden, id, labelText, suffix) {
     var group = document.createElement("span");
-    group.className = "contentguard-param-group contentguard-param-group--" + kind;
+    group.className = "contentlatch-param-group contentlatch-param-group--" + kind;
     group.hidden = hidden;
     group.appendChild(srLabel(labelText, id));
 
     var input = document.createElement("input");
     input.id = id;
-    input.className = "contentguard-param contentguard-" + kind;
+    input.className = "contentlatch-param contentlatch-" + kind;
     input.name = name;
     input.value = value;
     input.disabled = hidden;
@@ -299,7 +299,7 @@
 
     if (suffix) {
       var text = document.createElement("span");
-      text.className = "contentguard-param-suffix";
+      text.className = "contentlatch-param-suffix";
       text.textContent = suffix;
       group.appendChild(text);
     }
@@ -308,9 +308,9 @@
   }
 
   function syncOperand(row) {
-    var field = row.querySelector(".contentguard-field");
-    var operator = row.querySelector(".contentguard-operator");
-    var operand = row.querySelector(".contentguard-operand");
+    var field = row.querySelector(".contentlatch-field");
+    var operator = row.querySelector(".contentlatch-operator");
+    var operand = row.querySelector(".contentlatch-operand");
     if (!field || !operator || !operand) {
       return;
     }
@@ -321,8 +321,8 @@
   }
 
   function syncOperator(row) {
-    var field = row.querySelector(".contentguard-field");
-    var operator = row.querySelector(".contentguard-operator");
+    var field = row.querySelector(".contentlatch-field");
+    var operator = row.querySelector(".contentlatch-operator");
     if (!field || !operator) {
       return;
     }
@@ -346,7 +346,7 @@
       return;
     }
     group.hidden = !visible;
-    var input = group.querySelector(".contentguard-param");
+    var input = group.querySelector(".contentlatch-param");
     if (!input) {
       return;
     }
@@ -357,23 +357,23 @@
   }
 
   function toggleValidation(row) {
-    var type = row.querySelector(".contentguard-validator");
+    var type = row.querySelector(".contentlatch-validator");
     if (!type) {
       return;
     }
-    setParamGroup(row.querySelector(".contentguard-param-group--min"), type.value === "min_length");
-    setParamGroup(row.querySelector(".contentguard-param-group--max"), type.value === "max_length");
-    setParamGroup(row.querySelector(".contentguard-param-group--values"), type.value === "allowed_values");
+    setParamGroup(row.querySelector(".contentlatch-param-group--min"), type.value === "min_length");
+    setParamGroup(row.querySelector(".contentlatch-param-group--max"), type.value === "max_length");
+    setParamGroup(row.querySelector(".contentlatch-param-group--values"), type.value === "allowed_values");
   }
 
   function nextIndex(container) {
-    return container.querySelectorAll(".contentguard-row").length;
+    return container.querySelectorAll(".contentlatch-row").length;
   }
 
   function addCondition(selected) {
     var index = nextIndex(conditions);
     var row = document.createElement("div");
-    row.className = "contentguard-row contentguard-builder-row";
+    row.className = "contentlatch-row contentlatch-builder-row";
     row.setAttribute("data-row", "condition");
 
     var id = document.createElement("input");
@@ -382,10 +382,10 @@
     row.appendChild(id);
 
     var controls = document.createElement("div");
-    controls.className = "contentguard-builder-row__controls";
-    var fieldId = "contentguard-condition-field-" + index;
-    var operatorId = "contentguard-condition-operator-" + index;
-    var operandId = "contentguard-condition-operand-" + index;
+    controls.className = "contentlatch-builder-row__controls";
+    var fieldId = "contentlatch-condition-field-" + index;
+    var operatorId = "contentlatch-condition-operator-" + index;
+    var operandId = "contentlatch-condition-operand-" + index;
     controls.appendChild(srLabel(t("whenField", "WHEN field"), fieldId));
     controls.appendChild(fieldSelect("conditions[" + index + "][field_key]", selected || "", fieldId));
     controls.appendChild(srLabel(t("operator", "Operator"), operatorId));
@@ -396,7 +396,7 @@
 
     var remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "button contentguard-remove";
+    remove.className = "button contentlatch-remove";
     remove.textContent = t("remove", "Remove");
     remove.setAttribute("aria-label", sprintf(t("removeCondition", "Remove condition %d"), index + 1));
     row.appendChild(remove);
@@ -409,7 +409,7 @@
   function addValidation(selected) {
     var index = nextIndex(validations);
     var row = document.createElement("div");
-    row.className = "contentguard-row contentguard-builder-row";
+    row.className = "contentlatch-row contentlatch-builder-row";
     row.setAttribute("data-row", "validation");
 
     var id = document.createElement("input");
@@ -418,24 +418,24 @@
     row.appendChild(id);
 
     var controls = document.createElement("div");
-    controls.className = "contentguard-builder-row__controls";
-    var fieldId = "contentguard-validation-field-" + index;
-    var typeId = "contentguard-validation-type-" + index;
+    controls.className = "contentlatch-builder-row__controls";
+    var fieldId = "contentlatch-validation-field-" + index;
+    var typeId = "contentlatch-validation-type-" + index;
     var validators = config.validators || {};
     controls.appendChild(srLabel(t("thenField", "THEN field"), fieldId));
     controls.appendChild(fieldSelect("validations[" + index + "][field_key]", selected || "", fieldId));
     controls.appendChild(srLabel(t("requirement", "Requirement"), typeId));
     controls.appendChild(validatorSelect("validations[" + index + "][type]", "required", typeId));
-    controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentguard-validation-min-" + index, validators.min_length || __("Minimum length"), t("characters", "characters")));
-    controls.appendChild(paramGroup("max", "validations[" + index + "][max]", "", true, "contentguard-validation-max-" + index, validators.max_length || __("Maximum length"), t("characters", "characters")));
-    controls.appendChild(paramGroup("values", "validations[" + index + "][values]", "", true, "contentguard-validation-values-" + index, validators.allowed_values || __("Allowed values"), ""));
+    controls.appendChild(paramGroup("min", "validations[" + index + "][min]", "", true, "contentlatch-validation-min-" + index, validators.min_length || __("Minimum length"), t("characters", "characters")));
+    controls.appendChild(paramGroup("max", "validations[" + index + "][max]", "", true, "contentlatch-validation-max-" + index, validators.max_length || __("Maximum length"), t("characters", "characters")));
+    controls.appendChild(paramGroup("values", "validations[" + index + "][values]", "", true, "contentlatch-validation-values-" + index, validators.allowed_values || __("Allowed values"), ""));
 
-    var messageId = "contentguard-validation-message-" + index;
+    var messageId = "contentlatch-validation-message-" + index;
     controls.appendChild(srLabel(t("customMessage", "Custom message (optional)"), messageId));
     var message = document.createElement("input");
     message.type = "text";
     message.id = messageId;
-    message.className = "contentguard-validation-message";
+    message.className = "contentlatch-validation-message";
     message.name = "validations[" + index + "][message]";
     message.placeholder = t("customMessage", "Custom message (optional)");
     controls.appendChild(message);
@@ -443,7 +443,7 @@
 
     var remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "button contentguard-remove";
+    remove.className = "button contentlatch-remove";
     remove.textContent = t("remove", "Remove");
     remove.setAttribute("aria-label", sprintf(t("removeRequirement", "Remove requirement %d"), index + 1));
     row.appendChild(remove);
@@ -454,7 +454,7 @@
   }
 
   function rebuildFieldSelects() {
-    form.querySelectorAll(".contentguard-field").forEach(function (select) {
+    form.querySelectorAll(".contentlatch-field").forEach(function (select) {
       var current = select.value;
       var name = select.name;
       var replacement = fieldSelect(name, current, select.id);
@@ -537,9 +537,9 @@
     var whenParts = [];
     var whenIncomplete = false;
     form.querySelectorAll("[data-row='condition']").forEach(function (row) {
-      var field = row.querySelector(".contentguard-field");
-      var operator = row.querySelector(".contentguard-operator");
-      var operand = row.querySelector(".contentguard-operand");
+      var field = row.querySelector(".contentlatch-field");
+      var operator = row.querySelector(".contentlatch-operator");
+      var operand = row.querySelector(".contentlatch-operand");
       if (!field || !operator) {
         return;
       }
@@ -566,11 +566,11 @@
     var thenParts = [];
     var thenIncomplete = false;
     form.querySelectorAll("[data-row='validation']").forEach(function (row) {
-      var field = row.querySelector(".contentguard-field");
-      var type = row.querySelector(".contentguard-validator");
-      var min = row.querySelector(".contentguard-min");
-      var max = row.querySelector(".contentguard-max");
-      var values = row.querySelector(".contentguard-values");
+      var field = row.querySelector(".contentlatch-field");
+      var type = row.querySelector(".contentlatch-validator");
+      var min = row.querySelector(".contentlatch-min");
+      var max = row.querySelector(".contentlatch-max");
+      var values = row.querySelector(".contentlatch-values");
       if (!field || !type) {
         return;
       }
@@ -658,8 +658,8 @@
     if (!(target instanceof HTMLElement)) {
       return;
     }
-    if (target.classList.contains("contentguard-remove")) {
-      var row = target.closest(".contentguard-row");
+    if (target.classList.contains("contentlatch-remove")) {
+      var row = target.closest(".contentlatch-row");
       if (row) {
         row.remove();
         updatePreview();
@@ -672,12 +672,12 @@
     if (!(target instanceof HTMLElement)) {
       return;
     }
-    var row = target.closest(".contentguard-row");
+    var row = target.closest(".contentlatch-row");
     if (row) {
-      if (target.classList.contains("contentguard-operator") || target.classList.contains("contentguard-field")) {
+      if (target.classList.contains("contentlatch-operator") || target.classList.contains("contentlatch-field")) {
         toggleCondition(row);
       }
-      if (target.classList.contains("contentguard-validator")) {
+      if (target.classList.contains("contentlatch-validator")) {
         toggleValidation(row);
       }
     }
@@ -688,14 +688,14 @@
     updatePreview();
   });
 
-  var addConditionButton = document.getElementById("contentguard-add-condition");
+  var addConditionButton = document.getElementById("contentlatch-add-condition");
   if (addConditionButton) {
     addConditionButton.addEventListener("click", function () {
       addCondition();
     });
   }
 
-  var addValidationButton = document.getElementById("contentguard-add-validation");
+  var addValidationButton = document.getElementById("contentlatch-add-validation");
   if (addValidationButton) {
     addValidationButton.addEventListener("click", function () {
       addValidation();
@@ -717,27 +717,27 @@
     window.history.replaceState(
       null,
       "",
-      window.location.pathname + window.location.search + "#contentguard-rule-notice"
+      window.location.pathname + window.location.search + "#contentlatch-rule-notice"
     );
   }
 
   function noticeMessageEl(notice) {
-    var el = notice.querySelector(".contentguard-notice-message");
+    var el = notice.querySelector(".contentlatch-notice-message");
     if (el) {
       return el;
     }
     el = document.createElement("p");
-    el.className = "contentguard-notice-message";
+    el.className = "contentlatch-notice-message";
     notice.appendChild(el);
     return el;
   }
 
   function ensureWarningLabel(notice) {
-    if (notice.querySelector(".contentguard-notice-label")) {
+    if (notice.querySelector(".contentlatch-notice-label")) {
       return;
     }
     var label = document.createElement("p");
-    label.className = "contentguard-notice-label";
+    label.className = "contentlatch-notice-label";
     var strong = document.createElement("strong");
     strong.textContent = t("warning", "Warning:");
     label.appendChild(strong);
@@ -777,14 +777,14 @@
     }
   }
 
-  var serverNotice = document.getElementById("contentguard-rule-notice");
+  var serverNotice = document.getElementById("contentlatch-rule-notice");
   if (serverNotice && serverNotice.classList.contains("notice-error")) {
     revealErrorNotice(serverNotice, "", true);
   }
 
   form.addEventListener("submit", function (event) {
     var message = clientGuardMessage();
-    var notice = document.getElementById("contentguard-rule-client-notice");
+    var notice = document.getElementById("contentlatch-rule-client-notice");
     if (message) {
       event.preventDefault();
       revealErrorNotice(notice, message, false);
@@ -810,8 +810,8 @@
     var error = "";
 
     form.querySelectorAll("[data-row='condition']").forEach(function (row) {
-      var field = row.querySelector(".contentguard-field");
-      var operator = row.querySelector(".contentguard-operator");
+      var field = row.querySelector(".contentlatch-field");
+      var operator = row.querySelector(".contentlatch-operator");
       if (!field || !operator || !field.value) {
         return;
       }
@@ -832,15 +832,15 @@
     }
 
     Array.prototype.some.call(form.querySelectorAll("[data-row='validation']"), function (row) {
-      var field = row.querySelector(".contentguard-field");
-      var type = row.querySelector(".contentguard-validator");
+      var field = row.querySelector(".contentlatch-field");
+      var type = row.querySelector(".contentlatch-validator");
       if (!field || !type) {
         return false;
       }
       if (!field.value) {
-        var minStarted = row.querySelector(".contentguard-min");
-        var maxStarted = row.querySelector(".contentguard-max");
-        var valuesStarted = row.querySelector(".contentguard-values");
+        var minStarted = row.querySelector(".contentlatch-min");
+        var maxStarted = row.querySelector(".contentlatch-max");
+        var valuesStarted = row.querySelector(".contentlatch-values");
         var started = (minStarted && !minStarted.disabled && minStarted.value.trim() !== "")
           || (maxStarted && !maxStarted.disabled && maxStarted.value.trim() !== "")
           || (valuesStarted && !valuesStarted.disabled && valuesStarted.value.replace(/\s+/g, "") !== "");
@@ -870,19 +870,19 @@
         return true;
       }
       if (type.value === "min_length") {
-        var min = row.querySelector(".contentguard-min");
+        var min = row.querySelector(".contentlatch-min");
         if (min && min.value !== "") {
           minByField[key] = parseInt(min.value, 10);
         }
       }
       if (type.value === "max_length") {
-        var max = row.querySelector(".contentguard-max");
+        var max = row.querySelector(".contentlatch-max");
         if (max && max.value !== "") {
           maxByField[key] = parseInt(max.value, 10);
         }
       }
       if (type.value === "allowed_values") {
-        var values = row.querySelector(".contentguard-values");
+        var values = row.querySelector(".contentlatch-values");
         if (!values || values.value.replace(/\s+/g, "") === "") {
           error = t("allowedValues", "Enter at least one allowed value.");
           return true;
@@ -907,9 +907,9 @@
 
     var hasWhen = false;
     Array.prototype.some.call(form.querySelectorAll("[data-row='condition']"), function (row) {
-      var field = row.querySelector(".contentguard-field");
-      var operator = row.querySelector(".contentguard-operator");
-      var operand = row.querySelector(".contentguard-operand");
+      var field = row.querySelector(".contentlatch-field");
+      var operator = row.querySelector(".contentlatch-operator");
+      var operand = row.querySelector(".contentlatch-operand");
       if (!field || !operator || !field.value || !operator.value) {
         return false;
       }

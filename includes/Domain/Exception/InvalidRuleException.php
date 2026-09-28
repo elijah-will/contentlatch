@@ -2,12 +2,12 @@
 /**
  * Invalid rule definition.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Exception;
+namespace ContentLatch\Domain\Exception;
 
 use InvalidArgumentException;
 

@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Audit;
+namespace ContentLatch\Tests\Unit\Application\Audit;
 
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
 use PHPUnit\Framework\TestCase;
 
 final class InMemoryAuditPostScannerTest extends TestCase

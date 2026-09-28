@@ -1,18 +1,18 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
-use ContentGuard\Infrastructure\WordPress\CoreIncomingValueProvider;
-use ContentGuard\Infrastructure\WordPress\CoreStoredValueProvider;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Infrastructure\WordPress\CoreIncomingValueProvider;
+use ContentLatch\Infrastructure\WordPress\CoreStoredValueProvider;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class CoreIntegrationTest extends TestCase

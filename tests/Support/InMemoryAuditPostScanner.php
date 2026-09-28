@@ -2,15 +2,15 @@
 /**
  * In-memory ID scanner for audit tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Audit\AuditPost;
-use ContentGuard\Application\Audit\AuditPostScanner;
+use ContentLatch\Application\Audit\AuditPost;
+use ContentLatch\Application\Audit\AuditPostScanner;
 
 final class InMemoryAuditPostScanner implements AuditPostScanner
 {

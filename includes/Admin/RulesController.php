@@ -2,34 +2,34 @@
 /**
  * Capability- and nonce-gated rule builder mutations.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\AdminNotice;
-use ContentGuard\Application\Exception\ForbiddenRuleMutationException;
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleMutationPresentation;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Application\AdminNotice;
+use ContentLatch\Application\Exception\ForbiddenRuleMutationException;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleMutationPresentation;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
 
 final class RulesController
 {
-    public const ACTION_SAVE     = 'contentguard_save_rule';
-    public const ACTION_DELETE   = 'contentguard_delete_rule';
-    public const ACTION_STATUS   = 'contentguard_rule_status';
-    public const ACTION_FIELDS   = 'contentguard_rule_fields';
+    public const ACTION_SAVE     = 'contentlatch_save_rule';
+    public const ACTION_DELETE   = 'contentlatch_delete_rule';
+    public const ACTION_STATUS   = 'contentlatch_rule_status';
+    public const ACTION_FIELDS   = 'contentlatch_rule_fields';
 
     /**
      * @param callable(): bool       $canManage
@@ -75,7 +75,7 @@ final class RulesController
         $fallback = admin_url('admin.php?page=' . RulesPage::SLUG . '&action=new');
         if (!$this->callerCanManage()) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentLatch rules.', 'contentlatch')),
                 $fallback
             );
 
@@ -88,7 +88,7 @@ final class RulesController
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
             );
 
@@ -105,7 +105,7 @@ final class RulesController
         $fallback = admin_url('admin.php?page=' . RulesPage::SLUG);
         if (!$this->callerCanManage()) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentLatch rules.', 'contentlatch')),
                 $fallback
             );
 
@@ -118,7 +118,7 @@ final class RulesController
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
             );
 
@@ -139,7 +139,7 @@ final class RulesController
         $fallback = admin_url('admin.php?page=' . RulesPage::SLUG);
         if (!$this->callerCanManage()) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard')),
+                array('ok' => false, 'message' => __('You are not allowed to manage ContentLatch rules.', 'contentlatch')),
                 $fallback
             );
 
@@ -152,7 +152,7 @@ final class RulesController
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
             $this->respondAdmin(
-                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard')),
+                array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
             );
 
@@ -175,7 +175,7 @@ final class RulesController
         if (!$this->callerCanManage()) {
             $this->sendFields(array(
                 'ok'      => false,
-                'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard'),
+                'message' => __('You are not allowed to manage ContentLatch rules.', 'contentlatch'),
             ));
 
             return;
@@ -188,7 +188,7 @@ final class RulesController
         if (!is_callable($verify) || !$verify($nonce)) {
             $this->sendFields(array(
                 'ok'      => false,
-                'message' => __('Invalid rule management nonce.', 'contentguard'),
+                'message' => __('Invalid rule management nonce.', 'contentlatch'),
             ));
 
             return;
@@ -213,7 +213,7 @@ final class RulesController
             self::ACTION_DELETE => $this->handleDelete($request),
             self::ACTION_STATUS => $this->handleStatus($request),
             self::ACTION_FIELDS => $this->handleFields($request),
-            default             => array('ok' => false, 'message' => __('Unknown rule action.', 'contentguard')),
+            default             => array('ok' => false, 'message' => __('Unknown rule action.', 'contentlatch')),
         };
     }
 
@@ -292,7 +292,7 @@ final class RulesController
 
         $id = isset($request['rule_id']) ? (int) $request['rule_id'] : 0;
         if ($id <= 0) {
-            return array('ok' => false, 'message' => __('Invalid rule.', 'contentguard'));
+            return array('ok' => false, 'message' => __('Invalid rule.', 'contentlatch'));
         }
 
         try {
@@ -302,8 +302,8 @@ final class RulesController
         }
 
         return $deleted
-            ? array('ok' => true, 'message' => __('Rule deleted.', 'contentguard'))
-            : array('ok' => false, 'message' => __('Rule not found.', 'contentguard'));
+            ? array('ok' => true, 'message' => __('Rule deleted.', 'contentlatch'))
+            : array('ok' => false, 'message' => __('Rule not found.', 'contentlatch'));
     }
 
     /**
@@ -325,13 +325,13 @@ final class RulesController
         $id = isset($request['rule_id']) ? (int) $request['rule_id'] : 0;
         $existing = $id > 0 ? $this->rules->find($id) : null;
         if ($existing === null) {
-            return array('ok' => false, 'message' => __('Rule not found.', 'contentguard'));
+            return array('ok' => false, 'message' => __('Rule not found.', 'contentlatch'));
         }
 
         $status = (string) ($request['status'] ?? '');
         $enum   = RuleStatus::tryFrom($status);
         if ($enum === null) {
-            return array('ok' => false, 'message' => __('Invalid rule status.', 'contentguard'));
+            return array('ok' => false, 'message' => __('Invalid rule status.', 'contentlatch'));
         }
 
         $data           = $existing->toArray();
@@ -347,8 +347,8 @@ final class RulesController
             'ok'      => true,
             'rule'    => $saved->toArray(),
             'message' => $enum === RuleStatus::Active
-                ? __('Rule activated.', 'contentguard')
-                : __('Rule deactivated.', 'contentguard'),
+                ? __('Rule activated.', 'contentlatch')
+                : __('Rule deactivated.', 'contentlatch'),
         );
     }
 
@@ -552,12 +552,12 @@ final class RulesController
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
-            return array('ok' => false, 'message' => __('You are not allowed to manage ContentGuard rules.', 'contentguard'));
+            return array('ok' => false, 'message' => __('You are not allowed to manage ContentLatch rules.', 'contentlatch'));
         }
 
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($this->nonce($request))) {
-            return array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentguard'));
+            return array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch'));
         }
 
         return null;

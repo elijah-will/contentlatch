@@ -1,11 +1,11 @@
 <?php
 // phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- These files are include/extract template scopes; assignments are template locals, not plugin globals.
 /**
- * ContentGuard rule editor.
+ * ContentLatch rule editor.
  *
- * @package ContentGuard
+ * @package ContentLatch
  *
- * @var \ContentGuard\Admin\RuleEditorState $editor
+ * @var \ContentLatch\Admin\RuleEditorState $editor
  * @var array<string, string> $postTypes
  * @var array<int, array<string, mixed>> $fields
  * @var array{type: string, message: string}|null $notice
@@ -13,16 +13,16 @@
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\AdminView;
-use ContentGuard\Admin\RulesController;
-use ContentGuard\Admin\RulesPage;
-use ContentGuard\Application\AdminNotice;
-use ContentGuard\Application\ConditionOperators;
-use ContentGuard\Application\RuleBuilderFieldLabels;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RulePreview;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Admin\AdminView;
+use ContentLatch\Admin\RulesController;
+use ContentLatch\Admin\RulesPage;
+use ContentLatch\Application\AdminNotice;
+use ContentLatch\Application\ConditionOperators;
+use ContentLatch\Application\RuleBuilderFieldLabels;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RulePreview;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
 
 $isNew       = $editor->isNew();
 $conditions  = $editor->conditions;
@@ -46,24 +46,24 @@ foreach ($fields as $field) {
 $preview = RulePreview::fromEditor($conditions, $validations, $fieldMeta, $editor->severity);
 
 $validators = array(
-    'required'       => __('is required', 'contentguard'),
-    'min_length'     => __('Minimum length', 'contentguard'),
-    'max_length'     => __('Maximum length', 'contentguard'),
-    'allowed_values' => __('Allowed values', 'contentguard'),
+    'required'       => __('is required', 'contentlatch'),
+    'min_length'     => __('Minimum length', 'contentlatch'),
+    'max_length'     => __('Maximum length', 'contentlatch'),
+    'allowed_values' => __('Allowed values', 'contentlatch'),
 );
 
 $headerSecondary = array(
     array(
-        'label' => __('Back to rules', 'contentguard'),
+        'label' => __('Back to rules', 'contentlatch'),
         'href'  => $listUrl,
-        'class' => 'contentguard-button--link',
+        'class' => 'contentlatch-button--link',
     ),
 );
 if (!$isNew) {
     $headerSecondary[] = array(
-        'label' => __('Add another rule', 'contentguard'),
+        'label' => __('Add another rule', 'contentlatch'),
         'href'  => $newUrl,
-        'class' => 'contentguard-button--link',
+        'class' => 'contentlatch-button--link',
     );
 }
 
@@ -72,7 +72,7 @@ if (!$isNew) {
  * @param array<string, true> $fieldKeys
  */
 $renderFieldOptions = static function (array $fields, array $fieldKeys, string $selected): void {
-    echo '<option value="">' . esc_html__('Choose a field', 'contentguard') . '</option>';
+    echo '<option value="">' . esc_html__('Choose a field', 'contentlatch') . '</option>';
 
     $ungrouped = array();
     $groups    = array();
@@ -111,15 +111,15 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
     }
 };
 ?>
-<div class="wrap contentguard" id="contentguard-rule-editor">
+<div class="wrap contentlatch" id="contentlatch-rule-editor">
     <?php
     AdminView::partial(
         'page-header',
         array(
-            'title'       => $isNew ? __('Add New Rule', 'contentguard') : __('Edit Rule', 'contentguard'),
+            'title'       => $isNew ? __('Add New Rule', 'contentlatch') : __('Edit Rule', 'contentlatch'),
             'description' => $isNew
-                ? __('Create a rule that defines when content must meet a requirement.', 'contentguard')
-                : __('Update the rule that defines when content must meet a requirement.', 'contentguard'),
+                ? __('Create a rule that defines when content must meet a requirement.', 'contentlatch')
+                : __('Update the rule that defines when content must meet a requirement.', 'contentlatch'),
             'secondary'   => $headerSecondary,
         )
     );
@@ -135,57 +135,57 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
             <?php endif; ?>
         >
             <?php if ($notice['type'] === 'error') : ?>
-                <p class="contentguard-notice-label"><strong><?php echo esc_html__('Warning:', 'contentguard'); ?></strong></p>
+                <p class="contentlatch-notice-label"><strong><?php echo esc_html__('Warning:', 'contentlatch'); ?></strong></p>
             <?php endif; ?>
-            <p class="contentguard-notice-message">
+            <p class="contentlatch-notice-message">
                 <?php echo esc_html($notice['message']); ?>
                 <?php if ($notice['type'] === 'success') : ?>
-                    <a href="<?php echo esc_url($newUrl); ?>"><?php echo esc_html__('Add another rule', 'contentguard'); ?></a>
+                    <a href="<?php echo esc_url($newUrl); ?>"><?php echo esc_html__('Add another rule', 'contentlatch'); ?></a>
                 <?php endif; ?>
             </p>
         </div>
     <?php endif; ?>
-    <div id="contentguard-rule-client-notice" class="notice notice-error inline" hidden>
-        <p class="contentguard-notice-label"><strong><?php echo esc_html__('Warning:', 'contentguard'); ?></strong></p>
-        <p class="contentguard-notice-message"></p>
+    <div id="contentlatch-rule-client-notice" class="notice notice-error inline" hidden>
+        <p class="contentlatch-notice-label"><strong><?php echo esc_html__('Warning:', 'contentlatch'); ?></strong></p>
+        <p class="contentlatch-notice-message"></p>
     </div>
 
-    <section class="contentguard-panel contentguard-rule-preview" aria-labelledby="contentguard-preview-heading">
-        <h2 class="contentguard-builder-section__title" id="contentguard-preview-heading"><?php echo esc_html__('Rule preview', 'contentguard'); ?></h2>
-        <p class="contentguard-rule-preview__text" id="contentguard-rule-preview" aria-live="polite"><?php echo esc_html($preview); ?></p>
+    <section class="contentlatch-panel contentlatch-rule-preview" aria-labelledby="contentlatch-preview-heading">
+        <h2 class="contentlatch-builder-section__title" id="contentlatch-preview-heading"><?php echo esc_html__('Rule preview', 'contentlatch'); ?></h2>
+        <p class="contentlatch-rule-preview__text" id="contentlatch-rule-preview" aria-live="polite"><?php echo esc_html($preview); ?></p>
     </section>
 
-    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="contentguard-rule-form" class="contentguard-builder">
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="contentlatch-rule-form" class="contentlatch-builder">
         <input type="hidden" name="action" value="<?php echo esc_attr(RulesController::ACTION_SAVE); ?>">
         <input type="hidden" name="rule_id" value="<?php echo $isNew ? '' : esc_attr((string) $editor->id); ?>">
         <?php wp_nonce_field(RuleCommandService::NONCE_ACTION); ?>
 
-        <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-details-heading">
-            <h2 class="contentguard-builder-section__title" id="contentguard-details-heading"><?php echo esc_html__('Rule details', 'contentguard'); ?></h2>
-            <p class="description"><?php echo esc_html__('Name the rule and choose the content it applies to.', 'contentguard'); ?></p>
+        <section class="contentlatch-panel contentlatch-builder-section" aria-labelledby="contentlatch-details-heading">
+            <h2 class="contentlatch-builder-section__title" id="contentlatch-details-heading"><?php echo esc_html__('Rule details', 'contentlatch'); ?></h2>
+            <p class="description"><?php echo esc_html__('Name the rule and choose the content it applies to.', 'contentlatch'); ?></p>
 
-            <div class="contentguard-builder-field">
-                <label for="contentguard-rule-name"><?php echo esc_html__('Rule name', 'contentguard'); ?></label>
-                <input type="text" class="regular-text" id="contentguard-rule-name" name="name" required value="<?php echo esc_attr($editor->name); ?>">
+            <div class="contentlatch-builder-field">
+                <label for="contentlatch-rule-name"><?php echo esc_html__('Rule name', 'contentlatch'); ?></label>
+                <input type="text" class="regular-text" id="contentlatch-rule-name" name="name" required value="<?php echo esc_attr($editor->name); ?>">
             </div>
-            <div class="contentguard-builder-field">
-                <label for="contentguard-rule-post-type"><?php echo esc_html__('Applies to', 'contentguard'); ?></label>
-                <select id="contentguard-rule-post-type" name="target_post_type" required aria-describedby="contentguard-post-type-help">
+            <div class="contentlatch-builder-field">
+                <label for="contentlatch-rule-post-type"><?php echo esc_html__('Applies to', 'contentlatch'); ?></label>
+                <select id="contentlatch-rule-post-type" name="target_post_type" required aria-describedby="contentlatch-post-type-help">
                     <?php foreach ($postTypes as $slug => $label) : ?>
                         <option value="<?php echo esc_attr($slug); ?>" <?php selected($editor->postType, $slug); ?>>
                             <?php echo esc_html($label); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <p class="description" id="contentguard-post-type-help"><?php echo esc_html__('Changing this updates the fields you can use in WHEN and THEN.', 'contentguard'); ?></p>
+                <p class="description" id="contentlatch-post-type-help"><?php echo esc_html__('Changing this updates the fields you can use in WHEN and THEN.', 'contentlatch'); ?></p>
             </div>
         </section>
 
-        <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-when-heading">
-            <h2 class="contentguard-builder-section__title" id="contentguard-when-heading"><?php echo esc_html__('WHEN', 'contentguard'); ?></h2>
-            <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentguard'); ?></p>
-            <p class="description"><?php echo esc_html__('Repeater and Flexible Content fields can be used in WHEN and THEN. WHEN applies when any matching row meets the condition. THEN requirements apply to every matching row.', 'contentguard'); ?></p>
-            <div id="contentguard-conditions" class="contentguard-rows">
+        <section class="contentlatch-panel contentlatch-builder-section" aria-labelledby="contentlatch-when-heading">
+            <h2 class="contentlatch-builder-section__title" id="contentlatch-when-heading"><?php echo esc_html__('WHEN', 'contentlatch'); ?></h2>
+            <p class="description"><?php echo esc_html__('Leave empty to apply this rule to every post of the selected type. Multiple conditions use AND.', 'contentlatch'); ?></p>
+            <p class="description"><?php echo esc_html__('Repeater and Flexible Content fields can be used in WHEN and THEN. WHEN applies when any matching row meets the condition. THEN requirements apply to every matching row.', 'contentlatch'); ?></p>
+            <div id="contentlatch-conditions" class="contentlatch-rows">
                 <?php foreach ($conditions as $index => $condition) : ?>
                     <?php
                     $needsValue  = ConditionOperators::requiresOperand($condition['operator']);
@@ -195,155 +195,155 @@ $renderFieldOptions = static function (array $fields, array $fieldKeys, string $
                         $operators[$condition['operator']] = $condition['operator'];
                     }
                     $operandName = 'conditions[' . (int) $index . '][operand]';
-                    $fieldId     = 'contentguard-condition-field-' . (int) $index;
-                    $operatorId  = 'contentguard-condition-operator-' . (int) $index;
-                    $operandId   = 'contentguard-condition-operand-' . (int) $index;
+                    $fieldId     = 'contentlatch-condition-field-' . (int) $index;
+                    $operatorId  = 'contentlatch-condition-operator-' . (int) $index;
+                    $operandId   = 'contentlatch-condition-operand-' . (int) $index;
                     ?>
-                    <div class="contentguard-row contentguard-builder-row" data-row="condition">
+                    <div class="contentlatch-row contentlatch-builder-row" data-row="condition">
                         <input type="hidden" name="conditions[<?php echo (int) $index; ?>][id]" value="<?php echo esc_attr($condition['id']); ?>">
-                        <div class="contentguard-builder-row__controls">
-                            <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('WHEN field', 'contentguard'); ?></label>
-                            <select id="<?php echo esc_attr($fieldId); ?>" name="conditions[<?php echo (int) $index; ?>][field_key]" class="contentguard-field">
+                        <div class="contentlatch-builder-row__controls">
+                            <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('WHEN field', 'contentlatch'); ?></label>
+                            <select id="<?php echo esc_attr($fieldId); ?>" name="conditions[<?php echo (int) $index; ?>][field_key]" class="contentlatch-field">
                                 <?php $renderFieldOptions($fields, $fieldKeys, $condition['field_key']); ?>
                             </select>
-                            <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentguard'); ?></label>
-                            <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentguard-operator">
+                            <label class="screen-reader-text" for="<?php echo esc_attr($operatorId); ?>"><?php echo esc_html__('Operator', 'contentlatch'); ?></label>
+                            <select id="<?php echo esc_attr($operatorId); ?>" name="conditions[<?php echo (int) $index; ?>][operator]" class="contentlatch-operator">
                                 <?php foreach ($operators as $value => $label) : ?>
                                     <option value="<?php echo esc_attr($value); ?>" <?php selected($condition['operator'], $value); ?>><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <label class="screen-reader-text" for="<?php echo esc_attr($operandId); ?>"><?php echo esc_html__('Value', 'contentguard'); ?></label>
+                            <label class="screen-reader-text" for="<?php echo esc_attr($operandId); ?>"><?php echo esc_html__('Value', 'contentlatch'); ?></label>
                             <?php if ($fieldType === 'true_false') : ?>
-                                <select id="<?php echo esc_attr($operandId); ?>" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
-                                    <option value="1" <?php selected($condition['operand'], '1'); ?>><?php echo esc_html__('Yes', 'contentguard'); ?></option>
-                                    <option value="0" <?php selected($condition['operand'], '0'); ?>><?php echo esc_html__('No', 'contentguard'); ?></option>
+                                <select id="<?php echo esc_attr($operandId); ?>" class="contentlatch-operand" name="<?php echo esc_attr($operandName); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                                    <option value="1" <?php selected($condition['operand'], '1'); ?>><?php echo esc_html__('Yes', 'contentlatch'); ?></option>
+                                    <option value="0" <?php selected($condition['operand'], '0'); ?>><?php echo esc_html__('No', 'contentlatch'); ?></option>
                                 </select>
                             <?php elseif (ConditionOperators::isNumericField($fieldType)) : ?>
-                                <input id="<?php echo esc_attr($operandId); ?>" type="number" step="any" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                                <input id="<?php echo esc_attr($operandId); ?>" type="number" step="any" class="contentlatch-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
                             <?php else : ?>
-                                <input id="<?php echo esc_attr($operandId); ?>" type="text" class="contentguard-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
+                                <input id="<?php echo esc_attr($operandId); ?>" type="text" class="contentlatch-operand" name="<?php echo esc_attr($operandName); ?>" value="<?php echo esc_attr($condition['operand']); ?>" <?php echo $needsValue ? '' : 'hidden'; ?>>
                             <?php endif; ?>
                         </div>
-                        <button type="button" class="button contentguard-remove" aria-label="<?php echo esc_attr(sprintf(/* translators: %s: condition number */ __('Remove condition %s', 'contentguard'), (string) ((int) $index + 1))); ?>">
-                            <?php echo esc_html__('Remove', 'contentguard'); ?>
+                        <button type="button" class="button contentlatch-remove" aria-label="<?php echo esc_attr(sprintf(/* translators: %s: condition number */ __('Remove condition %s', 'contentlatch'), (string) ((int) $index + 1))); ?>">
+                            <?php echo esc_html__('Remove', 'contentlatch'); ?>
                         </button>
                     </div>
                 <?php endforeach; ?>
             </div>
-            <p><button type="button" class="button" id="contentguard-add-condition"><?php echo esc_html__('Add condition', 'contentguard'); ?></button></p>
+            <p><button type="button" class="button" id="contentlatch-add-condition"><?php echo esc_html__('Add condition', 'contentlatch'); ?></button></p>
         </section>
 
-        <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-then-heading">
-            <h2 class="contentguard-builder-section__title" id="contentguard-then-heading"><?php echo esc_html__('THEN', 'contentguard'); ?></h2>
-            <p class="description"><?php echo esc_html__('Optional. Leave the field unselected if matching the WHEN condition itself should fail the rule. Minimum length and maximum length count characters, not words.', 'contentguard'); ?></p>
-            <div id="contentguard-validations" class="contentguard-rows">
+        <section class="contentlatch-panel contentlatch-builder-section" aria-labelledby="contentlatch-then-heading">
+            <h2 class="contentlatch-builder-section__title" id="contentlatch-then-heading"><?php echo esc_html__('THEN', 'contentlatch'); ?></h2>
+            <p class="description"><?php echo esc_html__('Optional. Leave the field unselected if matching the WHEN condition itself should fail the rule. Minimum length and maximum length count characters, not words.', 'contentlatch'); ?></p>
+            <div id="contentlatch-validations" class="contentlatch-rows">
                 <?php if ($validations === array()) : ?>
                     <?php $validations = array(array('id' => '', 'field_key' => '', 'type' => 'required', 'min' => '', 'max' => '', 'values' => '', 'message' => '')); ?>
                 <?php endif; ?>
                 <?php foreach ($validations as $index => $validation) : ?>
                     <?php
-                    $fieldId     = 'contentguard-validation-field-' . (int) $index;
-                    $typeId      = 'contentguard-validation-type-' . (int) $index;
-                    $minId       = 'contentguard-validation-min-' . (int) $index;
-                    $maxId       = 'contentguard-validation-max-' . (int) $index;
-                    $valuesId    = 'contentguard-validation-values-' . (int) $index;
-                    $messageId   = 'contentguard-validation-message-' . (int) $index;
+                    $fieldId     = 'contentlatch-validation-field-' . (int) $index;
+                    $typeId      = 'contentlatch-validation-type-' . (int) $index;
+                    $minId       = 'contentlatch-validation-min-' . (int) $index;
+                    $maxId       = 'contentlatch-validation-max-' . (int) $index;
+                    $valuesId    = 'contentlatch-validation-values-' . (int) $index;
+                    $messageId   = 'contentlatch-validation-message-' . (int) $index;
                     $showMin     = $validation['type'] === 'min_length';
                     $showMax     = $validation['type'] === 'max_length';
                     $showValues  = $validation['type'] === 'allowed_values';
                     ?>
-                    <div class="contentguard-row contentguard-builder-row" data-row="validation">
+                    <div class="contentlatch-row contentlatch-builder-row" data-row="validation">
                         <input type="hidden" name="validations[<?php echo (int) $index; ?>][id]" value="<?php echo esc_attr($validation['id']); ?>">
-                        <div class="contentguard-builder-row__controls">
-                            <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('THEN field', 'contentguard'); ?></label>
-                            <select id="<?php echo esc_attr($fieldId); ?>" name="validations[<?php echo (int) $index; ?>][field_key]" class="contentguard-field">
+                        <div class="contentlatch-builder-row__controls">
+                            <label class="screen-reader-text" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html__('THEN field', 'contentlatch'); ?></label>
+                            <select id="<?php echo esc_attr($fieldId); ?>" name="validations[<?php echo (int) $index; ?>][field_key]" class="contentlatch-field">
                                 <?php $renderFieldOptions($fields, $fieldKeys, $validation['field_key']); ?>
                             </select>
-                            <label class="screen-reader-text" for="<?php echo esc_attr($typeId); ?>"><?php echo esc_html__('Requirement', 'contentguard'); ?></label>
-                            <select id="<?php echo esc_attr($typeId); ?>" name="validations[<?php echo (int) $index; ?>][type]" class="contentguard-validator">
+                            <label class="screen-reader-text" for="<?php echo esc_attr($typeId); ?>"><?php echo esc_html__('Requirement', 'contentlatch'); ?></label>
+                            <select id="<?php echo esc_attr($typeId); ?>" name="validations[<?php echo (int) $index; ?>][type]" class="contentlatch-validator">
                                 <?php foreach ($validators as $value => $label) : ?>
                                     <option value="<?php echo esc_attr($value); ?>" <?php selected($validation['type'], $value); ?>><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <span class="contentguard-param-group contentguard-param-group--min" <?php echo $showMin ? '' : 'hidden'; ?>>
-                                <label class="screen-reader-text" for="<?php echo esc_attr($minId); ?>"><?php echo esc_html__('Minimum length', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($minId); ?>" type="number" min="0" class="contentguard-param contentguard-min" name="validations[<?php echo (int) $index; ?>][min]" value="<?php echo esc_attr($showMin ? $validation['min'] : ''); ?>" <?php disabled(!$showMin); ?>>
-                                <span class="contentguard-param-suffix"><?php echo esc_html__('characters', 'contentguard'); ?></span>
+                            <span class="contentlatch-param-group contentlatch-param-group--min" <?php echo $showMin ? '' : 'hidden'; ?>>
+                                <label class="screen-reader-text" for="<?php echo esc_attr($minId); ?>"><?php echo esc_html__('Minimum length', 'contentlatch'); ?></label>
+                                <input id="<?php echo esc_attr($minId); ?>" type="number" min="0" class="contentlatch-param contentlatch-min" name="validations[<?php echo (int) $index; ?>][min]" value="<?php echo esc_attr($showMin ? $validation['min'] : ''); ?>" <?php disabled(!$showMin); ?>>
+                                <span class="contentlatch-param-suffix"><?php echo esc_html__('characters', 'contentlatch'); ?></span>
                             </span>
-                            <span class="contentguard-param-group contentguard-param-group--max" <?php echo $showMax ? '' : 'hidden'; ?>>
-                                <label class="screen-reader-text" for="<?php echo esc_attr($maxId); ?>"><?php echo esc_html__('Maximum length', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($maxId); ?>" type="number" min="0" class="contentguard-param contentguard-max" name="validations[<?php echo (int) $index; ?>][max]" value="<?php echo esc_attr($showMax ? $validation['max'] : ''); ?>" <?php disabled(!$showMax); ?>>
-                                <span class="contentguard-param-suffix"><?php echo esc_html__('characters', 'contentguard'); ?></span>
+                            <span class="contentlatch-param-group contentlatch-param-group--max" <?php echo $showMax ? '' : 'hidden'; ?>>
+                                <label class="screen-reader-text" for="<?php echo esc_attr($maxId); ?>"><?php echo esc_html__('Maximum length', 'contentlatch'); ?></label>
+                                <input id="<?php echo esc_attr($maxId); ?>" type="number" min="0" class="contentlatch-param contentlatch-max" name="validations[<?php echo (int) $index; ?>][max]" value="<?php echo esc_attr($showMax ? $validation['max'] : ''); ?>" <?php disabled(!$showMax); ?>>
+                                <span class="contentlatch-param-suffix"><?php echo esc_html__('characters', 'contentlatch'); ?></span>
                             </span>
-                            <span class="contentguard-param-group contentguard-param-group--values" <?php echo $showValues ? '' : 'hidden'; ?>>
-                                <label class="screen-reader-text" for="<?php echo esc_attr($valuesId); ?>"><?php echo esc_html__('Allowed values', 'contentguard'); ?></label>
-                                <input id="<?php echo esc_attr($valuesId); ?>" type="text" class="contentguard-param contentguard-values" name="validations[<?php echo (int) $index; ?>][values]" value="<?php echo esc_attr($showValues ? $validation['values'] : ''); ?>" placeholder="<?php echo esc_attr__('value1, value2', 'contentguard'); ?>" <?php disabled(!$showValues); ?>>
+                            <span class="contentlatch-param-group contentlatch-param-group--values" <?php echo $showValues ? '' : 'hidden'; ?>>
+                                <label class="screen-reader-text" for="<?php echo esc_attr($valuesId); ?>"><?php echo esc_html__('Allowed values', 'contentlatch'); ?></label>
+                                <input id="<?php echo esc_attr($valuesId); ?>" type="text" class="contentlatch-param contentlatch-values" name="validations[<?php echo (int) $index; ?>][values]" value="<?php echo esc_attr($showValues ? $validation['values'] : ''); ?>" placeholder="<?php echo esc_attr__('value1, value2', 'contentlatch'); ?>" <?php disabled(!$showValues); ?>>
                             </span>
-                            <label class="screen-reader-text" for="<?php echo esc_attr($messageId); ?>"><?php echo esc_html__('Custom message (optional)', 'contentguard'); ?></label>
-                            <input id="<?php echo esc_attr($messageId); ?>" type="text" class="contentguard-validation-message" name="validations[<?php echo (int) $index; ?>][message]" value="<?php echo esc_attr($validation['message']); ?>" placeholder="<?php echo esc_attr__('Custom message (optional)', 'contentguard'); ?>">
+                            <label class="screen-reader-text" for="<?php echo esc_attr($messageId); ?>"><?php echo esc_html__('Custom message (optional)', 'contentlatch'); ?></label>
+                            <input id="<?php echo esc_attr($messageId); ?>" type="text" class="contentlatch-validation-message" name="validations[<?php echo (int) $index; ?>][message]" value="<?php echo esc_attr($validation['message']); ?>" placeholder="<?php echo esc_attr__('Custom message (optional)', 'contentlatch'); ?>">
                         </div>
-                        <button type="button" class="button contentguard-remove" aria-label="<?php echo esc_attr(sprintf(/* translators: %s: requirement number */ __('Remove requirement %s', 'contentguard'), (string) ((int) $index + 1))); ?>">
-                            <?php echo esc_html__('Remove', 'contentguard'); ?>
+                        <button type="button" class="button contentlatch-remove" aria-label="<?php echo esc_attr(sprintf(/* translators: %s: requirement number */ __('Remove requirement %s', 'contentlatch'), (string) ((int) $index + 1))); ?>">
+                            <?php echo esc_html__('Remove', 'contentlatch'); ?>
                         </button>
                     </div>
                 <?php endforeach; ?>
             </div>
-            <p><button type="button" class="button" id="contentguard-add-validation"><?php echo esc_html__('Add requirement', 'contentguard'); ?></button></p>
+            <p><button type="button" class="button" id="contentlatch-add-validation"><?php echo esc_html__('Add requirement', 'contentlatch'); ?></button></p>
         </section>
 
-        <section class="contentguard-panel contentguard-builder-section" aria-labelledby="contentguard-behavior-heading">
-            <h2 class="contentguard-builder-section__title" id="contentguard-behavior-heading"><?php echo esc_html__('Rule behavior', 'contentguard'); ?></h2>
+        <section class="contentlatch-panel contentlatch-builder-section" aria-labelledby="contentlatch-behavior-heading">
+            <h2 class="contentlatch-builder-section__title" id="contentlatch-behavior-heading"><?php echo esc_html__('Rule behavior', 'contentlatch'); ?></h2>
 
-            <fieldset class="contentguard-choice-group">
-                <legend><?php echo esc_html__('Severity', 'contentguard'); ?></legend>
-                <label class="contentguard-choice">
+            <fieldset class="contentlatch-choice-group">
+                <legend><?php echo esc_html__('Severity', 'contentlatch'); ?></legend>
+                <label class="contentlatch-choice">
                     <input type="radio" name="severity" value="<?php echo esc_attr(RuleSeverity::Fail->value); ?>" <?php checked($editor->severity === RuleSeverity::Fail->value); ?>>
                     <span>
-                        <span class="contentguard-choice__label"><?php echo esc_html__('Blocking', 'contentguard'); ?></span>
-                        <span class="description"><?php echo esc_html__('Prevents publishing when the rule fails.', 'contentguard'); ?></span>
+                        <span class="contentlatch-choice__label"><?php echo esc_html__('Blocking', 'contentlatch'); ?></span>
+                        <span class="description"><?php echo esc_html__('Prevents publishing when the rule fails.', 'contentlatch'); ?></span>
                     </span>
                 </label>
-                <label class="contentguard-choice">
+                <label class="contentlatch-choice">
                     <input type="radio" name="severity" value="<?php echo esc_attr(RuleSeverity::Warning->value); ?>" <?php checked($editor->severity === RuleSeverity::Warning->value); ?>>
                     <span>
-                        <span class="contentguard-choice__label"><?php echo esc_html__('Warning', 'contentguard'); ?></span>
-                        <span class="description"><?php echo esc_html__('Reports an issue but does not prevent publishing.', 'contentguard'); ?></span>
+                        <span class="contentlatch-choice__label"><?php echo esc_html__('Warning', 'contentlatch'); ?></span>
+                        <span class="description"><?php echo esc_html__('Reports an issue but does not prevent publishing.', 'contentlatch'); ?></span>
                     </span>
                 </label>
             </fieldset>
 
-            <fieldset class="contentguard-choice-group">
-                <legend><?php echo esc_html__('Status', 'contentguard'); ?></legend>
-                <label class="contentguard-choice">
+            <fieldset class="contentlatch-choice-group">
+                <legend><?php echo esc_html__('Status', 'contentlatch'); ?></legend>
+                <label class="contentlatch-choice">
                     <input type="radio" name="status" value="<?php echo esc_attr(RuleStatus::Active->value); ?>" <?php checked($editor->status === RuleStatus::Active->value); ?>>
                     <span>
-                        <span class="contentguard-choice__label"><?php echo esc_html__('Active', 'contentguard'); ?></span>
-                        <span class="description"><?php echo esc_html__('Enforced and included in audits.', 'contentguard'); ?></span>
+                        <span class="contentlatch-choice__label"><?php echo esc_html__('Active', 'contentlatch'); ?></span>
+                        <span class="description"><?php echo esc_html__('Enforced and included in audits.', 'contentlatch'); ?></span>
                     </span>
                 </label>
-                <label class="contentguard-choice">
+                <label class="contentlatch-choice">
                     <input type="radio" name="status" value="<?php echo esc_attr(RuleStatus::Inactive->value); ?>" <?php checked($editor->status === RuleStatus::Inactive->value); ?>>
                     <span>
-                        <span class="contentguard-choice__label"><?php echo esc_html__('Inactive', 'contentguard'); ?></span>
-                        <span class="description"><?php echo esc_html__('Not enforced and not included in audits.', 'contentguard'); ?></span>
+                        <span class="contentlatch-choice__label"><?php echo esc_html__('Inactive', 'contentlatch'); ?></span>
+                        <span class="description"><?php echo esc_html__('Not enforced and not included in audits.', 'contentlatch'); ?></span>
                     </span>
                 </label>
             </fieldset>
 
-            <div class="contentguard-builder-field">
-                <label for="contentguard-rule-message"><?php echo esc_html__('Custom failure message', 'contentguard'); ?></label>
-                <input type="text" class="regular-text" id="contentguard-rule-message" name="message" value="<?php echo esc_attr($editor->message); ?>">
-                <p class="description"><?php echo esc_html__('Used when this rule fails, including when a WHEN condition matches without a THEN requirement. Optional — leave blank to use the default message.', 'contentguard'); ?></p>
+            <div class="contentlatch-builder-field">
+                <label for="contentlatch-rule-message"><?php echo esc_html__('Custom failure message', 'contentlatch'); ?></label>
+                <input type="text" class="regular-text" id="contentlatch-rule-message" name="message" value="<?php echo esc_attr($editor->message); ?>">
+                <p class="description"><?php echo esc_html__('Used when this rule fails, including when a WHEN condition matches without a THEN requirement. Optional — leave blank to use the default message.', 'contentlatch'); ?></p>
             </div>
         </section>
 
-        <div class="contentguard-builder-actions">
+        <div class="contentlatch-builder-actions">
             <button type="submit" class="button button-primary">
-                <?php echo esc_html($isNew ? __('Save Rule', 'contentguard') : __('Update Rule', 'contentguard')); ?>
+                <?php echo esc_html($isNew ? __('Save Rule', 'contentlatch') : __('Update Rule', 'contentlatch')); ?>
             </button>
-            <a class="button" href="<?php echo esc_url($listUrl); ?>"><?php echo esc_html__('Back to rules', 'contentguard'); ?></a>
+            <a class="button" href="<?php echo esc_url($listUrl); ?>"><?php echo esc_html__('Back to rules', 'contentlatch'); ?></a>
             <?php if (!$isNew) : ?>
-                <a class="button" href="<?php echo esc_url($newUrl); ?>"><?php echo esc_html__('Add another rule', 'contentguard'); ?></a>
+                <a class="button" href="<?php echo esc_url($newUrl); ?>"><?php echo esc_html__('Add another rule', 'contentlatch'); ?></a>
             <?php endif; ?>
         </div>
     </form>

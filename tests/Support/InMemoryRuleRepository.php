@@ -2,18 +2,18 @@
 /**
  * In-memory rule repository for tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleStatus;
 
 final class InMemoryRuleRepository implements RuleRepositoryInterface
 {

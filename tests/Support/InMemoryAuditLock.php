@@ -2,14 +2,14 @@
 /**
  * In-memory audit start lock for tests.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Audit\AuditLockInterface;
+use ContentLatch\Application\Audit\AuditLockInterface;
 
 final class InMemoryAuditLock implements AuditLockInterface
 {

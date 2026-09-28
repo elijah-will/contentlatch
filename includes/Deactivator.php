@@ -2,12 +2,12 @@
 /**
  * Deactivation hook.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard;
+namespace ContentLatch;
 
 defined('ABSPATH') || exit;
 

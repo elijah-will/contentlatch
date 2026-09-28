@@ -2,12 +2,12 @@
 /**
  * Persistence port for audit runs and findings.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 

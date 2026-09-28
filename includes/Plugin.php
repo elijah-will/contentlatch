@@ -2,44 +2,44 @@
 /**
  * Plugin bootstrap.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard;
+namespace ContentLatch;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\AuditAjaxController;
-use ContentGuard\Admin\AuditPage;
-use ContentGuard\Admin\EditorAuditNotice;
-use ContentGuard\Admin\EditorFieldFocus;
-use ContentGuard\Admin\EditorRestBlockNotice;
-use ContentGuard\Admin\RuleEditorDraftStore;
-use ContentGuard\Admin\RulesController;
-use ContentGuard\Admin\RulesPage;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\Integration\IntegrationRegistry;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
-use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
-use ContentGuard\Infrastructure\WordPress\AuditSchema;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
-use ContentGuard\Infrastructure\WordPress\CoreSaveValidator;
-use ContentGuard\Infrastructure\WordPress\EditablePostTypes;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
-use ContentGuard\Infrastructure\WordPress\RestSaveValidator;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Admin\AuditAjaxController;
+use ContentLatch\Admin\AuditPage;
+use ContentLatch\Admin\EditorAuditNotice;
+use ContentLatch\Admin\EditorFieldFocus;
+use ContentLatch\Admin\EditorRestBlockNotice;
+use ContentLatch\Admin\RuleEditorDraftStore;
+use ContentLatch\Admin\RulesController;
+use ContentLatch\Admin\RulesPage;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\Integration\IntegrationRegistry;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\ACF\AcfSaveValidator;
+use ContentLatch\Infrastructure\ACF\SaveWarningNotifier;
+use ContentLatch\Infrastructure\WordPress\AuditSchema;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Infrastructure\WordPress\CoreSaveValidator;
+use ContentLatch\Infrastructure\WordPress\EditablePostTypes;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Infrastructure\WordPress\RestSaveValidator;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
 
 final class Plugin
 {
@@ -47,8 +47,8 @@ final class Plugin
     public const MIN_PHP      = '8.1';
     public const MIN_WP       = '6.6';
     public const MIN_ACF      = '6.0.0';
-    public const TEXT_DOMAIN  = 'contentguard';
-    public const SLUG         = 'contentguard';
+    public const TEXT_DOMAIN  = 'contentlatch';
+    public const SLUG         = 'contentlatch';
 
     private static ?self $instance = null;
 

@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 use PHPUnit\Framework\TestCase;
 
 final class AcfFieldCatalogTest extends TestCase
@@ -567,8 +567,8 @@ final class AcfFieldCatalogTest extends TestCase
 
     public function testProduct636AndRecipe12325RepeaterChildrenAreCatalogued(): void
     {
-        $product = \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog();
-        $recipe  = \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
+        $product = \ContentLatch\Tests\Support\AcfRepeaterFixtures::productCatalog();
+        $recipe  = \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
 
         $productFields = $product->fieldsForPostType('product');
         $byKey         = array();
@@ -576,20 +576,20 @@ final class AcfFieldCatalogTest extends TestCase
             $byKey[$field->key] = $field;
         }
 
-        $this->assertArrayHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE, $byKey);
-        $this->assertSame('', $byKey[\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE]->container);
-        $this->assertArrayNotHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION, $byKey);
-        $this->assertArrayNotHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $byKey);
-        $this->assertArrayHasKey(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $byKey);
-        $size = $byKey[\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE];
+        $this->assertArrayHasKey(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE, $byKey);
+        $this->assertSame('', $byKey[\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE]->container);
+        $this->assertArrayNotHasKey(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION, $byKey);
+        $this->assertArrayNotHasKey(\ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $byKey);
+        $this->assertArrayHasKey(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $byKey);
+        $size = $byKey[\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE];
         $this->assertSame('repeater', $size->container);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $size->repeaterKey);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE, $size->repeaterKey);
         $this->assertSame('Product Information → Item Size → Product Size', $size->breadcrumb());
         $this->assertSame(
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION,
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION,
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE,
             ),
             $size->path
         );
@@ -599,18 +599,18 @@ final class AcfFieldCatalogTest extends TestCase
             $product->fieldTypesForPostType('product')
         );
         $this->assertSame(
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
-            $maps['repeater_keys'][\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE]
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE,
+            $maps['repeater_keys'][\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE]
         );
 
         $ingredient = $recipe->fieldsForPostType('recipe')[0];
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $ingredient->key);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $ingredient->key);
         $this->assertSame('repeater', $ingredient->container);
         $this->assertSame('Ingredient List → Ingredient', $ingredient->breadcrumb());
         $this->assertSame(
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
             ),
             $ingredient->path
         );
@@ -619,7 +619,7 @@ final class AcfFieldCatalogTest extends TestCase
             $ingredient->toCatalogArray()
         );
         $this->assertSame(
-            array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST),
+            array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST),
             $ingredient->repeaterChain()
         );
         $this->assertFalse($ingredient->isNestedRepeaterChild());
@@ -629,12 +629,12 @@ final class AcfFieldCatalogTest extends TestCase
 
     public function testRecipeNestedRepeaterLeafIsCataloguedWithATwoLevelChain(): void
     {
-        $catalog = \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
         $name    = $catalog->fieldsForPostType('recipe')[0];
 
-        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $name->key);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::path(), $name->path);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::chain(), $name->repeaterChain());
+        $this->assertSame(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $name->key);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::path(), $name->path);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::chain(), $name->repeaterChain());
         $this->assertSame('Directions → Steps → Name', $name->breadcrumb());
         $this->assertTrue($name->isNestedRepeaterChild());
         $this->assertTrue($name->isBuilderSelectable());

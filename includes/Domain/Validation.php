@@ -2,14 +2,14 @@
 /**
  * THEN clause: field + validator + parameters.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
-use ContentGuard\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Exception\InvalidRuleException;
 
 final class Validation
 {

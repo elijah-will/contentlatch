@@ -1,21 +1,21 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\FieldInstance;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\FieldInstance;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEngineRepeaterTest extends TestCase
@@ -427,7 +427,7 @@ final class RuleEngineRepeaterTest extends TestCase
     /**
      * @param array<string, mixed> $overrides
      */
-    private function ingredientRule(array $overrides = array()): \ContentGuard\Domain\Rule
+    private function ingredientRule(array $overrides = array()): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array_merge(array(
             'id' => 40,
@@ -446,7 +446,7 @@ final class RuleEngineRepeaterTest extends TestCase
     /**
      * @param array<string, mixed> $overrides
      */
-    private function productSizeRule(array $overrides = array()): \ContentGuard\Domain\Rule
+    private function productSizeRule(array $overrides = array()): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array_merge(array(
             'id' => 41,

@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\ContentStatus;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\ContentStatus;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class ContentEvaluatorTest extends TestCase
@@ -149,7 +149,7 @@ final class ContentEvaluatorTest extends TestCase
     }
 
     /**
-     * @param array<int, \ContentGuard\Domain\Rule> $rules
+     * @param array<int, \ContentLatch\Domain\Rule> $rules
      */
     private function evaluator(array $rules): ContentEvaluator
     {

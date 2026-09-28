@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Integration;
+namespace ContentLatch\Tests\Unit\Application\Integration;
 
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\FieldInstance;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\FieldInstance;
 use PHPUnit\Framework\TestCase;
 
 final class CompositeValueProviderTest extends TestCase
@@ -33,7 +33,7 @@ final class CompositeValueProviderTest extends TestCase
 
     public function testInstancesAreRoutedWhenHasIsFalse(): void
     {
-        $nested = new class implements \ContentGuard\Domain\Contracts\FieldValueProviderInterface {
+        $nested = new class implements \ContentLatch\Domain\Contracts\FieldValueProviderInterface {
             public function has(string $fieldId): bool
             {
                 return false;

@@ -1,25 +1,25 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\SaveWarningNotifier;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\SaveWarningNotifier;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class SaveWarningNotifierTest extends TestCase
@@ -30,14 +30,14 @@ final class SaveWarningNotifierTest extends TestCase
 
         $this->assertStringNotContainsString('EditorAuditNotice', $php);
         $this->assertStringNotContainsString('editor-blockers', $php);
-        $this->assertStringNotContainsString('contentguard-audit-blockers', $php);
+        $this->assertStringNotContainsString('contentlatch-audit-blockers', $php);
         $this->assertStringContainsString('classicNoticeHtml', $php);
         $this->assertStringContainsString('admin_notices', $php);
         $this->assertStringContainsString('shouldRenderClassicNotices', $php);
         $this->assertStringContainsString("base ?? '') === 'post'", $php);
         $this->assertStringContainsString('shouldEnqueue', $php);
         $this->assertStringContainsString('navigationExtras', $php);
-        $this->assertStringNotContainsString('contentguard_row', $php);
+        $this->assertStringNotContainsString('contentlatch_row', $php);
     }
 
     public function testGutenbergAssetsStayOnTheIndividualPostEditor(): void
@@ -46,8 +46,8 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertTrue(SaveWarningNotifier::shouldEnqueue('post-new.php'));
         $this->assertFalse(SaveWarningNotifier::shouldEnqueue('edit.php'));
         $this->assertFalse(SaveWarningNotifier::shouldEnqueue('index.php'));
-        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('toplevel_page_contentguard'));
-        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('contentguard_page_contentguard-audit'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('toplevel_page_contentlatch'));
+        $this->assertFalse(SaveWarningNotifier::shouldEnqueue('contentlatch_page_contentlatch-audit'));
     }
 
     public function testEmptyWarningsDoNotRepublishEditorFieldNavigationState(): void
@@ -67,14 +67,14 @@ final class SaveWarningNotifierTest extends TestCase
             substr_count($php, 'EditorFieldFocus::enqueueAssets')
         );
         $this->assertStringContainsString('navigationExtras($warnings)', $php);
-        $this->assertStringContainsString('contentguard-editor-warnings', $php);
-        $this->assertStringContainsString('contentguardEditorWarnings', $php);
+        $this->assertStringContainsString('contentlatch-editor-warnings', $php);
+        $this->assertStringContainsString('contentlatchEditorWarnings', $php);
         $this->assertStringNotContainsString(
-            "wp_localize_script(\n            'contentguard-editor-field'",
+            "wp_localize_script(\n            'contentlatch-editor-field'",
             $php
         );
         $this->assertStringNotContainsString(
-            "wp_localize_script(\n            \"contentguard-editor-field\"",
+            "wp_localize_script(\n            \"contentlatch-editor-field\"",
             $php
         );
     }
@@ -180,7 +180,7 @@ final class SaveWarningNotifierTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field'   => \ContentGuard\Tests\Support\CoreCatalogFixtures::titleRef(),
+                    'field'   => \ContentLatch\Tests\Support\CoreCatalogFixtures::titleRef(),
                     'type'    => 'min_length',
                     'params'  => array('min' => 8),
                     'message' => 'Title is too short.',
@@ -188,10 +188,10 @@ final class SaveWarningNotifierTest extends TestCase
             ),
         ));
         $repository = new InMemoryRuleRepository(array($rule));
-        $core       = \ContentGuard\Tests\Support\CoreCatalogFixtures::integration();
+        $core       = \ContentLatch\Tests\Support\CoreCatalogFixtures::integration();
         $acfCatalog = new AcfFieldCatalog(static fn (): array => array());
-        $acf        = new \ContentGuard\Infrastructure\ACF\AcfIntegration($acfCatalog);
-        $composite  = new \ContentGuard\Application\Integration\CompositeFieldCatalog(array($core, $acf));
+        $acf        = new \ContentLatch\Infrastructure\ACF\AcfIntegration($acfCatalog);
+        $composite  = new \ContentLatch\Application\Integration\CompositeFieldCatalog(array($core, $acf));
 
         $short = $this->coreWarningNotifier($repository, $acfCatalog, $composite, $core, $acf, 'Hi');
         $this->assertNotSame(array(), $short->warningsForPost(42));
@@ -210,7 +210,7 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertCount(1, $items);
         $this->assertSame('field_description', $items[0]['fieldKey']);
         $this->assertTrue(SaveWarningNotifier::isClickableWarning($items[0]));
-        $this->assertStringContainsString('data-contentguard-field="field_description"', SaveWarningNotifier::classicNoticeHtml($items[0]));
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', SaveWarningNotifier::classicNoticeHtml($items[0]));
         $this->assertStringContainsString('Recipe Description', SaveWarningNotifier::classicNoticeHtml($items[0]));
     }
 
@@ -238,10 +238,10 @@ final class SaveWarningNotifierTest extends TestCase
             static fn (array $item): string => SaveWarningNotifier::classicNoticeHtml($item),
             $items
         ));
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_yield"', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_featuredon"', $html);
-        $this->assertStringNotContainsString('data-contentguard-field="field_description" data-contentguard-field="field_yield"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_yield"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_featuredon"', $html);
+        $this->assertStringNotContainsString('data-contentlatch-field="field_description" data-contentlatch-field="field_yield"', $html);
     }
 
     public function testWarningWithoutFieldKeyRemainsPlainText(): void
@@ -254,11 +254,11 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertFalse(SaveWarningNotifier::isClickableWarning($items[0]));
         $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
         $this->assertStringNotContainsString('<button', $html);
-        $this->assertStringNotContainsString('data-contentguard-field', $html);
+        $this->assertStringNotContainsString('data-contentlatch-field', $html);
         $this->assertStringContainsString('notice notice-warning', $html);
-        $this->assertStringContainsString('ContentGuard · Warning', $html);
+        $this->assertStringContainsString('ContentLatch · Warning', $html);
         $this->assertStringContainsString('Recipe Description — Description is missing', $html);
-        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $html);
+        $this->assertStringNotContainsString('contentlatch-editor-warnings__count', $html);
         $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
         $this->assertStringNotContainsString('[object Object]', $html);
     }
@@ -277,7 +277,7 @@ final class SaveWarningNotifierTest extends TestCase
             $this->assertFalse(SaveWarningNotifier::isClickableWarning($item));
             $html = SaveWarningNotifier::classicNoticeHtml($item);
             $this->assertStringNotContainsString('<button', $html);
-            $this->assertStringNotContainsString('data-contentguard-field', $html);
+            $this->assertStringNotContainsString('data-contentlatch-field', $html);
             $this->assertStringNotContainsString('<script>', $html);
         }
     }
@@ -293,7 +293,7 @@ final class SaveWarningNotifierTest extends TestCase
         $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
         $this->assertStringContainsString('Yield', $html);
         $this->assertStringContainsString('Yield is missing', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_deleted999"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_deleted999"', $html);
     }
 
     public function testClassicNoticeUsesFieldLabelAsTheNavigationTarget(): void
@@ -305,13 +305,13 @@ final class SaveWarningNotifierTest extends TestCase
             'fieldKey' => 'field_description',
         ));
 
-        $this->assertStringContainsString('ContentGuard · Warning', $html);
+        $this->assertStringContainsString('ContentLatch · Warning', $html);
         $this->assertStringContainsString('notice notice-warning', $html);
-        $this->assertStringContainsString('<button type="button" class="contentguard-warning-field"', $html);
+        $this->assertStringContainsString('<button type="button" class="contentlatch-warning-field"', $html);
         $this->assertStringContainsString('aria-label="Go to field: Recipe Description"', $html);
         $this->assertStringContainsString('>Recipe Description</button>', $html);
         $this->assertStringContainsString('— Description is missing', $html);
-        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $html);
+        $this->assertStringNotContainsString('contentlatch-editor-warnings__count', $html);
         $this->assertStringNotContainsString('class="button"', $html);
         $this->assertStringNotContainsString('[object Object]', $html);
         $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText(array(
@@ -336,12 +336,12 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertFalse(SaveWarningNotifier::isClickableWarning($items[1], EditorCoreNavigation::SURFACE_GUTENBERG));
 
         $classic = SaveWarningNotifier::noticeHtml($items, EditorCoreNavigation::SURFACE_CLASSIC);
-        $this->assertStringContainsString('data-contentguard-core="title"', $classic);
-        $this->assertStringContainsString('data-contentguard-core="slug"', $classic);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $classic);
+        $this->assertStringContainsString('data-contentlatch-core="slug"', $classic);
 
         $gutenberg = SaveWarningNotifier::noticeHtml($items, EditorCoreNavigation::SURFACE_GUTENBERG);
-        $this->assertStringContainsString('data-contentguard-core="title"', $gutenberg);
-        $this->assertStringNotContainsString('data-contentguard-core="slug"', $gutenberg);
+        $this->assertStringContainsString('data-contentlatch-core="title"', $gutenberg);
+        $this->assertStringNotContainsString('data-contentlatch-core="slug"', $gutenberg);
         $this->assertStringContainsString('Slug — This field is required.', $gutenberg);
     }
 
@@ -436,12 +436,12 @@ final class SaveWarningNotifierTest extends TestCase
             SaveWarningNotifier::displayText($warnings[2])
         );
         $grouped = SaveWarningNotifier::classicNoticeHtml($warnings);
-        $this->assertStringContainsString('ContentGuard · Warning', $grouped);
+        $this->assertStringContainsString('ContentLatch · Warning', $grouped);
         $this->assertStringContainsString('3 warnings', $grouped);
         $this->assertStringContainsString('notice notice-warning', $grouped);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $grouped);
-        $this->assertStringContainsString('data-contentguard-field="field_featuredon"', $grouped);
-        $this->assertStringContainsString('data-contentguard-field="field_yield"', $grouped);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $grouped);
+        $this->assertStringContainsString('data-contentlatch-field="field_featuredon"', $grouped);
+        $this->assertStringContainsString('data-contentlatch-field="field_yield"', $grouped);
     }
 
     public function testMultipleWarningsForTheSameFieldKeepTheirOwnMessages(): void
@@ -459,7 +459,7 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertSame('Recipe Description — Description is missing', SaveWarningNotifier::displayText($items[0]));
         $this->assertSame('Recipe Description — Description looks thin.', SaveWarningNotifier::displayText($items[1]));
         $grouped = SaveWarningNotifier::classicNoticeHtml($items);
-        $this->assertStringContainsString('ContentGuard · Warning', $grouped);
+        $this->assertStringContainsString('ContentLatch · Warning', $grouped);
         $this->assertStringContainsString('2 warnings', $grouped);
         $this->assertStringNotContainsString('[object Object]', SaveWarningNotifier::classicNoticeHtml($items[0]));
         $this->assertStringNotContainsString('[object Object]', SaveWarningNotifier::classicNoticeHtml($items[1]));
@@ -524,12 +524,12 @@ final class SaveWarningNotifierTest extends TestCase
         );
         $this->assertSame(array('Ingredients: This looks thin.'), $payload['messages']);
         $this->assertSame($warnings, $payload['warnings']);
-        $this->assertStringContainsString('ContentGuard · Warning', $payload['html']);
+        $this->assertStringContainsString('ContentLatch · Warning', $payload['html']);
         $this->assertStringContainsString('>Ingredients</button>', $payload['html']);
         $this->assertStringContainsString('— This looks thin.', $payload['html']);
-        $this->assertStringNotContainsString('contentguard-editor-warnings__count', $payload['html']);
+        $this->assertStringNotContainsString('contentlatch-editor-warnings__count', $payload['html']);
         $this->assertSame(
-            "ContentGuard · Warning\nIngredients — This looks thin.",
+            "ContentLatch · Warning\nIngredients — This looks thin.",
             $payload['text']
         );
         $this->assertSame(array(), $stored);
@@ -629,10 +629,10 @@ final class SaveWarningNotifierTest extends TestCase
         );
 
         $this->assertStringContainsString('notice notice-warning', $html);
-        $this->assertStringContainsString('ContentGuard · Warning', $html);
+        $this->assertStringContainsString('ContentLatch · Warning', $html);
         $this->assertStringContainsString('Ingredients', $html);
         $this->assertStringContainsString('This looks thin.', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_ingredients"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_ingredients"', $html);
         $this->assertSame(array(), $stored);
     }
 
@@ -658,22 +658,22 @@ final class SaveWarningNotifierTest extends TestCase
         $this->assertSame('', $html);
     }
 
-    public function testClassicNoticeDoesNotRenderOnContentGuardRules(): void
+    public function testClassicNoticeDoesNotRenderOnContentLatchRules(): void
     {
         $stored = array();
         $html = $this->renderClassicNotices(
-            $this->notifier('publish', $stored, '', $this->screen('toplevel_page_contentguard', false)),
+            $this->notifier('publish', $stored, '', $this->screen('toplevel_page_contentlatch', false)),
             array('post' => '42')
         );
 
         $this->assertSame('', $html);
     }
 
-    public function testClassicNoticeDoesNotRenderOnContentGuardAudit(): void
+    public function testClassicNoticeDoesNotRenderOnContentLatchAudit(): void
     {
         $stored = array();
         $html = $this->renderClassicNotices(
-            $this->notifier('publish', $stored, '', $this->screen('contentguard_page_contentguard-audit', false)),
+            $this->notifier('publish', $stored, '', $this->screen('contentlatch_page_contentlatch-audit', false)),
             array('post' => '42')
         );
 
@@ -732,7 +732,7 @@ final class SaveWarningNotifierTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field' => new \ContentGuard\Domain\FieldRef(
+                    'field' => new \ContentLatch\Domain\FieldRef(
                         'field_ingredients',
                         'ingredients',
                         'Product Details → Ingredients',
@@ -791,7 +791,7 @@ final class SaveWarningNotifierTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                     'message'    => 'Ingredient is missing.',
@@ -799,7 +799,7 @@ final class SaveWarningNotifierTest extends TestCase
             ),
         ));
         $repository = new InMemoryRuleRepository(array($rule), RuleDocumentValidator::v1());
-        $catalog = \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog();
         $notifier = new SaveWarningNotifier(
             new ContentEvaluator($repository, RuleEngine::v1()),
             $repository,
@@ -811,9 +811,9 @@ final class SaveWarningNotifierTest extends TestCase
             static fn (): array => array(),
             static function (string $fieldKey, int $postId): mixed {
                 unset($postId);
-                return $fieldKey === \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
+                return $fieldKey === \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
                     ? array(
-                        array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                        array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                     )
                     : null;
             }
@@ -821,7 +821,7 @@ final class SaveWarningNotifierTest extends TestCase
 
         $warnings = $notifier->warningsForPost(12325);
         $this->assertCount(1, $warnings);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $warnings[0]['fieldKey']);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $warnings[0]['fieldKey']);
         $this->assertSame('Ingredient is missing.', $warnings[0]['message']);
         $this->assertFalse($notifier->shouldRenderClassicNotices());
         $this->assertArrayNotHasKey('affectedRows', $warnings[0]);
@@ -835,7 +835,7 @@ final class SaveWarningNotifierTest extends TestCase
                 EvaluationStatus::Warning,
                 80,
                 9,
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                 'Title looks thin.',
                 RuleSeverity::Warning,
                 'required',
@@ -849,7 +849,7 @@ final class SaveWarningNotifierTest extends TestCase
                 EvaluationStatus::Warning,
                 80,
                 9,
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                 'Title looks thin.',
                 RuleSeverity::Warning,
                 'required',
@@ -862,17 +862,17 @@ final class SaveWarningNotifierTest extends TestCase
         )));
 
         $this->assertCount(1, $items);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $items[0]['fieldKey']);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $items[0]['fieldKey']);
         $this->assertSame('hero', $items[0]['layout']);
         $this->assertSame(array(1, 3), $items[0]['affectedRows']);
 
         $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
-        $this->assertStringContainsString('data-contentguard-layout="hero"', $html);
-        $this->assertStringContainsString('data-contentguard-display-row="1"', $html);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('data-contentlatch-layout="hero"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="1"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', $html);
         $this->assertStringContainsString('>Row 1</button>', $html);
         $this->assertStringContainsString('>Row 3</button>', $html);
-        $this->assertStringNotContainsString('contentguard_row', $html);
+        $this->assertStringNotContainsString('contentlatch_row', $html);
     }
 
     public function testSingleFlexibleWarningNavigatesDirectlyToThatRow(): void
@@ -882,7 +882,7 @@ final class SaveWarningNotifierTest extends TestCase
                 EvaluationStatus::Warning,
                 80,
                 9,
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                 'Title looks thin.',
                 RuleSeverity::Warning,
                 'required',
@@ -896,7 +896,7 @@ final class SaveWarningNotifierTest extends TestCase
 
         $this->assertSame(array(3), $items[0]['affectedRows']);
         $html = SaveWarningNotifier::classicNoticeHtml($items[0]);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', $html);
         $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
         $this->assertStringNotContainsString('>Row 3</button>', $html);
     }
@@ -1057,9 +1057,9 @@ final class SaveWarningNotifierTest extends TestCase
     private function coreWarningNotifier(
         InMemoryRuleRepository $repository,
         AcfFieldCatalog $acfCatalog,
-        \ContentGuard\Application\Integration\CompositeFieldCatalog $composite,
-        \ContentGuard\Infrastructure\WordPress\CoreIntegration $core,
-        \ContentGuard\Infrastructure\ACF\AcfIntegration $acf,
+        \ContentLatch\Application\Integration\CompositeFieldCatalog $composite,
+        \ContentLatch\Infrastructure\WordPress\CoreIntegration $core,
+        \ContentLatch\Infrastructure\ACF\AcfIntegration $acf,
         string $title,
     ): SaveWarningNotifier {
         return new SaveWarningNotifier(
@@ -1074,8 +1074,8 @@ final class SaveWarningNotifierTest extends TestCase
             null,
             null,
             $composite,
-            static function (int $postId, string $postType, array $fieldTypes) use ($core, $acf, $title): \ContentGuard\Application\Integration\CompositeValueProvider {
-                return new \ContentGuard\Application\Integration\CompositeValueProvider(array(
+            static function (int $postId, string $postType, array $fieldTypes) use ($core, $acf, $title): \ContentLatch\Application\Integration\CompositeValueProvider {
+                return new \ContentLatch\Application\Integration\CompositeValueProvider(array(
                     $core->storedProvider(
                         $postId,
                         $postType,

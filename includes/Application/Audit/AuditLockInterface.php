@@ -2,12 +2,12 @@
 /**
  * Atomic lock so only one active audit can be created.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 

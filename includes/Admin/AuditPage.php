@@ -1,30 +1,30 @@
 <?php
 /**
- * ContentGuard Audit admin page.
+ * ContentLatch Audit admin page.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Application\StatusPresentation;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\Exception\AuditException;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Application\StatusPresentation;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
 
 final class AuditPage
 {
-    public const SLUG              = 'contentguard-audit';
+    public const SLUG              = 'contentlatch-audit';
     public const PAGE_SIZE         = AuditFindingQuery::DEFAULT_LIMIT;
     public const HISTORY_PAGE_SIZE = 10;
     public const HISTORY_PAGED_ARG = 'hpaged';
@@ -45,8 +45,8 @@ final class AuditPage
     {
         add_submenu_page(
             RulesPage::SLUG,
-            __('Audit', 'contentguard'),
-            __('Audit', 'contentguard'),
+            __('Audit', 'contentlatch'),
+            __('Audit', 'contentlatch'),
             Capabilities::MANAGE,
             self::SLUG,
             array($this, 'render')
@@ -62,26 +62,26 @@ final class AuditPage
         AdminAssets::enqueueShared();
 
         wp_register_style(
-            'contentguard-audit',
-            CONTENTGUARD_URL . 'admin/css/audit.css',
+            'contentlatch-audit',
+            CONTENTLATCH_URL . 'admin/css/audit.css',
             array(AdminAssets::STYLE),
-            \ContentGuard\Plugin::VERSION
+            \ContentLatch\Plugin::VERSION
         );
-        wp_enqueue_style('contentguard-audit');
+        wp_enqueue_style('contentlatch-audit');
 
         wp_register_script(
-            'contentguard-audit',
-            CONTENTGUARD_URL . 'admin/js/audit.js',
+            'contentlatch-audit',
+            CONTENTLATCH_URL . 'admin/js/audit.js',
             array('wp-i18n'),
-            \ContentGuard\Plugin::VERSION,
+            \ContentLatch\Plugin::VERSION,
             true
         );
         if (function_exists('wp_set_script_translations')) {
-            wp_set_script_translations('contentguard-audit', 'contentguard', CONTENTGUARD_DIR . 'languages');
+            wp_set_script_translations('contentlatch-audit', 'contentlatch', CONTENTLATCH_DIR . 'languages');
         }
         wp_localize_script(
-            'contentguard-audit',
-            'contentguardAudit',
+            'contentlatch-audit',
+            'contentlatchAudit',
             array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce'   => wp_create_nonce(ContentAuditService::NONCE_ACTION),
@@ -95,19 +95,19 @@ final class AuditPage
                     'pending'          => StatusPresentation::label('pending'),
                     'running'          => StatusPresentation::label('running'),
                     /* translators: 1: Number of content items checked. 2: Total content items. */
-                    'progressKnown'    => __('%1$d of %2$d content items checked', 'contentguard'),
+                    'progressKnown'    => __('%1$d of %2$d content items checked', 'contentlatch'),
                     /* translators: %d: Number of content items checked. */
-                    'progressUnknown'  => __('%d content items checked', 'contentguard'),
-                    'couldNotStart'    => __('Could not start the audit.', 'contentguard'),
-                    'batchFailed'      => __('The audit could not continue.', 'contentguard'),
+                    'progressUnknown'  => __('%d content items checked', 'contentlatch'),
+                    'couldNotStart'    => __('Could not start the audit.', 'contentlatch'),
+                    'batchFailed'      => __('The audit could not continue.', 'contentlatch'),
                     'cancelConfirm'    => AuditPresentation::cancelConfirmText(),
-                    'stopAudit'        => __('Stop audit', 'contentguard'),
-                    'keepRunning'      => __('Keep running', 'contentguard'),
-                    'cancelAudit'      => __('Cancel Audit', 'contentguard'),
+                    'stopAudit'        => __('Stop audit', 'contentlatch'),
+                    'keepRunning'      => __('Keep running', 'contentlatch'),
+                    'cancelAudit'      => __('Cancel Audit', 'contentlatch'),
                 ),
             )
         );
-        wp_enqueue_script('contentguard-audit');
+        wp_enqueue_script('contentlatch-audit');
     }
 
     /**
@@ -142,7 +142,7 @@ final class AuditPage
 
     public static function healthHeading(bool $viewingHistory): string
     {
-        return $viewingHistory ? __('Previous audit', 'contentguard') : AuditPresentation::completedHeading();
+        return $viewingHistory ? __('Previous audit', 'contentlatch') : AuditPresentation::completedHeading();
     }
 
     public static function isFirstRun(?AuditRun $resultsRun, ?AuditRun $active): bool
@@ -379,7 +379,7 @@ final class AuditPage
     public function render(): void
     {
         if (!Capabilities::currentUserCanManage()) {
-            wp_die(esc_html__('You are not allowed to access this page.', 'contentguard'));
+            wp_die(esc_html__('You are not allowed to access this page.', 'contentlatch'));
         }
 
         $active         = $this->audit->getActiveRun();
@@ -421,7 +421,7 @@ final class AuditPage
         $filterArgs     = self::filterArgs($auditQuery, $viewingHistory ? $resultsRun?->id : null, $historyPaged);
         $historyArgs    = self::historyPaginationArgs($filterArgs, $paged);
 
-        $view = CONTENTGUARD_DIR . 'admin/views/audit.php';
+        $view = CONTENTLATCH_DIR . 'admin/views/audit.php';
         require $view;
     }
 
@@ -439,7 +439,7 @@ final class AuditPage
     }
 
     /**
-     * @param \ContentGuard\Application\Audit\AuditFinding[] $findings
+     * @param \ContentLatch\Application\Audit\AuditFinding[] $findings
      * @param AuditRuleImpact[] $impacts
      * @return array<string, string>
      */
@@ -462,7 +462,7 @@ final class AuditPage
     }
 
     /**
-     * @param \ContentGuard\Application\Audit\AuditFinding[] $findings
+     * @param \ContentLatch\Application\Audit\AuditFinding[] $findings
      * @return array<string, string>
      */
     private function fieldLabels(array $findings): array

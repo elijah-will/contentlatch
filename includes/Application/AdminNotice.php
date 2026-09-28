@@ -2,27 +2,27 @@
 /**
  * Success/error admin notices. Type and message stay paired.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
 final class AdminNotice
 {
-    public const TARGET_ID = 'contentguard-rule-notice';
+    public const TARGET_ID = 'contentlatch-rule-notice';
 
     /**
-     * @return array{contentguard_notice: string, contentguard_msg: string}
+     * @return array{contentlatch_notice: string, contentlatch_msg: string}
      */
     public static function queryArgs(bool $ok, string $message): array
     {
         return array(
-            'contentguard_notice' => $ok ? 'success' : 'error',
-            'contentguard_msg'    => $message,
+            'contentlatch_notice' => $ok ? 'success' : 'error',
+            'contentlatch_msg'    => $message,
         );
     }
 
@@ -32,13 +32,13 @@ final class AdminNotice
      */
     public static function fromQuery(array $query): ?array
     {
-        if (!isset($query['contentguard_notice'], $query['contentguard_msg'])) {
+        if (!isset($query['contentlatch_notice'], $query['contentlatch_msg'])) {
             return null;
         }
 
-        $typeRaw = self::unslash((string) $query['contentguard_notice']);
+        $typeRaw = self::unslash((string) $query['contentlatch_notice']);
         $type    = self::normalizeType($typeRaw);
-        $message = self::decodeMessage(self::unslash((string) $query['contentguard_msg']));
+        $message = self::decodeMessage(self::unslash((string) $query['contentlatch_msg']));
 
         if ($type === null || $message === '') {
             return null;

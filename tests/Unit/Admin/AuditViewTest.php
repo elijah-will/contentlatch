@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\AuditPage;
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Admin\AuditPage;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
 final class AuditViewTest extends TestCase
@@ -23,18 +23,18 @@ final class AuditViewTest extends TestCase
     {
         $html = $this->renderAudit($this->baseVars());
 
-        $this->assertStringContainsString('id="contentguard-audit-start"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-start"', $html);
         $this->assertStringContainsString('Run Audit', $html);
         $this->assertStringContainsString(AuditPresentation::firstRunHeading(), $html);
         $this->assertStringContainsString(AuditPresentation::firstRunText(), $html);
         $this->assertStringContainsString(AuditPresentation::doesNotModifyContent(), $html);
         $this->assertStringContainsString('Check your existing content against your active rules.', $html);
-        $this->assertStringContainsString('id="contentguard-audit-cancel"', $html);
-        $this->assertStringContainsString('id="contentguard-audit-active"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-cancel"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-active"', $html);
         $this->assertStringContainsString('hidden', $html);
         $this->assertStringNotContainsString('Start Audit', $html);
         $this->assertStringNotContainsString('Statuses:', $html);
-        $this->assertStringContainsString('id="contentguard-audit"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit"', $html);
     }
 
     public function testNoActiveRulesExplainsWhyAuditCannotStart(): void
@@ -47,8 +47,8 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString(AuditPresentation::noActiveRulesHeading(), $html);
         $this->assertStringContainsString(AuditPresentation::noActiveRulesText(), $html);
         $this->assertStringContainsString('Go to Rules', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard', $html);
-        $this->assertStringContainsString('id="contentguard-audit-start"', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-start"', $html);
         $this->assertStringContainsString('disabled="disabled"', $html);
     }
 
@@ -67,9 +67,9 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString(AuditPresentation::runningHeading(), $html);
         $this->assertStringContainsString('42 of 137 content items checked', $html);
-        $this->assertStringContainsString('id="contentguard-audit-status"', $html);
-        $this->assertStringContainsString('id="contentguard-audit-scanned"', $html);
-        $this->assertStringContainsString('id="contentguard-audit-progress"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-status"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-scanned"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-progress"', $html);
         $this->assertStringContainsString('role="progressbar"', $html);
         $this->assertStringContainsString('aria-valuenow="30"', $html);
         $this->assertStringContainsString('Cancel Audit', $html);
@@ -115,7 +115,7 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Checked', $html);
         $this->assertStringContainsString('Passed', $html);
         $this->assertStringContainsString('Need attention', $html);
-        $this->assertStringContainsString('id="contentguard-audit-start"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-start"', $html);
     }
 
     public function testFailedStateShowsSafeMessageAndRetry(): void
@@ -130,7 +130,7 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString(AuditPresentation::failedHeading(), $html);
         $this->assertStringContainsString('Audit batch failed.', $html);
-        $this->assertStringContainsString('id="contentguard-audit-retry"', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-retry"', $html);
         $this->assertStringContainsString('Try again', $html);
         $this->assertStringNotContainsString('SQL', $html);
         $this->assertStringNotContainsString('stack', $html);
@@ -153,56 +153,56 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-01-01 00:01:00'), $html);
         $this->assertStringContainsString('Back to latest audit', $html);
         $this->assertStringContainsString('role="status"', $html);
-        $this->assertStringContainsString('contentguard-audit--history', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=', $html);
+        $this->assertStringContainsString('contentlatch-audit--history', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=', $html);
         $this->assertStringNotContainsString('name="run"', $html);
     }
 
     public function testFindingPresentsContentIssueAndAction(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
         $html = $this->renderAudit($this->completedResults());
 
-        $this->assertStringContainsString('contentguard-finding__headline', $html);
-        $this->assertStringContainsString('contentguard-finding__title', $html);
+        $this->assertStringContainsString('contentlatch-finding__headline', $html);
+        $this->assertStringContainsString('contentlatch-finding__title', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('This field is required when Show &quot;New&quot; Tag is Yes.', $html);
-        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringContainsString('contentlatch-finding__meta', $html);
         $this->assertStringContainsString('Recipe', $html);
         $this->assertStringContainsString('Recipe Description', $html);
         $css = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css');
         $this->assertStringContainsString('overflow-wrap: anywhere', $css);
-        $this->assertStringContainsString('#contentguard-audit .contentguard-audit-action > p', $css);
-        $this->assertStringContainsString('#contentguard-audit .contentguard-page-header__description', $css);
+        $this->assertStringContainsString('#contentlatch-audit .contentlatch-audit-action > p', $css);
+        $this->assertStringContainsString('#contentlatch-audit .contentlatch-page-header__description', $css);
         $this->assertStringContainsString('max-width: none;', $css);
         $this->assertStringNotContainsString('>field_123abc<', $html);
         $this->assertStringContainsString('Blocking', $html);
-        $this->assertStringContainsString('contentguard-finding--blocking', $html);
-        $this->assertStringContainsString('contentguard-status__text', $html);
+        $this->assertStringContainsString('contentlatch-finding--blocking', $html);
+        $this->assertStringContainsString('contentlatch-status__text', $html);
         $this->assertStringContainsString('Rule: New Tag requires description', $html);
         $this->assertStringContainsString('Edit content', $html);
         $this->assertStringContainsString('aria-label="Edit content: Chocolate Chip Cookies"', $html);
         $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit', $html);
-        $this->assertStringContainsString('contentguard_field=field_123abc', $html);
-        $this->assertStringContainsString('contentguard_run=7', $html);
-        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringContainsString('contentlatch_field=field_123abc', $html);
+        $this->assertStringContainsString('contentlatch_run=7', $html);
+        $this->assertStringContainsString('name="cl_type"', $html);
         $this->assertStringNotContainsString('name="post_type"', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;contentlatch_field', $html);
         $this->assertStringNotContainsString('>Edit</a>', $html);
         $this->assertStringNotContainsString('Unavailable', $html);
         $this->assertStringNotContainsString(AuditPresentation::filteredEmptyHeading(), $html);
-        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringNotContainsString('contentlatch-finding--grouped', $html);
     }
 
     public function testWarningFindingUsesWarningLabelAndModifier(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(8 => 'Tomato Sauce');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(8 => 'Tomato Sauce');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             8 => 'http://example.test/wp-admin/post.php?post=8&action=edit',
         );
 
@@ -218,9 +218,9 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Tomato Sauce', $html);
         $this->assertStringContainsString('Consider adding a serving size.', $html);
         $this->assertStringContainsString('Warning', $html);
-        $this->assertStringContainsString('contentguard-finding--warning', $html);
-        $this->assertStringContainsString('contentguard-status--caution', $html);
-        $this->assertStringNotContainsString('contentguard-finding--blocking', $html);
+        $this->assertStringContainsString('contentlatch-finding--warning', $html);
+        $this->assertStringContainsString('contentlatch-status--caution', $html);
+        $this->assertStringNotContainsString('contentlatch-finding--blocking', $html);
     }
 
     public function testDeletedContentAndDeletedRuleStayReadableWithoutBrokenEditLink(): void
@@ -243,7 +243,7 @@ final class AuditViewTest extends TestCase
         $this->assertStringNotContainsString('Edit content', $html);
         $this->assertStringNotContainsString('post.php?post=77', $html);
         $this->assertStringNotContainsString('href=""', $html);
-        $this->assertStringNotContainsString('contentguard_field=', $html);
+        $this->assertStringNotContainsString('contentlatch_field=', $html);
     }
 
     public function testZeroFindingsShowsAllClearNotFilteredEmpty(): void
@@ -263,8 +263,8 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString(AuditPresentation::allClearText(12), $html);
         $this->assertStringNotContainsString(AuditPresentation::filteredEmptyHeading(), $html);
         $this->assertStringNotContainsString(AuditPresentation::filteredEmptyText(), $html);
-        $this->assertStringNotContainsString('id="contentguard-findings-heading"', $html);
-        $this->assertStringNotContainsString('class="contentguard-filters"', $html);
+        $this->assertStringNotContainsString('id="contentlatch-findings-heading"', $html);
+        $this->assertStringNotContainsString('class="contentlatch-filters"', $html);
     }
 
     public function testFilteredEmptyStateExplainsFilters(): void
@@ -279,7 +279,7 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString(AuditPresentation::filteredEmptyHeading(), $html);
         $this->assertStringContainsString(AuditPresentation::filteredEmptyText(), $html);
         $this->assertStringContainsString('Clear filters', $html);
-        $this->assertStringContainsString('class="contentguard-filters"', $html);
+        $this->assertStringContainsString('class="contentlatch-filters"', $html);
         $this->assertStringContainsString(AuditPresentation::findingsHeading(), $html);
         $this->assertStringNotContainsString(AuditPresentation::allClearHeading(), $html);
         $this->assertStringNotContainsString('Ready to check your content', $html);
@@ -287,8 +287,8 @@ final class AuditViewTest extends TestCase
 
     public function testPaginationMarkupRemainsIntact(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -300,11 +300,11 @@ final class AuditViewTest extends TestCase
         )));
 
         $this->assertSame(50, AuditPage::PAGE_SIZE);
-        $this->assertStringContainsString('contentguard-pagination', $html);
+        $this->assertStringContainsString('contentlatch-pagination', $html);
         $this->assertStringContainsString('aria-label="Findings pagination"', $html);
-        $this->assertStringContainsString('aria-describedby="contentguard-pagination-status"', $html);
+        $this->assertStringContainsString('aria-describedby="contentlatch-pagination-status"', $html);
         $this->assertStringContainsString('Showing 1–50 of 51 findings', $html);
-        $this->assertStringContainsString('contentguard-pagination__disabled', $html);
+        $this->assertStringContainsString('contentlatch-pagination__disabled', $html);
         $this->assertStringContainsString('Previous', $html);
         $this->assertStringContainsString('paged=%#%', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
@@ -312,8 +312,8 @@ final class AuditViewTest extends TestCase
 
     public function testPaginationPreservesFiltersAndHistoricalRun(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -333,17 +333,17 @@ final class AuditViewTest extends TestCase
         $this->assertSame(50, AuditPage::PAGE_SIZE);
         $this->assertStringContainsString('Showing 51–100 of 127 findings', $html);
         $this->assertStringContainsString('paged=%#%', $html);
-        $this->assertStringContainsString('page=contentguard-audit', $html);
+        $this->assertStringContainsString('page=contentlatch-audit', $html);
         $this->assertStringContainsString('run=2', $html);
         $this->assertStringContainsString('severity=fail', $html);
         $this->assertStringContainsString('name="run"', $html);
-        $this->assertStringNotContainsString('contentguard-pagination__disabled', $html);
+        $this->assertStringNotContainsString('contentlatch-pagination__disabled', $html);
     }
 
     public function testPostTypeFilterUsesSafeQueryArgAndKeepsOtherFilters(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -353,29 +353,29 @@ final class AuditViewTest extends TestCase
                 'page'     => AuditPage::SLUG,
                 'severity' => 'fail',
                 'rule'     => '15',
-                'cg_type'  => 'recipe',
+                'cl_type'  => 'recipe',
             ),
             'findingTotal' => 51,
             'paged'        => 1,
             'totalPages'   => 2,
         )));
 
-        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringContainsString('name="cl_type"', $html);
         $this->assertStringContainsString('value="recipe"', $html);
         $this->assertStringNotContainsString('name="post_type"', $html);
-        $this->assertStringContainsString('cg_type=recipe', $html);
+        $this->assertStringContainsString('cl_type=recipe', $html);
         $this->assertStringContainsString('severity=fail', $html);
         $this->assertStringContainsString('rule=15', $html);
-        $this->assertStringContainsString('page=contentguard-audit', $html);
-        $this->assertStringContainsString('contentguard_run=7', $html);
+        $this->assertStringContainsString('page=contentlatch-audit', $html);
+        $this->assertStringContainsString('contentlatch_run=7', $html);
         $this->assertStringContainsString('Clear filters', $html);
         $this->assertStringContainsString('paged=%#%', $html);
     }
 
     public function testMultipleValidationsGroupOnTheSameContentRuleAndField(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -399,24 +399,24 @@ final class AuditViewTest extends TestCase
             'fieldLabels' => array('15:field_123abc' => 'Page ID'),
         )));
 
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
-        $this->assertStringContainsString('contentguard-finding--grouped', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__title'));
+        $this->assertStringContainsString('contentlatch-finding--grouped', $html);
         $this->assertStringContainsString('2 issues', $html);
         $this->assertStringContainsString('2 validation issues need attention', $html);
         $this->assertStringNotContainsString('Page ID is required.', $html);
         $this->assertStringNotContainsString('Page ID must be at least 10 characters.', $html);
-        $this->assertStringNotContainsString('<ul class="contentguard-finding__issues">', $html);
-        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringNotContainsString('<ul class="contentlatch-finding__issues">', $html);
+        $this->assertStringContainsString('contentlatch-finding__meta', $html);
         $this->assertStringContainsString('>Page ID</a>', $html);
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__action'));
-        $this->assertStringContainsString('post.php?post=42&amp;action=edit&amp;contentguard_field=field_123abc&amp;contentguard_run=7', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__action'));
+        $this->assertStringContainsString('post.php?post=42&amp;action=edit&amp;contentlatch_field=field_123abc&amp;contentlatch_run=7', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;contentlatch_field', $html);
     }
 
     public function testMultipleFieldsOnTheSameRuleShareOneCard(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -443,26 +443,26 @@ final class AuditViewTest extends TestCase
             ),
         )));
 
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
-        $this->assertStringContainsString('contentguard-finding--grouped', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__title'));
+        $this->assertStringContainsString('contentlatch-finding--grouped', $html);
         $this->assertStringContainsString('2 issues', $html);
         $this->assertStringContainsString('2 required fields are missing', $html);
         $this->assertStringNotContainsString('Page ID is required.', $html);
         $this->assertStringNotContainsString('Description is required.', $html);
-        $this->assertStringContainsString('contentguard-finding__meta', $html);
+        $this->assertStringContainsString('contentlatch-finding__meta', $html);
         $this->assertStringContainsString('aria-label="Edit content and go to field: Page ID"', $html);
         $this->assertStringContainsString('aria-label="Edit content and go to field: Recipe Description"', $html);
-        $this->assertStringContainsString('contentguard_field=field_pageid', $html);
-        $this->assertStringContainsString('contentguard_field=field_desc', $html);
-        $this->assertStringContainsString('contentguard_run=7', $html);
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__action'));
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+        $this->assertStringContainsString('contentlatch_field=field_pageid', $html);
+        $this->assertStringContainsString('contentlatch_field=field_desc', $html);
+        $this->assertStringContainsString('contentlatch_run=7', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__action'));
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;contentlatch_field', $html);
     }
 
     public function testFourRequiredFieldsStayOnOneCompactCard(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -491,22 +491,22 @@ final class AuditViewTest extends TestCase
             'fieldLabels'     => $labels,
         )));
 
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__title'));
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__title'));
         $this->assertStringContainsString('4 issues', $html);
         $this->assertStringContainsString('4 required fields are missing', $html);
         $this->assertStringContainsString('Prep Time', $html);
         $this->assertStringContainsString('Cook Time', $html);
         $this->assertStringContainsString('Total Time', $html);
         $this->assertStringContainsString('Yield', $html);
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__issue'));
         $this->assertStringNotContainsString('This field is required.', $html);
-        $this->assertStringNotContainsString('contentguard-finding__field-name', $html);
+        $this->assertStringNotContainsString('contentlatch-finding__field-name', $html);
     }
 
     public function testFlexibleFindingShowsAffectedRowsWithoutPuttingThemInTheEditUrl(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Fajita-Stuffed Chicken');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -520,20 +520,20 @@ final class AuditViewTest extends TestCase
         )));
 
         $this->assertStringContainsString('Title is required in 2 Hero rows.', $html);
-        $this->assertStringContainsString('contentguard-finding__rows', $html);
+        $this->assertStringContainsString('contentlatch-finding__rows', $html);
         $this->assertStringContainsString('Affected rows:', $html);
         $this->assertStringContainsString('Row 1', $html);
         $this->assertStringContainsString('Row 3', $html);
-        $this->assertStringContainsString('contentguard_field=field_66e48d6611345', $html);
-        $this->assertStringContainsString('contentguard_run=7', $html);
-        $this->assertStringNotContainsString('contentguard_row', $html);
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+        $this->assertStringContainsString('contentlatch_field=field_66e48d6611345', $html);
+        $this->assertStringContainsString('contentlatch_run=7', $html);
+        $this->assertStringNotContainsString('contentlatch_row', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__issue'));
     }
 
     public function testNestedRepeaterFindingShowsPairedCoordinatesInTheIssueText(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -547,20 +547,20 @@ final class AuditViewTest extends TestCase
         )));
 
         $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $html);
-        $this->assertStringContainsString('contentguard-finding__rows', $html);
+        $this->assertStringContainsString('contentlatch-finding__rows', $html);
         $this->assertStringContainsString('Affected rows:', $html);
         $this->assertStringContainsString('>1/1</span>', $html);
         $this->assertStringContainsString('>1/2</span>', $html);
         $this->assertStringContainsString('>2/1</span>', $html);
         $this->assertStringNotContainsString('>Row 1</span>', $html);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
-        $this->assertSame(1, substr_count($html, 'contentguard-finding__issue'));
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $html);
+        $this->assertSame(1, substr_count($html, 'contentlatch-finding__issue'));
     }
 
     public function testSingleNestedRepeaterFindingShowsTheOuterInnerRow(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -579,8 +579,8 @@ final class AuditViewTest extends TestCase
 
     public function testGroupedCardStillShowsNestedCoordinatesWhenSummaryIsGeneric(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -615,31 +615,31 @@ final class AuditViewTest extends TestCase
 
     public function testOneLevelRepeaterSingleRowFindingNamesTheRowInTheIssueText(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(374 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(374 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             374 => 'http://example.test/wp-admin/post.php?post=374&action=edit',
         );
 
         $html = $this->renderAudit($this->completedResults(array(
             'findings' => array($this->makeFinding(array(
                 'postId'   => 374,
-                'fieldKey' => \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                'fieldKey' => \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
                 'message'  => 'Section Title is required in row 2.',
             ))),
             'fieldLabels' => array(
-                '15:' . \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE => 'Directions → Section Title',
+                '15:' . \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE => 'Directions → Section Title',
             ),
         )));
 
         $this->assertStringContainsString('Section Title is required in row 2.', $html);
         $this->assertStringNotContainsString('1/1', $html);
-        $this->assertStringNotContainsString('contentguard-finding__rows', $html);
+        $this->assertStringNotContainsString('contentlatch-finding__rows', $html);
     }
 
     public function testOneLevelRepeaterFindingKeepsItsExistingWording(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -653,13 +653,13 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('Ingredient is required in 3 rows (rows 1, 3, 5).', $html);
         $this->assertStringNotContainsString('1/1', $html);
-        $this->assertStringNotContainsString('contentguard-finding__rows', $html);
+        $this->assertStringNotContainsString('contentlatch-finding__rows', $html);
     }
 
     public function testManyFieldsCollapseWithAMoreCount(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -686,13 +686,13 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('8 required fields are missing', $html);
         $this->assertStringContainsString('+ 3 more', $html);
         $this->assertStringContainsString('Affected fields: Field 1, Field 2, Field 3, Field 4, Field 5, Field 6, Field 7, Field 8', $html);
-        $this->assertSame(5, substr_count($html, 'class="contentguard-finding__field"'));
+        $this->assertSame(5, substr_count($html, 'class="contentlatch-finding__field"'));
     }
 
     public function testUnsafeFieldKeyStaysVisibleButNotALink(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -704,14 +704,14 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Recipe Description', $html);
         $this->assertStringNotContainsString('aria-label="Edit content and go to field: Recipe Description"', $html);
         $this->assertStringNotContainsString('>field_', $html);
-        $this->assertStringContainsString('contentguard_run=7', $html);
-        $this->assertStringNotContainsString('contentguard_field=', $html);
+        $this->assertStringContainsString('contentlatch_run=7', $html);
+        $this->assertStringNotContainsString('contentlatch_field=', $html);
     }
 
     public function testCoreTitleAuditFieldIsANavigableEditLink(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -720,15 +720,15 @@ final class AuditViewTest extends TestCase
             'fieldLabels' => array('15:title' => 'Title'),
         )));
 
-        $this->assertStringContainsString('contentguard_field=title', $html);
+        $this->assertStringContainsString('contentlatch_field=title', $html);
         $this->assertStringContainsString('aria-label="Edit content and go to field: Title"', $html);
         $this->assertStringContainsString('>Title</a>', $html);
     }
 
     public function testMixedSeverityGroupAnnouncesBothStatuses(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -757,8 +757,8 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('2 issues', $html);
         $this->assertStringContainsString('1 Blocking', $html);
         $this->assertStringContainsString('1 Warning', $html);
-        $this->assertStringContainsString('contentguard-status--danger', $html);
-        $this->assertStringContainsString('contentguard-status--caution', $html);
+        $this->assertStringContainsString('contentlatch-status--danger', $html);
+        $this->assertStringContainsString('contentlatch-status--caution', $html);
         $this->assertStringContainsString('2 validation issues need attention', $html);
         $this->assertStringContainsString('Prep Time', $html);
         $this->assertStringContainsString('Total Time', $html);
@@ -768,8 +768,8 @@ final class AuditViewTest extends TestCase
 
     public function testSeverityFilterDoesNotClaimHiddenWarnings(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -784,15 +784,15 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('Prep Time is required.', $html);
         $this->assertStringContainsString('Blocking', $html);
-        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringNotContainsString('contentlatch-finding--grouped', $html);
         $this->assertStringNotContainsString('Total Time looks thin.', $html);
         $this->assertStringNotContainsString('1 Warning', $html);
     }
 
     public function testDifferentRulesOnTheSameContentStaySeparateCards(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -821,30 +821,30 @@ final class AuditViewTest extends TestCase
             ),
         )));
 
-        $this->assertSame(2, substr_count($html, 'contentguard-finding__title'));
+        $this->assertSame(2, substr_count($html, 'contentlatch-finding__title'));
         $this->assertStringContainsString('Rule: Recipes requirements', $html);
         $this->assertStringContainsString('Rule: Yield rules', $html);
-        $this->assertStringNotContainsString('contentguard-finding--grouped', $html);
+        $this->assertStringNotContainsString('contentlatch-finding--grouped', $html);
     }
 
     public function testEditContentRejectsAnAuditPageUrl(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
-            42 => 'http://example.test/wp-admin/admin.php?page=contentguard-audit&post_type=recipe',
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
+            42 => 'http://example.test/wp-admin/admin.php?page=contentlatch-audit&post_type=recipe',
         );
 
         $html = $this->renderAudit($this->completedResults());
 
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringNotContainsString('Edit content', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;contentguard_field', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;contentlatch_field', $html);
     }
 
     public function testUnsafeFieldKeyDoesNotChangeTheEditUrl(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -853,15 +853,15 @@ final class AuditViewTest extends TestCase
             'fieldLabels' => array('15:not a key' => 'Recipe Description'),
         )));
 
-        $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit&amp;contentguard_run=7', $html);
+        $this->assertStringContainsString('http://example.test/wp-admin/post.php?post=42&amp;action=edit&amp;contentlatch_run=7', $html);
         $this->assertStringContainsString('Edit content', $html);
-        $this->assertStringNotContainsString('contentguard_field=', $html);
+        $this->assertStringNotContainsString('contentlatch_field=', $html);
     }
 
     public function testHistoricalFindingsStayTiedToThatAudit(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -883,20 +883,20 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Previous audit', $html);
         $this->assertStringContainsString(AuditPresentation::historicalNotice(), $html);
         $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-01-01 00:01:00'), $html);
-        $this->assertStringContainsString('contentguard-audit--history', $html);
+        $this->assertStringContainsString('contentlatch-audit--history', $html);
         $this->assertStringContainsString('name="run"', $html);
         $this->assertStringContainsString('value="2"', $html);
-        $this->assertStringContainsString('contentguard_run=2', $html);
-        $this->assertStringNotContainsString('contentguard_run=9', $html);
+        $this->assertStringContainsString('contentlatch_run=2', $html);
+        $this->assertStringNotContainsString('contentlatch_run=9', $html);
         $this->assertStringContainsString('Chocolate Chip Cookies', $html);
         $this->assertStringContainsString('Back to latest audit', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit', $html);
     }
 
     public function testFindingsFiltersPresentAsAToolbarWithSelectedState(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -907,21 +907,21 @@ final class AuditViewTest extends TestCase
                 'page'     => AuditPage::SLUG,
                 'severity' => 'fail',
                 'rule'     => '15',
-                'cg_type'  => 'recipe',
+                'cl_type'  => 'recipe',
             ),
         )));
 
-        $this->assertStringContainsString('class="contentguard-filters"', $html);
-        $this->assertStringContainsString('#contentguard-findings-heading', $html);
+        $this->assertStringContainsString('class="contentlatch-filters"', $html);
+        $this->assertStringContainsString('#contentlatch-findings-heading', $html);
         $this->assertStringContainsString('scroll-margin-top: 48px', (string) file_get_contents(dirname(__DIR__, 3) . '/admin/css/audit.css'));
         $this->assertStringContainsString('role="group"', $html);
-        $this->assertStringContainsString('aria-labelledby="contentguard-filter-severity-label"', $html);
+        $this->assertStringContainsString('aria-labelledby="contentlatch-filter-severity-label"', $html);
         $this->assertStringContainsString(AuditPresentation::severityFilterLabel(), $html);
         $this->assertStringContainsString(AuditPresentation::ruleFilterLabel(), $html);
         $this->assertStringContainsString(AuditPresentation::contentTypeFilterLabel(), $html);
         $this->assertStringContainsString('name="severity"', $html);
         $this->assertStringContainsString('name="rule"', $html);
-        $this->assertStringContainsString('name="cg_type"', $html);
+        $this->assertStringContainsString('name="cl_type"', $html);
         $this->assertStringNotContainsString('name="post_type"', $html);
         $this->assertStringContainsString('type="submit"', $html);
         $this->assertStringContainsString('value="fail"', $html);
@@ -931,19 +931,19 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('value="recipe"', $html);
         $this->assertStringContainsString('value="15"', $html);
         $this->assertStringContainsString('Showing 1–1 of 1 findings', $html);
-        $this->assertStringContainsString('contentguard-filters__actions', $html);
+        $this->assertStringContainsString('contentlatch-filters__actions', $html);
         $this->assertStringContainsString('Filter', $html);
         $this->assertStringContainsString('Clear filters', $html);
         $this->assertStringNotContainsString('name="paged"', $html);
         $this->assertMatchesRegularExpression('/<button[^>]+name="severity"[^>]+value="fail"[^>]*aria-pressed="true"/', $html);
         $this->assertDoesNotMatchRegularExpression('/href="[^"]*[?&]severity=/', $html);
-        $this->assertDoesNotMatchRegularExpression('/href="[^"]*[?&](?:rule|cg_type)=/', $html);
+        $this->assertDoesNotMatchRegularExpression('/href="[^"]*[?&](?:rule|cl_type)=/', $html);
     }
 
     public function testSeverityChipsSubmitImmediatelyAndResetFindingsPage(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -974,8 +974,8 @@ final class AuditViewTest extends TestCase
 
     public function testSeverityChipFormPreservesHistoricalRun(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -997,16 +997,16 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('name="hpaged"', $html);
         $this->assertStringContainsString('name="severity"', $html);
         $this->assertStringContainsString('type="submit"', $html);
-        $this->assertStringContainsString('contentguard_run=2', $html);
+        $this->assertStringContainsString('contentlatch_run=2', $html);
         $this->assertStringNotContainsString('name="paged"', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;run=2', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=2&amp;severity=', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit&amp;run=2', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=2&amp;severity=', $html);
     }
 
     public function testAuditHistoryIdentifiesCurrentHistoricalFailedAndCancelledRuns(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -1042,17 +1042,17 @@ final class AuditViewTest extends TestCase
             'history'        => array($current, $older, $failed, $cancelled),
         )));
 
-        $this->assertStringContainsString('contentguard-history', $html);
+        $this->assertStringContainsString('contentlatch-history', $html);
         $this->assertStringContainsString(AuditPresentation::historyHeading(), $html);
-        $this->assertStringContainsString('contentguard-history__details', $html);
-        $this->assertStringContainsString('contentguard-history__details" open', $html);
+        $this->assertStringContainsString('contentlatch-history__details', $html);
+        $this->assertStringContainsString('contentlatch-history__details" open', $html);
         $this->assertStringContainsString('aria-expanded="true"', $html);
         $this->assertStringContainsString(AuditPresentation::showHistoryLabel(), $html);
         $this->assertStringContainsString(AuditPresentation::hideHistoryLabel(), $html);
         $this->assertStringNotContainsString('widefat', $html);
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
-        $this->assertStringContainsString('contentguard-history__item--current', $html);
-        $this->assertStringContainsString('contentguard-history__item--viewing', $html);
+        $this->assertStringContainsString('contentlatch-history__item--current', $html);
+        $this->assertStringContainsString('contentlatch-history__item--viewing', $html);
         $this->assertStringContainsString('aria-current="true"', $html);
         $this->assertStringContainsString('127 content items checked', $html);
         $this->assertStringContainsString('124 content items checked', $html);
@@ -1063,20 +1063,20 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('Cancelled', $html);
         $this->assertStringContainsString('Audit timed out', $html);
         $this->assertStringContainsString(AuditPresentation::cancelledText(), $html);
-        $this->assertStringContainsString('contentguard-history__item--failed', $html);
-        $this->assertStringContainsString('contentguard-history__item--cancelled', $html);
+        $this->assertStringContainsString('contentlatch-history__item--failed', $html);
+        $this->assertStringContainsString('contentlatch-history__item--cancelled', $html);
         $this->assertStringContainsString(AuditPresentation::viewResultsLabel(), $html);
-        $this->assertStringContainsString('contentguard-history__viewing', $html);
+        $this->assertStringContainsString('contentlatch-history__viewing', $html);
         $this->assertStringContainsString('>' . AuditPresentation::viewingAuditLabel() . '<', $html);
         $this->assertStringContainsString(AuditPresentation::viewingResultsFrom('2026-09-05 15:42:00'), $html);
         $this->assertStringContainsString(AuditPresentation::backToLatestLabel(), $html);
-        $this->assertStringContainsString('contentguard_run=4', $html);
-        $this->assertStringNotContainsString('contentguard_run=9', $html);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=4">View results', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=9', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=3', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=2', $html);
+        $this->assertStringContainsString('contentlatch_run=4', $html);
+        $this->assertStringNotContainsString('contentlatch_run=9', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=4">View results', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=9', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=3', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=2', $html);
     }
 
     public function testLatestHistoryItemLinksBackWithoutARunQuery(): void
@@ -1100,26 +1100,26 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $html);
         $this->assertStringContainsString(AuditPresentation::viewResultsLabel(), $html);
-        $this->assertStringContainsString('contentguard-history__details', $html);
-        $this->assertStringNotContainsString('contentguard-history__details" open', $html);
+        $this->assertStringContainsString('contentlatch-history__details', $html);
+        $this->assertStringNotContainsString('contentlatch-history__details" open', $html);
         $this->assertStringContainsString('aria-expanded="false"', $html);
         $this->assertStringContainsString(AuditPresentation::showHistoryLabel(), $html);
-        $this->assertStringContainsString('<summary class="contentguard-history__summary"', $html);
-        $this->assertStringContainsString('contentguard-history__panel', $html);
-        $this->assertStringContainsString('contentguard-history__list', $html);
+        $this->assertStringContainsString('<summary class="contentlatch-history__summary"', $html);
+        $this->assertStringContainsString('contentlatch-history__panel', $html);
+        $this->assertStringContainsString('contentlatch-history__list', $html);
         $this->assertLessThan(
-            (int) strpos($html, '<details class="contentguard-history__details"'),
+            (int) strpos($html, '<details class="contentlatch-history__details"'),
             (int) strpos($html, AuditPresentation::findingsHeading())
         );
-        $detailsStart = (int) strpos($html, '<details class="contentguard-history__details"');
+        $detailsStart = (int) strpos($html, '<details class="contentlatch-history__details"');
         $detailsEnd   = (int) strpos($html, '</details>', $detailsStart);
-        $listPos      = (int) strpos($html, 'contentguard-history__list');
+        $listPos      = (int) strpos($html, 'contentlatch-history__list');
         $this->assertGreaterThan($detailsStart, $listPos);
         $this->assertLessThan($detailsEnd, $listPos);
-        $this->assertStringContainsString('admin.php?page=contentguard-audit&amp;run=4', $html);
-        $this->assertStringNotContainsString('page=contentguard-audit&amp;run=9', $html);
-        $this->assertStringNotContainsString('contentguard-history__viewing', $html);
-        $this->assertStringNotContainsString('contentguard-audit--history', $html);
+        $this->assertStringContainsString('admin.php?page=contentlatch-audit&amp;run=4', $html);
+        $this->assertStringNotContainsString('page=contentlatch-audit&amp;run=9', $html);
+        $this->assertStringNotContainsString('contentlatch-history__viewing', $html);
+        $this->assertStringNotContainsString('contentlatch-audit--history', $html);
         $this->assertStringNotContainsString('aria-current="true"', $html);
     }
 
@@ -1129,7 +1129,7 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString(AuditPresentation::firstRunHeading(), $first);
         $this->assertStringContainsString(AuditPresentation::firstRunText(), $first);
         $this->assertStringContainsString(AuditPresentation::historyEmptyText(), $first);
-        $this->assertStringContainsString('contentguard-empty', $first);
+        $this->assertStringContainsString('contentlatch-empty', $first);
 
         $none = $this->renderAudit($this->baseVars(array(
             'postTypes'       => array(),
@@ -1149,13 +1149,13 @@ final class AuditViewTest extends TestCase
         )));
         $this->assertStringContainsString(AuditPresentation::allClearHeading(), $clear);
         $this->assertStringContainsString(AuditPresentation::allClearText(12), $clear);
-        $this->assertStringContainsString('contentguard-empty', $clear);
+        $this->assertStringContainsString('contentlatch-empty', $clear);
     }
 
     public function testAuditHistoryUsesFullWidthAndPaginatesIndependently(): void
     {
-        $GLOBALS['contentguard_test_titles']     = array(42 => 'Chocolate Chip Cookies');
-        $GLOBALS['contentguard_test_edit_links'] = array(
+        $GLOBALS['contentlatch_test_titles']     = array(42 => 'Chocolate Chip Cookies');
+        $GLOBALS['contentlatch_test_edit_links'] = array(
             42 => 'http://example.test/wp-admin/post.php?post=42&action=edit',
         );
 
@@ -1186,22 +1186,22 @@ final class AuditViewTest extends TestCase
 
         $this->assertSame(10, AuditPage::HISTORY_PAGE_SIZE);
         $this->assertSame(10, count($page));
-        $this->assertStringContainsString('contentguard-history--wide', $first);
-        $this->assertStringNotContainsString('contentguard-history__details" open', $first);
+        $this->assertStringContainsString('contentlatch-history--wide', $first);
+        $this->assertStringNotContainsString('contentlatch-history__details" open', $first);
         $this->assertStringContainsString('aria-expanded="false"', $first);
-        $this->assertStringContainsString('<summary class="contentguard-history__summary"', $first);
+        $this->assertStringContainsString('<summary class="contentlatch-history__summary"', $first);
         $this->assertLessThan(
-            (int) strpos($first, '<details class="contentguard-history__details"'),
+            (int) strpos($first, '<details class="contentlatch-history__details"'),
             (int) strpos($first, AuditPresentation::findingsHeading())
         );
-        $this->assertStringContainsString('contentguard-pagination--history', $first);
+        $this->assertStringContainsString('contentlatch-pagination--history', $first);
         $this->assertStringContainsString('aria-label="Audit history pagination"', $first);
         $this->assertStringContainsString('Showing 1–10 of 37 audits', $first);
         $this->assertStringContainsString('hpaged=%#%', $first);
         $this->assertStringContainsString('paged=3', $first);
         $this->assertStringContainsString('paged=%#%', $first);
         $this->assertStringContainsString('severity=fail', $first);
-        $this->assertStringContainsString('contentguard-pagination--findings', $first);
+        $this->assertStringContainsString('contentlatch-pagination--findings', $first);
         $this->assertStringContainsString('Showing 101–127 of 127 findings', $first);
 
         $older = $this->makeRun(4, AuditRunStatus::Complete, array('postsScanned' => 124));
@@ -1234,11 +1234,11 @@ final class AuditViewTest extends TestCase
         $this->assertStringContainsString('name="hpaged"', $middle);
         $this->assertStringContainsString('value="2"', $middle);
         $this->assertStringContainsString('name="run"', $middle);
-        $this->assertStringContainsString('contentguard_run=4', $middle);
+        $this->assertStringContainsString('contentlatch_run=4', $middle);
         $this->assertStringContainsString('hpaged=2', $middle);
         $this->assertStringContainsString('paged=3', $middle);
-        $this->assertStringContainsString('contentguard-history__viewing', $middle);
-        $this->assertStringContainsString('contentguard-history__details" open', $middle);
+        $this->assertStringContainsString('contentlatch-history__viewing', $middle);
+        $this->assertStringContainsString('contentlatch-history__details" open', $middle);
         $this->assertStringContainsString('aria-expanded="true"', $middle);
         $this->assertStringContainsString(AuditPresentation::currentAuditLabel(), $middle);
         $this->assertStringContainsString('hpaged=2', $middle);
@@ -1255,14 +1255,14 @@ final class AuditViewTest extends TestCase
         )));
 
         $this->assertStringContainsString('Showing 31–37 of 37 audits', $last);
-        $this->assertStringContainsString('contentguard-pagination__disabled', $last);
+        $this->assertStringContainsString('contentlatch-pagination__disabled', $last);
         $this->assertStringContainsString('Next', $last);
         $this->assertStringContainsString('hpaged=%#%', $last);
     }
 
     protected function tearDown(): void
     {
-        unset($GLOBALS['contentguard_test_titles'], $GLOBALS['contentguard_test_edit_links']);
+        unset($GLOBALS['contentlatch_test_titles'], $GLOBALS['contentlatch_test_edit_links']);
         parent::tearDown();
     }
 
@@ -1390,7 +1390,7 @@ final class AuditViewTest extends TestCase
     {
         require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
         extract($vars, EXTR_SKIP);
-        $view = CONTENTGUARD_DIR . 'admin/views/audit.php';
+        $view = CONTENTLATCH_DIR . 'admin/views/audit.php';
         ob_start();
         require $view;
 

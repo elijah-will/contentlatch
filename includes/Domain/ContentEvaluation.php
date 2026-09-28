@@ -2,12 +2,12 @@
 /**
  * Aggregate evaluation of one content item against a set of rules.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 final class ContentEvaluation
 {

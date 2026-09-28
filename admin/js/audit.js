@@ -1,22 +1,22 @@
 (function () {
-  var config = window.contentguardAudit;
+  var config = window.contentlatchAudit;
   if (!config) {
     return;
   }
 
   var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
   function __(text) {
-    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+    return i18nApi ? i18nApi.__(text, "contentlatch") : text;
   }
 
   var i18n = config.i18n || {};
-  var startButtons = document.querySelectorAll(".contentguard-audit-start, #contentguard-audit-start");
-  var cancelButton = document.getElementById("contentguard-audit-cancel");
-  var confirmBox = document.getElementById("contentguard-audit-cancel-confirm");
-  var confirmYes = document.getElementById("contentguard-audit-cancel-confirm-yes");
-  var confirmNo = document.getElementById("contentguard-audit-cancel-confirm-no");
-  var activePanel = document.getElementById("contentguard-audit-active");
-  var clientNotice = document.getElementById("contentguard-audit-client-notice");
+  var startButtons = document.querySelectorAll(".contentlatch-audit-start, #contentlatch-audit-start");
+  var cancelButton = document.getElementById("contentlatch-audit-cancel");
+  var confirmBox = document.getElementById("contentlatch-audit-cancel-confirm");
+  var confirmYes = document.getElementById("contentlatch-audit-cancel-confirm-yes");
+  var confirmNo = document.getElementById("contentlatch-audit-cancel-confirm-no");
+  var activePanel = document.getElementById("contentlatch-audit-active");
+  var clientNotice = document.getElementById("contentlatch-audit-client-notice");
   var cancelling = false;
 
   function prefersReducedMotion() {
@@ -51,7 +51,7 @@
     if (!clientNotice) {
       return;
     }
-    var text = clientNotice.querySelector(".contentguard-notice-message") || clientNotice.querySelector("p");
+    var text = clientNotice.querySelector(".contentlatch-notice-message") || clientNotice.querySelector("p");
     if (text) {
       text.textContent = message;
     }
@@ -82,16 +82,16 @@
       return;
     }
 
-    var status = document.getElementById("contentguard-audit-status");
-    var scanned = document.getElementById("contentguard-audit-scanned");
-    var total = document.getElementById("contentguard-audit-total");
-    var failed = document.getElementById("contentguard-audit-failed");
-    var warned = document.getElementById("contentguard-audit-warned");
-    var countText = document.getElementById("contentguard-audit-count-text");
-    var percent = document.getElementById("contentguard-audit-progress");
-    var percentWrap = document.getElementById("contentguard-audit-progress-wrap");
-    var bar = document.getElementById("contentguard-audit-progress-bar");
-    var progressbar = document.getElementById("contentguard-audit-progressbar");
+    var status = document.getElementById("contentlatch-audit-status");
+    var scanned = document.getElementById("contentlatch-audit-scanned");
+    var total = document.getElementById("contentlatch-audit-total");
+    var failed = document.getElementById("contentlatch-audit-failed");
+    var warned = document.getElementById("contentlatch-audit-warned");
+    var countText = document.getElementById("contentlatch-audit-count-text");
+    var percent = document.getElementById("contentlatch-audit-progress");
+    var percentWrap = document.getElementById("contentlatch-audit-progress-wrap");
+    var bar = document.getElementById("contentlatch-audit-progress-bar");
+    var progressbar = document.getElementById("contentlatch-audit-progressbar");
 
     if (status) {
       status.textContent = run.status === "pending"
@@ -236,9 +236,9 @@
     });
   }
 
-  var historyDetails = document.querySelector(".contentguard-history__details");
+  var historyDetails = document.querySelector(".contentlatch-history__details");
   if (historyDetails) {
-    var historySummary = historyDetails.querySelector(".contentguard-history__summary");
+    var historySummary = historyDetails.querySelector(".contentlatch-history__summary");
     var syncHistoryState = function () {
       if (!historySummary) {
         return;

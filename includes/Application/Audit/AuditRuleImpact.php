@@ -2,12 +2,12 @@
 /**
  * Finding and affected-post counts for one rule in a run.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 

@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\FieldInstance;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\Validation;
-use ContentGuard\Tests\Support\AcfFlexibleFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\FieldInstance;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\Validation;
+use ContentLatch\Tests\Support\AcfFlexibleFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEngineFlexibleTest extends TestCase
@@ -141,7 +141,7 @@ final class RuleEngineFlexibleTest extends TestCase
         );
     }
 
-    private function heroTitleRule(): \ContentGuard\Domain\Rule
+    private function heroTitleRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(array(
             'postType' => 'page',

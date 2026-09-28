@@ -1,4 +1,4 @@
-# ContentGuard
+# ContentLatch
 
 A WordPress plugin for content governance and validation on WordPress Core and [Advanced Custom Fields (ACF)](https://www.advancedcustomfields.com/) fields.
 

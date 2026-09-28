@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
+use ContentLatch\Infrastructure\WordPress\HttpRequest;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 3) . '/Support/wordpress-admin-functions.php';

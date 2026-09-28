@@ -1,24 +1,24 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\AuditAjaxController;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\AuditAjaxController;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AuditAjaxControllerTest extends TestCase
@@ -28,7 +28,7 @@ final class AuditAjaxControllerTest extends TestCase
         $controller = $this->controller(false, true);
         $denied = $controller->dispatch(AuditAjaxController::ACTION_START, array('_wpnonce' => 'ok'));
         $this->assertFalse($denied['ok']);
-        $this->assertSame('You are not allowed to run ContentGuard audits.', $denied['message']);
+        $this->assertSame('You are not allowed to run ContentLatch audits.', $denied['message']);
 
         $controller = $this->controller(true, false);
         $badNonce = $controller->dispatch(AuditAjaxController::ACTION_START, array('_wpnonce' => 'nope'));
@@ -98,7 +98,7 @@ final class AuditAjaxControllerTest extends TestCase
             $this->assertSame('Unknown audit action.', $unknown['message']);
 
             $blocked = $this->controller(false, true)->dispatch('not-an-action', array('_wpnonce' => 'ok'));
-            $this->assertSame('You are not allowed to run ContentGuard audits.', $blocked['message']);
+            $this->assertSame('You are not allowed to run ContentLatch audits.', $blocked['message']);
         } finally {
             $_POST = $previous;
         }

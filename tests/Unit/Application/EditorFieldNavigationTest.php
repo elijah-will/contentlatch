@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\EditorFieldNavigation;
+use ContentLatch\Application\EditorFieldNavigation;
 use PHPUnit\Framework\TestCase;
 
 final class EditorFieldNavigationTest extends TestCase
@@ -26,7 +26,7 @@ final class EditorFieldNavigationTest extends TestCase
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_ingredients'));
         $this->assertTrue(EditorFieldNavigation::isSafeFieldKey('field_clone_a_field_title'));
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_clone_a_field_title',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_field=field_clone_a_field_title',
             EditorFieldNavigation::appendToEditUrl(
                 'http://example.test/wp-admin/post.php?post=42&action=edit',
                 'field_clone_a_field_title'
@@ -34,7 +34,7 @@ final class EditorFieldNavigationTest extends TestCase
         );
         $this->assertFalse(EditorFieldNavigation::isSafeFieldKey('field_product_details.field_ingredients'));
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_ingredients',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_field=field_ingredients',
             EditorFieldNavigation::appendToEditUrl(
                 'http://example.test/wp-admin/post.php?post=42&action=edit',
                 'field_ingredients'
@@ -48,7 +48,7 @@ final class EditorFieldNavigationTest extends TestCase
             )
         );
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_64f8a42a61f56',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_field=field_64f8a42a61f56',
             $url
         );
     }
@@ -69,25 +69,25 @@ final class EditorFieldNavigationTest extends TestCase
         $this->assertSame(
             'field_64f8a42a61f56',
             EditorFieldNavigation::requestedFieldKey(array(
-                'contentguard_field' => 'field_64f8a42a61f56',
+                'contentlatch_field' => 'field_64f8a42a61f56',
             ))
         );
         $this->assertSame('', EditorFieldNavigation::requestedFieldKey(array(
-            'contentguard_field' => 'field_64f8a42a61f56/../x',
+            'contentlatch_field' => 'field_64f8a42a61f56/../x',
         )));
         $this->assertSame('', EditorFieldNavigation::requestedFieldKey(array()));
         $this->assertSame(
             'field_650071058895b',
             EditorFieldNavigation::requestedFieldKey(array(
-                'contentguard_field' => 'field_650071058895b',
-                'contentguard_run'   => '7',
+                'contentlatch_field' => 'field_650071058895b',
+                'contentlatch_run'   => '7',
             ))
         );
     }
 
     public function testAuditAdminUrlsAreNeverUsedAsEditDestinations(): void
     {
-        $audit = 'http://example.test/wp-admin/admin.php?page=contentguard-audit&post_type=recipe';
+        $audit = 'http://example.test/wp-admin/admin.php?page=contentlatch-audit&post_type=recipe';
 
         $this->assertTrue(EditorFieldNavigation::looksLikeAuditAdminUrl($audit));
         $this->assertSame('', EditorFieldNavigation::normalizeEditorUrl($audit));
@@ -114,11 +114,11 @@ final class EditorFieldNavigationTest extends TestCase
         );
 
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_64f8a42a61f56&contentguard_run=7',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_field=field_64f8a42a61f56&contentlatch_run=7',
             $url
         );
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_run=7',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_run=7',
             EditorFieldNavigation::appendToEditUrl(
                 'http://example.test/wp-admin/post.php?post=42&action=edit',
                 'not-a-field',
@@ -126,29 +126,29 @@ final class EditorFieldNavigationTest extends TestCase
             )
         );
         $this->assertStringNotContainsString('post_type=', $url);
-        $this->assertStringNotContainsString('page=contentguard-audit', $url);
+        $this->assertStringNotContainsString('page=contentlatch-audit', $url);
     }
 
     public function testRequestedRunIdRejectsTamperedValues(): void
     {
         $this->assertSame(7, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => '7',
+            'contentlatch_run' => '7',
         )));
         $this->assertSame(7, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => 7,
+            'contentlatch_run' => 7,
         )));
         $this->assertSame(0, EditorFieldNavigation::requestedRunId(array()));
         $this->assertSame(0, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => '0',
+            'contentlatch_run' => '0',
         )));
         $this->assertSame(0, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => '-3',
+            'contentlatch_run' => '-3',
         )));
         $this->assertSame(0, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => '7abc',
+            'contentlatch_run' => '7abc',
         )));
         $this->assertSame(0, EditorFieldNavigation::requestedRunId(array(
-            'contentguard_run' => '7"><script>',
+            'contentlatch_run' => '7"><script>',
         )));
         $this->assertSame(0, EditorFieldNavigation::sanitizeRunId('Description is required'));
     }
@@ -195,12 +195,12 @@ final class EditorFieldNavigationTest extends TestCase
             7
         );
         $this->assertSame(
-            'http://example.test/wp-admin/post.php?post=42&action=edit&contentguard_field=field_66e48d6611345&contentguard_run=7',
+            'http://example.test/wp-admin/post.php?post=42&action=edit&contentlatch_field=field_66e48d6611345&contentlatch_run=7',
             $url
         );
-        $this->assertStringNotContainsString('contentguard_row', $url);
+        $this->assertStringNotContainsString('contentlatch_row', $url);
         $this->assertStringNotContainsString('row-2', $url);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', EditorFieldNavigation::fieldTriggerAttributes(
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', EditorFieldNavigation::fieldTriggerAttributes(
             'field_66e48d6611345',
             'hero',
             3
@@ -261,11 +261,11 @@ final class EditorFieldNavigationTest extends TestCase
             0,
             $item['repeaterPath']
         );
-        $this->assertStringContainsString('data-contentguard-field="field_65011ffeae1ce"', $attrs);
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $attrs);
+        $this->assertStringContainsString('data-contentlatch-field="field_65011ffeae1ce"', $attrs);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $attrs);
         $this->assertStringContainsString('field_65007238dd468', $attrs);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $attrs);
-        $this->assertStringNotContainsString('contentguard_row', EditorFieldNavigation::appendToEditUrl(
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $attrs);
+        $this->assertStringNotContainsString('contentlatch_row', EditorFieldNavigation::appendToEditUrl(
             'http://example.test/wp-admin/post.php?post=42&action=edit',
             'field_65011ffeae1ce'
         ));
@@ -310,11 +310,11 @@ final class EditorFieldNavigationTest extends TestCase
             array(),
             $item['repeaterPath']
         );
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $html);
         $this->assertStringContainsString('field_650070df8895a', $html);
         $this->assertStringContainsString('field_65138ec34ed67', $html);
         $this->assertStringContainsString('Ingredient is required in row 1/14.', $html);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $html);
         $this->assertSame(array(), EditorFieldNavigation::sanitizeRepeaterPath(array(
             array('repeater' => 'not-a-field', 'display_row' => 1),
             array('repeater' => 'field_steps', 'display_row' => 14),
@@ -323,7 +323,7 @@ final class EditorFieldNavigationTest extends TestCase
             array('repeater' => 'field_directions', 'display_row' => 0),
         )));
         $this->assertSame(
-            'data-contentguard-repeater-path="invalid"',
+            'data-contentlatch-repeater-path="invalid"',
             EditorFieldNavigation::repeaterPathAttribute(array(), true)
         );
     }
@@ -350,6 +350,6 @@ final class EditorFieldNavigationTest extends TestCase
         );
         $this->assertStringContainsString('Avoid &lt;script&gt;alert(1)&lt;/script&gt; &amp; more', $xss);
         $this->assertStringNotContainsString('<script>', $xss);
-        $this->assertStringContainsString('data-contentguard-field="field_content"', $xss);
+        $this->assertStringContainsString('data-contentlatch-field="field_content"', $xss);
     }
 }

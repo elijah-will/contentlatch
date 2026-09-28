@@ -2,12 +2,12 @@
 /**
  * Holds registered integrations. Production registers Core and ACF.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Integration;
+namespace ContentLatch\Application\Integration;
 
 defined('ABSPATH') || exit;
 

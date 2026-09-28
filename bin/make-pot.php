@@ -1,17 +1,17 @@
 #!/usr/bin/env php
 <?php
 /**
- * Build languages/contentguard.pot with WordPress string extraction.
+ * Build languages/contentlatch.pot with WordPress string extraction.
  *
  * Usage: php bin/make-pot.php [/path/to/wp-cli.phar]
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$pot  = $root . '/languages/contentguard.pot';
+$pot  = $root . '/languages/contentlatch.pot';
 $wp   = $argv[1] ?? '/tmp/wp-cli.phar';
 
 if (!is_readable($wp) && $wp !== 'wp') {
@@ -28,10 +28,10 @@ $command = array_merge($wpCmd, array(
     'make-pot',
     $root,
     $pot,
-    '--slug=contentguard',
-    '--domain=contentguard',
+    '--slug=contentlatch',
+    '--domain=contentlatch',
     '--exclude=vendor,tests,node_modules,.git,bin',
-    '--headers={"Project-Id-Version":"ContentGuard 1.0.0","Report-Msgid-Bugs-To":""}',
+    '--headers={"Project-Id-Version":"ContentLatch 1.0.0","Report-Msgid-Bugs-To":""}',
 ));
 
 $cmd = implode(' ', array_map('escapeshellarg', $command));

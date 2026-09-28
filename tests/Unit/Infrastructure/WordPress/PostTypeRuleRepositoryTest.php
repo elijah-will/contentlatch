@@ -1,23 +1,23 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
-use ContentGuard\Infrastructure\WordPress\RulePostRecord;
-use ContentGuard\Tests\Support\FakeRulePostStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Infrastructure\WordPress\RulePostRecord;
+use ContentLatch\Tests\Support\FakeRulePostStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class PostTypeRuleRepositoryTest extends TestCase
@@ -248,7 +248,7 @@ final class PostTypeRuleRepositoryTest extends TestCase
     {
         $document = RuleFactory::document(array('id' => ''));
         $document['conditions'][0]['operator'] = 'starts_with';
-        $rule = \ContentGuard\Domain\Rule::fromArray($document);
+        $rule = \ContentLatch\Domain\Rule::fromArray($document);
 
         try {
             $this->repository->save($rule);
@@ -262,7 +262,7 @@ final class PostTypeRuleRepositoryTest extends TestCase
     {
         $document = RuleFactory::document(array('id' => ''));
         $document['validations'][0]['type'] = 'regex';
-        $rule = \ContentGuard\Domain\Rule::fromArray($document);
+        $rule = \ContentLatch\Domain\Rule::fromArray($document);
 
         $this->expectException(InvalidRuleException::class);
         $this->repository->save($rule);

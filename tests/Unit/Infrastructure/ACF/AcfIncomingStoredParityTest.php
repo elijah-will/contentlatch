@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIncomingValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIncomingValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfStoredValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AcfIncomingStoredParityTest extends TestCase

@@ -2,22 +2,22 @@
 /**
  * Hidden CPT rule repository.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Application\RuleMutationPresentation;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Application\RuleMutationPresentation;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleStatus;
 
 final class PostTypeRuleRepository implements RuleRepositoryInterface
 {

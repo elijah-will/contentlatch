@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RulePreview;
+use ContentLatch\Application\RulePreview;
 use PHPUnit\Framework\TestCase;
 
 final class RulePreviewTest extends TestCase

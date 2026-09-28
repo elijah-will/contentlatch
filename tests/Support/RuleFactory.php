@@ -2,19 +2,19 @@
 /**
  * Test helpers for building rules.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Domain\Condition;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Domain\Validation;
+use ContentLatch\Domain\Condition;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Domain\Validation;
 
 final class RuleFactory
 {

@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\RuleEditorDraftStore;
+use ContentLatch\Admin\RuleEditorDraftStore;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEditorDraftStoreTest extends TestCase
@@ -37,8 +37,8 @@ final class RuleEditorDraftStoreTest extends TestCase
         $drafts->put(42, array('name' => 'Draft'));
 
         $this->assertSame(900, RuleEditorDraftStore::TTL);
-        $this->assertSame('contentguard_rule_draft_', RuleEditorDraftStore::KEY_PREFIX);
-        $this->assertSame('contentguard_rule_draft_7_42', $seen['key']);
+        $this->assertSame('contentlatch_rule_draft_', RuleEditorDraftStore::KEY_PREFIX);
+        $this->assertSame('contentlatch_rule_draft_7_42', $seen['key']);
         $this->assertSame(900, $seen['ttl']);
         $this->assertSame(array('name' => 'Draft'), $seen['value']);
     }
@@ -85,8 +85,8 @@ final class RuleEditorDraftStoreTest extends TestCase
         );
         $this->assertSame(
             array(
-                addcslashes('_transient_contentguard_rule_draft_', '_%\\') . '%',
-                addcslashes('_transient_timeout_contentguard_rule_draft_', '_%\\') . '%',
+                addcslashes('_transient_contentlatch_rule_draft_', '_%\\') . '%',
+                addcslashes('_transient_timeout_contentlatch_rule_draft_', '_%\\') . '%',
             ),
             $wpdb->last['args']
         );

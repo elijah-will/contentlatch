@@ -1,15 +1,15 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Infrastructure\ACF\AcfNestedField;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Infrastructure\ACF\AcfNestedField;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfNestedFieldTest extends TestCase

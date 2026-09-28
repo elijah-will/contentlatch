@@ -1,26 +1,26 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfSaveValidator;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
-use ContentGuard\Infrastructure\WordPress\RulePostRecord;
-use ContentGuard\Tests\Support\FakeRulePostStore;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfSaveValidator;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Infrastructure\WordPress\RulePostRecord;
+use ContentLatch\Tests\Support\FakeRulePostStore;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -42,8 +42,8 @@ final class AcfSaveValidatorTest extends TestCase
             ),
         ));
         $this->assertStringContainsString('>Recipe Description</button> — This field is required.', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $this->errors[0]['message']);
-        $this->assertStringNotContainsString('contentguard_field', json_encode($this->errors) ?: '');
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $this->errors[0]['message']);
+        $this->assertStringNotContainsString('contentlatch_field', json_encode($this->errors) ?: '');
     }
 
     public function testMatchingConditionFilledFieldOnPublishDoesNotError(): void
@@ -99,7 +99,7 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertCount(1, $this->errors);
         $this->assertSame('acf[field_description]', $this->errors[0]['input']);
         $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
             'field'    => 'field_description',
             'fieldKey' => 'field_description',
             'label'    => 'Recipe Description',
@@ -184,7 +184,7 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertCount(1, $this->errors);
         $this->assertSame('acf[field_64f8a42a61f56]', $this->errors[0]['input']);
         $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
             'field'    => 'field_64f8a42a61f56',
             'fieldKey' => 'field_64f8a42a61f56',
             'label'    => 'Recipe Description',
@@ -598,7 +598,7 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertSame(array(), $this->errors);
     }
 
-    public function testClassicAcfBlockersEmitContentGuardSummaryWithoutAFieldQuery(): void
+    public function testClassicAcfBlockersEmitContentLatchSummaryWithoutAFieldQuery(): void
     {
         $titleRule = RuleFactory::rule(array(
             'id'          => 2,
@@ -633,16 +633,16 @@ final class AcfSaveValidatorTest extends TestCase
                 'message' => 'Recipe Title — This field is required.',
             ),
         ));
-        $this->assertStringContainsString("ContentGuard · Blocking\n2 blocking issues\n", $this->errors[0]['message']);
+        $this->assertStringContainsString("ContentLatch · Blocking\n2 blocking issues\n", $this->errors[0]['message']);
         $this->assertStringContainsString('>Recipe Description</button> — This field is required.', $this->errors[0]['message']);
         $this->assertStringContainsString('>Recipe Title</button> — This field is required.', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $this->errors[0]['message']);
-        $this->assertStringContainsString('data-contentguard-field="field_title"', $this->errors[0]['message']);
-        $this->assertArrayNotHasKey('contentguard_field', $this->publishRequest());
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $this->errors[0]['message']);
+        $this->assertStringContainsString('data-contentlatch-field="field_title"', $this->errors[0]['message']);
+        $this->assertArrayNotHasKey('contentlatch_field', $this->publishRequest());
 
         $withoutField = $this->errors;
         $this->validate(
-            $this->publishRequest(array('contentguard_field' => 'field_description')),
+            $this->publishRequest(array('contentlatch_field' => 'field_description')),
             array(
                 'field_signature'   => '1',
                 'field_description' => '',
@@ -661,7 +661,7 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertStringContainsString('EditorAuditIssues::classicValidationNotice', $php);
         $this->assertStringContainsString('EditorAuditIssues::fromResult', $php);
         $this->assertStringContainsString('decorateAcfValidationError', $php);
-        $this->assertStringContainsString("['contentguard']", $php);
+        $this->assertStringContainsString("['contentlatch']", $php);
         $this->assertStringNotContainsString('requestedFieldKey', $php);
         $this->assertStringNotContainsString('QUERY_ARG', $php);
         $this->assertStringNotContainsString('requestedRunId', $php);
@@ -686,9 +686,9 @@ final class AcfSaveValidatorTest extends TestCase
         $this->assertCount(1, $this->errors);
         $this->assertSame('acf[field_description]', $this->errors[0]['input']);
         $this->assertSame('Recipe Description — This field is required.', $this->errors[0]['message']);
-        $this->assertStringNotContainsString('ContentGuard · Blocking', $this->errors[0]['message']);
+        $this->assertStringNotContainsString('ContentLatch · Blocking', $this->errors[0]['message']);
         $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
             'field'    => 'field_description',
             'fieldKey' => 'field_description',
             'label'    => 'Recipe Description',
@@ -700,19 +700,19 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->gutenbergAcfAjaxRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
-                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Pepper'),
-                    'row-2' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                    'row-1' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Pepper'),
+                    'row-2' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                 ),
             )
         );
 
-        $input = 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
-            . '][row-2][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']';
+        $input = 'acf[' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST
+            . '][row-2][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']';
         $this->assertCount(1, $this->errors);
         $this->assertSame($input, $this->errors[0]['input']);
         $this->assertSame(
@@ -720,14 +720,14 @@ final class AcfSaveValidatorTest extends TestCase
             $this->errors[0]['message']
         );
         $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
-            'field'        => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
-            'fieldKey'     => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
+            'field'        => \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
+            'fieldKey'     => \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT,
             'label'        => 'Ingredient List → Ingredient',
             'message'      => 'Ingredient is required in row 3.',
             'repeaterPath' => array(
                 array(
-                    'repeater'    => \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
+                    'repeater'    => \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST,
                     'display_row' => 3,
                 ),
             ),
@@ -738,38 +738,38 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->nestedStepNameRule())),
-            \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog(),
             $this->gutenbergAcfAjaxRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS => array(
                     'row-0' => array(
-                        \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
-                            'row-0' => array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
-                            'row-1' => array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                        \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                            'row-0' => array(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => 'Cut'),
+                            'row-1' => array(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
                         ),
                     ),
                 ),
             )
         );
 
-        $input = 'acf[' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
-            . '][row-0][' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS
-            . '][row-1][' . \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME . ']';
+        $input = 'acf[' . \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
+            . '][row-0][' . \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS
+            . '][row-1][' . \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME . ']';
         $this->assertCount(1, $this->errors);
         $this->assertSame($input, $this->errors[0]['input']);
         $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
-            'field'        => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
-            'fieldKey'     => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
+            'field'        => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
+            'fieldKey'     => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME,
             'label'        => 'Directions → Steps → Name',
             'message'      => 'Name is required in row 1/2.',
             'repeaterPath' => array(
                 array(
-                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
+                    'repeater'    => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
                     'display_row' => 1,
                 ),
                 array(
-                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
+                    'repeater'    => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
                     'display_row' => 2,
                 ),
             ),
@@ -780,20 +780,20 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->gutenbergAcfAjaxRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     'row-0' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                 ),
             )
         );
 
-        $input = 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES
-            . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']';
+        $input = 'acf[' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES
+            . '][row-0][' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']';
         $this->assertCount(1, $this->errors);
         $this->assertSame($input, $this->errors[0]['input']);
         $this->assertSame(
@@ -801,9 +801,9 @@ final class AcfSaveValidatorTest extends TestCase
             $this->errors[0]['message']
         );
         $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
-            'field'        => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
-            'fieldKey'     => \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
+            'field'        => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+            'fieldKey'     => \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
             'label'        => 'Modules → Hero → Title',
             'message'      => 'This field is required.',
             'layout'       => 'hero',
@@ -815,17 +815,17 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->cloneTitleRule())),
-            \ContentGuard\Tests\Support\AcfCloneFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfCloneFixtures::pageCatalog(),
             $this->gutenbergAcfAjaxRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfCloneFixtures::CLONE_A => array(
-                    \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
+                \ContentLatch\Tests\Support\AcfCloneFixtures::CLONE_A => array(
+                    \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
                 ),
             )
         );
 
-        $input = 'acf[' . \ContentGuard\Tests\Support\AcfCloneFixtures::CLONE_A
-            . '][' . \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() . ']';
+        $input = 'acf[' . \ContentLatch\Tests\Support\AcfCloneFixtures::CLONE_A
+            . '][' . \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted() . ']';
         $this->assertCount(1, $this->errors);
         $this->assertSame($input, $this->errors[0]['input']);
         $this->assertSame(
@@ -833,9 +833,9 @@ final class AcfSaveValidatorTest extends TestCase
             $this->errors[0]['message']
         );
         $this->assertStringNotContainsString('<button', $this->errors[0]['message']);
-        $this->assertGutenbergContentGuardMetadata($this->errors[0], array(
-            'field'    => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
-            'fieldKey' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+        $this->assertGutenbergContentLatchMetadata($this->errors[0], array(
+            'field'    => \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+            'fieldKey' => \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
             'label'    => 'Shared Content → Title',
             'message'  => 'This field is required.',
         ));
@@ -868,10 +868,10 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertSame('acf[field_title]', $this->errors[0]['input']);
         $this->assertSame('ACF own error', $this->errors[0]['message']);
-        $this->assertArrayNotHasKey('contentguard', $this->errors[0]);
+        $this->assertArrayNotHasKey('contentlatch', $this->errors[0]);
         $this->assertSame('acf[field_description]', $this->errors[1]['input']);
-        $this->assertArrayHasKey('contentguard', $this->errors[1]);
-        $this->assertSame('field_description', $this->errors[1]['contentguard']['field']);
+        $this->assertArrayHasKey('contentlatch', $this->errors[1]);
+        $this->assertSame('field_description', $this->errors[1]['contentlatch']['field']);
     }
 
     public function testClassicFieldErrorsRemainUndecorated(): void
@@ -884,33 +884,33 @@ final class AcfSaveValidatorTest extends TestCase
                 'message' => 'Recipe Description — This field is required.',
             ),
         ));
-        $this->assertArrayNotHasKey('contentguard', $this->errors[0]);
-        $this->assertArrayNotHasKey('contentguard', $this->errors[1]);
+        $this->assertArrayNotHasKey('contentlatch', $this->errors[0]);
+        $this->assertArrayNotHasKey('contentlatch', $this->errors[1]);
     }
 
     public function testRepeaterChildTargetsExactPostedRowInput(): void
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->publishRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
-                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
-                    '67a1b2c3d4e5f' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
-                    'acfcloneindex' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Clone'),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'row-1' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                    '67a1b2c3d4e5f' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'acfcloneindex' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Clone'),
                 ),
             )
         );
 
         $this->assertClassicBlockingSummary(array(
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][row-0][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
                 'message' => 'Ingredient List → Ingredient — This field is required in row 1.',
             ),
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST . '][67a1b2c3d4e5f][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT . ']',
                 'message' => 'Ingredient List → Ingredient — This field is required in row 3.',
             ),
         ));
@@ -922,14 +922,14 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->productSizeRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::productCatalog(),
             $this->publishRequest(array('post_type' => 'product')),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
-                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
-                        'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => ''),
-                        'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '2.5oz'),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
+                    \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
+                        'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => ''),
+                        'row-1' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '2.5oz'),
                     ),
                 ),
             )
@@ -937,7 +937,7 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertClassicBlockingSummary(array(
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . '][row-0][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE . ']',
                 'message' => 'Product Information → Item Size → Product Size — This field is required in row 1.',
             ),
         ));
@@ -947,13 +947,13 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->productSizeRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::productCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::productCatalog(),
             $this->publishRequest(array('post_type' => 'product')),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
-                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
-                        'acfcloneindex' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '8oz'),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE => 'sauce',
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION => array(
+                    \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE => array(
+                        'acfcloneindex' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => '8oz'),
                     ),
                 ),
             )
@@ -961,7 +961,7 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertClassicBlockingSummary(array(
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentGuard\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_INFORMATION . '][' . \ContentLatch\Tests\Support\AcfRepeaterFixtures::ITEM_SIZE . ']',
                 'message' => 'Add at least one Item Size row.',
             ),
         ));
@@ -971,14 +971,14 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->request(array(
                 'post_status' => 'draft',
                 'save'        => 'Save Draft',
             )),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                 ),
             )
         );
@@ -986,11 +986,11 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->validateWith(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->publishRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                 ),
             )
         );
@@ -998,14 +998,14 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->validateWith(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->request(array(
                 'post_status' => 'draft',
                 'private'     => 'Private',
             )),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                 ),
             )
         );
@@ -1018,12 +1018,12 @@ final class AcfSaveValidatorTest extends TestCase
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule(array(
                 'severity' => RuleSeverity::Warning,
             )))),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             $this->publishRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
-                    'row-1' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
+                    'row-1' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => ''),
                 ),
             )
         );
@@ -1041,7 +1041,7 @@ final class AcfSaveValidatorTest extends TestCase
         );
         $validator = new AcfSaveValidator(
             new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-            \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
+            \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog(),
             new IntendedPostStatusResolver(),
             function (string $input, string $message): void {
                 $this->errors[] = array(
@@ -1051,14 +1051,14 @@ final class AcfSaveValidatorTest extends TestCase
             },
             IncomingSaveFixtures::evaluator(
                 new InMemoryRuleRepository(array($this->ingredientRepeaterRule())),
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::recipeCatalog()
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::recipeCatalog()
             )
         );
         $validator->validate(
             $this->publishRequest(),
             array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
-                    'row-0' => array(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT_LIST => array(
+                    'row-0' => array(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => 'Salt'),
                 ),
             )
         );
@@ -1124,30 +1124,30 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->publishRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     'row-0' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                     'row-1' => array(
                         'acf_fc_layout' => 'cta',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => '',
                     ),
                     '67a1b2c3d4e5f' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                     'acfcloneindex' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => 'Clone',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => 'Clone',
                     ),
                     'row-9' => array(
                         'acf_fc_layout' => 'hero',
                         'acf_fc_layout_disabled' => '1',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                 ),
             )
@@ -1155,11 +1155,11 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertClassicBlockingSummary(array(
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-0][' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
                 'message' => 'Modules → Hero → Title — This field is required.',
             ),
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES . '][67a1b2c3d4e5f][' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE . ']',
                 'message' => 'Modules → Hero → Title — This field is required.',
             ),
         ));
@@ -1169,14 +1169,14 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->contentBlockHeadlineRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->publishRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     'row-5' => array(
                         'acf_fc_layout' => 'content_block',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 => array(
-                            \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 => array(
+                            \ContentLatch\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE => '',
                         ),
                     ),
                 ),
@@ -1185,9 +1185,9 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->assertClassicBlockingSummary(array(
             array(
-                'input'   => 'acf[' . \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
-                    . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
-                    . \ContentGuard\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
+                'input'   => 'acf[' . \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES . '][row-5]['
+                    . \ContentLatch\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_1 . ']['
+                    . \ContentLatch\Tests\Support\AcfFlexibleFixtures::CONTENT_BLOCK_HEADLINE . ']',
                 'message' => 'Modules → Content Block → Content Block 1 → Headline — This field is required.',
             ),
         ));
@@ -1197,13 +1197,13 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->publishRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     'acfcloneindex' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                 ),
             )
@@ -1215,17 +1215,17 @@ final class AcfSaveValidatorTest extends TestCase
     public function testFlexibleDraftAllowedPublishAndPrivateBlocked(): void
     {
         $payload = array(
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                 'row-0' => array(
                     'acf_fc_layout' => 'hero',
-                    \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                    \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                 ),
             ),
         );
 
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->request(array(
                 'post_type'   => 'page',
                 'post_status' => 'draft',
@@ -1237,7 +1237,7 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->publishRequest(array('post_type' => 'page')),
             $payload
         );
@@ -1245,7 +1245,7 @@ final class AcfSaveValidatorTest extends TestCase
 
         $this->validateWith(
             new InMemoryRuleRepository(array($this->heroTitleRule())),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->request(array(
                 'post_type'   => 'page',
                 'post_status' => 'draft',
@@ -1262,13 +1262,13 @@ final class AcfSaveValidatorTest extends TestCase
             new InMemoryRuleRepository(array($this->heroTitleRule(array(
                 'severity' => RuleSeverity::Warning,
             )))),
-            \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
+            \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog(),
             $this->publishRequest(array('post_type' => 'page')),
             array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     'row-0' => array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                 ),
             )
@@ -1292,7 +1292,7 @@ final class AcfSaveValidatorTest extends TestCase
                     'validations' => array(
                         RuleFactory::validation(
                             array(
-                                'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                                'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
                                 'type'       => 'required',
                                 'quantifier' => 'every',
                             )
@@ -1313,7 +1313,7 @@ final class AcfSaveValidatorTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::contentBlockHeadlineRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::contentBlockHeadlineRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1322,7 +1322,7 @@ final class AcfSaveValidatorTest extends TestCase
     }
 
     /**
-     * Classic ACF saves emit a ContentGuard summary, then the field errors.
+     * Classic ACF saves emit a ContentLatch summary, then the field errors.
      *
      * @param list<array{input: string, message: string}> $fieldErrors
      */
@@ -1330,7 +1330,7 @@ final class AcfSaveValidatorTest extends TestCase
     {
         $this->assertNotSame(array(), $this->errors);
         $this->assertSame('', $this->errors[0]['input']);
-        $this->assertStringStartsWith("ContentGuard · Blocking\n", $this->errors[0]['message']);
+        $this->assertStringStartsWith("ContentLatch · Blocking\n", $this->errors[0]['message']);
         $this->assertSame($fieldErrors, array_slice($this->errors, 1));
     }
 
@@ -1338,47 +1338,47 @@ final class AcfSaveValidatorTest extends TestCase
      * @param array<string, mixed> $error
      * @param array<string, mixed> $expected
      */
-    private function assertGutenbergContentGuardMetadata(array $error, array $expected): void
+    private function assertGutenbergContentLatchMetadata(array $error, array $expected): void
     {
-        $this->assertArrayHasKey('contentguard', $error);
-        $this->assertIsArray($error['contentguard']);
-        $this->assertSame($expected['field'], $error['contentguard']['field']);
-        $this->assertSame($expected['fieldKey'], $error['contentguard']['fieldKey']);
-        $this->assertSame($expected['label'], $error['contentguard']['label']);
-        $this->assertSame($expected['message'], $error['contentguard']['message']);
+        $this->assertArrayHasKey('contentlatch', $error);
+        $this->assertIsArray($error['contentlatch']);
+        $this->assertSame($expected['field'], $error['contentlatch']['field']);
+        $this->assertSame($expected['fieldKey'], $error['contentlatch']['fieldKey']);
+        $this->assertSame($expected['label'], $error['contentlatch']['label']);
+        $this->assertSame($expected['message'], $error['contentlatch']['message']);
         if (isset($expected['repeaterPath'])) {
-            $this->assertSame($expected['repeaterPath'], $error['contentguard']['repeaterPath']);
+            $this->assertSame($expected['repeaterPath'], $error['contentlatch']['repeaterPath']);
         } else {
-            $this->assertArrayNotHasKey('repeaterPath', $error['contentguard']);
+            $this->assertArrayNotHasKey('repeaterPath', $error['contentlatch']);
         }
         if (isset($expected['layout'])) {
-            $this->assertSame($expected['layout'], $error['contentguard']['layout']);
+            $this->assertSame($expected['layout'], $error['contentlatch']['layout']);
         } else {
-            $this->assertArrayNotHasKey('layout', $error['contentguard']);
+            $this->assertArrayNotHasKey('layout', $error['contentlatch']);
         }
         if (isset($expected['affectedRows'])) {
-            $this->assertSame($expected['affectedRows'], $error['contentguard']['affectedRows']);
+            $this->assertSame($expected['affectedRows'], $error['contentlatch']['affectedRows']);
         } else {
-            $this->assertArrayNotHasKey('affectedRows', $error['contentguard']);
+            $this->assertArrayNotHasKey('affectedRows', $error['contentlatch']);
         }
         $this->assertStringNotContainsString('<button', (string) $error['message']);
-        $this->assertStringNotContainsString('contentguard', (string) $error['message']);
+        $this->assertStringNotContainsString('contentlatch', (string) $error['message']);
     }
 
     /**
-     * @param array<string, mixed> $contentguard
+     * @param array<string, mixed> $contentlatch
      */
-    public function decorateCapturedError(string $input, array $contentguard): void
+    public function decorateCapturedError(string $input, array $contentlatch): void
     {
         for ($i = count($this->errors) - 1; $i >= 0; $i--) {
             if (($this->errors[$i]['input'] ?? '') !== $input) {
                 continue;
             }
-            if (isset($this->errors[$i]['contentguard'])) {
+            if (isset($this->errors[$i]['contentlatch'])) {
                 continue;
             }
 
-            $this->errors[$i]['contentguard'] = $contentguard;
+            $this->errors[$i]['contentlatch'] = $contentlatch;
 
             return;
         }
@@ -1568,7 +1568,7 @@ final class AcfSaveValidatorTest extends TestCase
                     'validations' => array(
                         RuleFactory::validation(
                             array(
-                                'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                                'field'      => \ContentLatch\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
                                 'type'       => 'required',
                                 'quantifier' => 'every',
                             )
@@ -1595,7 +1595,7 @@ final class AcfSaveValidatorTest extends TestCase
                         RuleFactory::condition(
                             array(
                                 'field'    => RuleFactory::field(
-                                    \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
+                                    \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_TYPE,
                                     'product_type',
                                     'Product Type'
                                 ),
@@ -1607,7 +1607,7 @@ final class AcfSaveValidatorTest extends TestCase
                     'validations' => array(
                         RuleFactory::validation(
                             array(
-                                'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
+                                'field'      => \ContentLatch\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
                                 'type'       => 'required',
                                 'quantifier' => 'every',
                             )
@@ -1628,7 +1628,7 @@ final class AcfSaveValidatorTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1645,7 +1645,7 @@ final class AcfSaveValidatorTest extends TestCase
             'conditions'  => array(),
             'validations' => array(
                 RuleFactory::validation(array(
-                    'field' => \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
+                    'field' => \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitleRef(),
                     'type'  => 'required',
                 )),
             ),

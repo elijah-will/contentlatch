@@ -4,20 +4,20 @@
  *
  * Blocking findings only. Warnings stay on the live editor warning path.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\RuleSeverity;
 
 final class EditorAuditIssues
 {
@@ -104,7 +104,7 @@ final class EditorAuditIssues
     {
         $message = trim($result->message);
         if ($message === '') {
-            $message = __('This field is required.', 'contentguard');
+            $message = __('This field is required.', 'contentlatch');
         } else {
             $message = DomainMessages::present($message);
         }
@@ -122,7 +122,7 @@ final class EditorAuditIssues
             if ($displayRow > 0 && EditorFieldNavigation::layoutFromContext($result->context) === '') {
                 $message = sprintf(
                     /* translators: 1: Base validation message. 2: 1-based row number. */
-                    __('%1$s in row %2$d.', 'contentguard'),
+                    __('%1$s in row %2$d.', 'contentlatch'),
                     rtrim(self::nestedBaseMessage($result, $message), '.'),
                     $displayRow
                 );
@@ -196,7 +196,7 @@ final class EditorAuditIssues
     {
         $message = trim($finding->message);
         if ($message === '') {
-            $message = __('This field is required.', 'contentguard');
+            $message = __('This field is required.', 'contentlatch');
         } else {
             $message = DomainMessages::present($message);
         }
@@ -322,7 +322,7 @@ final class EditorAuditIssues
             (string) ($issue['fieldKey'] ?? ''),
             (string) ($issue['label'] ?? ''),
             (string) ($issue['message'] ?? ''),
-            __('This field is required.', 'contentguard'),
+            __('This field is required.', 'contentlatch'),
             $surface,
             EditorFieldNavigation::layoutFromItem($issue),
             EditorFieldNavigation::affectedRowsFromItem($issue),
@@ -338,7 +338,7 @@ final class EditorAuditIssues
             return '';
         }
 
-        return '<div class="notice notice-error contentguard-audit-blockers-notice">' . $inner . '</div>';
+        return '<div class="notice notice-error contentlatch-audit-blockers-notice">' . $inner . '</div>';
     }
 
     public static function canAccess(int $postId, bool $canManage, bool $canEditPost): bool
@@ -386,7 +386,7 @@ final class EditorAuditIssues
         }
 
         $into['message'] = AuditRepeaterCoordinates::formatSnapshot(
-            $base !== '' ? $base : __('This field is required.', 'contentguard'),
+            $base !== '' ? $base : __('This field is required.', 'contentlatch'),
             $cells
         );
 
@@ -401,11 +401,11 @@ final class EditorAuditIssues
             $label = $parts !== array() ? (string) $parts[count($parts) - 1] : '';
             if ($label !== '') {
                 /* translators: %s: Field label. */
-                return sprintf(__('%s is required.', 'contentguard'), $label);
+                return sprintf(__('%s is required.', 'contentlatch'), $label);
             }
         }
 
-        return $fallback !== '' ? $fallback : __('This field is required.', 'contentguard');
+        return $fallback !== '' ? $fallback : __('This field is required.', 'contentlatch');
     }
 
     private static function humanLabel(string $label, string $fieldKey): string

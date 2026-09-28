@@ -2,12 +2,12 @@
 /**
  * Rules admin script enqueue and view inline-script regressions.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
 use PHPUnit\Framework\TestCase;
 
@@ -17,9 +17,9 @@ final class RulesEnqueueScriptTest extends TestCase
     {
         $php = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/RulesPage.php');
 
-        $this->assertStringContainsString("wp_register_script(\n            'contentguard-rules'", $php);
-        $this->assertStringContainsString("wp_enqueue_script('contentguard-rules')", $php);
-        $this->assertStringContainsString("wp_localize_script(\n            'contentguard-rules',\n            'contentguardRules'", $php);
+        $this->assertStringContainsString("wp_register_script(\n            'contentlatch-rules'", $php);
+        $this->assertStringContainsString("wp_enqueue_script('contentlatch-rules')", $php);
+        $this->assertStringContainsString("wp_localize_script(\n            'contentlatch-rules',\n            'contentlatchRules'", $php);
         $this->assertStringContainsString("'catalogFields'", $php);
         $this->assertStringContainsString('catalogFieldsForRequest()', $php);
         $this->assertStringContainsString("'deleteConfirm'", $php);
@@ -35,8 +35,8 @@ final class RulesEnqueueScriptTest extends TestCase
         $view = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/views/rule-edit.php');
 
         $this->assertStringNotContainsString('<script', $view);
-        $this->assertStringNotContainsString('contentguard-catalog-fields', $view);
-        $this->assertStringNotContainsString('contentguardPendingNoticeScroll', $view);
+        $this->assertStringNotContainsString('contentlatch-catalog-fields', $view);
+        $this->assertStringNotContainsString('contentlatchPendingNoticeScroll', $view);
     }
 
     public function testRuleListItemHasNoInlineOnclick(): void
@@ -45,7 +45,7 @@ final class RulesEnqueueScriptTest extends TestCase
 
         $this->assertStringNotContainsString('onclick=', $view);
         $this->assertStringNotContainsString('onsubmit=', $view);
-        $this->assertStringContainsString('contentguard-delete-rule', $view);
+        $this->assertStringContainsString('contentlatch-delete-rule', $view);
         $this->assertStringNotContainsString('Delete this rule?', $view);
     }
 
@@ -53,20 +53,20 @@ final class RulesEnqueueScriptTest extends TestCase
     {
         $js = (string) file_get_contents(dirname(__DIR__, 3) . '/admin/js/rules.js');
 
-        $this->assertStringContainsString('window.contentguardRules', $js);
+        $this->assertStringContainsString('window.contentlatchRules', $js);
         $this->assertStringContainsString('config.catalogFields', $js);
-        $this->assertStringContainsString('a.contentguard-delete-rule', $js);
+        $this->assertStringContainsString('a.contentlatch-delete-rule', $js);
         $this->assertStringContainsString('config.deleteConfirm', $js);
         $this->assertStringContainsString('window.confirm(message)', $js);
         $this->assertStringContainsString('event.preventDefault()', $js);
-        $this->assertStringNotContainsString('contentguard-catalog-fields', $js);
-        $this->assertStringNotContainsString('getElementById("contentguard-catalog-fields")', $js);
+        $this->assertStringNotContainsString('contentlatch-catalog-fields', $js);
+        $this->assertStringNotContainsString('getElementById("contentlatch-catalog-fields")', $js);
     }
 
     public function testProductionAdminViewsHaveNoInlineScriptOrEventHandlers(): void
     {
         $root = dirname(__DIR__, 3);
-        $paths = array($root . '/contentguard.php');
+        $paths = array($root . '/contentlatch.php');
         foreach (array($root . '/admin/views', $root . '/includes') as $directory) {
             $iterator = new \RecursiveIteratorIterator(
                 new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)

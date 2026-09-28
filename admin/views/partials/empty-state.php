@@ -1,9 +1,9 @@
 <?php
 // phpcs:ignoreFile WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- These files are include/extract template scopes; assignments are template locals, not plugin globals.
 /**
- * Shared ContentGuard empty state.
+ * Shared ContentLatch empty state.
  *
- * @package ContentGuard
+ * @package ContentLatch
  *
  * @var string $heading
  * @var string $text
@@ -49,18 +49,18 @@ $renderAction = static function (array $action, string $defaultClass): void {
     echo '>' . esc_html($label) . '</button>';
 };
 ?>
-<div class="contentguard-empty">
+<div class="contentlatch-empty">
     <?php if ($heading !== '') : ?>
-        <h2 class="contentguard-empty__heading"><?php echo esc_html($heading); ?></h2>
+        <h2 class="contentlatch-empty__heading"><?php echo esc_html($heading); ?></h2>
     <?php endif; ?>
     <?php if ($text !== '') : ?>
-        <p class="contentguard-empty__text"><?php echo esc_html($text); ?></p>
+        <p class="contentlatch-empty__text"><?php echo esc_html($text); ?></p>
     <?php endif; ?>
     <?php if ($note !== '') : ?>
-        <p class="contentguard-empty__text"><?php echo esc_html($note); ?></p>
+        <p class="contentlatch-empty__text"><?php echo esc_html($note); ?></p>
     <?php endif; ?>
     <?php if ($primary !== null || $secondary !== null) : ?>
-        <div class="contentguard-empty__actions">
+        <div class="contentlatch-empty__actions">
             <?php
             if ($primary !== null) {
                 $renderAction($primary, 'button button-primary');

@@ -1,23 +1,23 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Application\AdminNotice;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Admin\RulesController;
-use ContentGuard\Infrastructure\WordPress\HttpRequest;
-use ContentGuard\Infrastructure\WordPress\PostTypeRuleRepository;
-use ContentGuard\Infrastructure\WordPress\RuleDocumentCodec;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
-use ContentGuard\Tests\Support\RuleFactory;
-use ContentGuard\Tests\Support\WordPressLikeRulePostStore;
+use ContentLatch\Application\AdminNotice;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Admin\RulesController;
+use ContentLatch\Infrastructure\WordPress\HttpRequest;
+use ContentLatch\Infrastructure\WordPress\PostTypeRuleRepository;
+use ContentLatch\Infrastructure\WordPress\RuleDocumentCodec;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Tests\Support\RuleFactory;
+use ContentLatch\Tests\Support\WordPressLikeRulePostStore;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 3) . '/Support/wordpress-admin-functions.php';
@@ -35,7 +35,7 @@ final class RuleDocumentSlashPersistenceTest extends TestCase
 
         $this->assertTrue($created['ok']);
         $this->assertSame('Rule added.', $created['message']);
-        $this->assertSame('success', AdminNotice::queryArgs(true, $created['message'])['contentguard_notice']);
+        $this->assertSame('success', AdminNotice::queryArgs(true, $created['message'])['contentlatch_notice']);
 
         $meta = $store->meta[1][RulePostType::DOCUMENT_META_KEY];
         $this->assertTrue(RuleDocumentCodec::isDocument($meta));

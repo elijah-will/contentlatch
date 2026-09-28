@@ -3,7 +3,7 @@
 /**
  * One audit history entry.
  *
- * @package ContentGuard
+ * @package ContentLatch
  *
  * @var string $date
  * @var string $status
@@ -18,8 +18,8 @@
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\AdminView;
-use ContentGuard\Application\AuditPresentation;
+use ContentLatch\Admin\AdminView;
+use ContentLatch\Application\AuditPresentation;
 
 $date         = isset($date) && is_string($date) ? $date : '';
 $status       = isset($status) && is_string($status) ? $status : '';
@@ -31,55 +31,55 @@ $detail       = isset($detail) && is_string($detail) ? $detail : '';
 $actionLabel  = isset($actionLabel) && is_string($actionLabel) ? $actionLabel : '';
 $actionUrl    = isset($actionUrl) && is_string($actionUrl) ? $actionUrl : '';
 
-$classes = array('contentguard-history__item');
+$classes = array('contentlatch-history__item');
 if ($isCurrent) {
-    $classes[] = 'contentguard-history__item--current';
+    $classes[] = 'contentlatch-history__item--current';
 }
 if ($isViewing) {
-    $classes[] = 'contentguard-history__item--viewing';
+    $classes[] = 'contentlatch-history__item--viewing';
 }
 if ($status === 'failed') {
-    $classes[] = 'contentguard-history__item--failed';
+    $classes[] = 'contentlatch-history__item--failed';
 }
 if ($status === 'cancelled') {
-    $classes[] = 'contentguard-history__item--cancelled';
+    $classes[] = 'contentlatch-history__item--cancelled';
 }
 ?>
 <article
     class="<?php echo esc_attr(implode(' ', $classes)); ?>"
     <?php echo $isViewing ? ' aria-current="true"' : ''; ?>
 >
-    <div class="contentguard-history__body">
-        <header class="contentguard-history__header">
+    <div class="contentlatch-history__body">
+        <header class="contentlatch-history__header">
             <?php if ($date !== '') : ?>
-                <h3 class="contentguard-history__date"><?php echo esc_html($date); ?></h3>
+                <h3 class="contentlatch-history__date"><?php echo esc_html($date); ?></h3>
             <?php endif; ?>
-            <p class="contentguard-history__flags">
+            <p class="contentlatch-history__flags">
                 <?php if ($isCurrent) : ?>
-                    <span class="contentguard-history__current"><?php echo esc_html(AuditPresentation::currentAuditLabel()); ?></span>
+                    <span class="contentlatch-history__current"><?php echo esc_html(AuditPresentation::currentAuditLabel()); ?></span>
                 <?php endif; ?>
                 <?php AdminView::partial('status-pill', array('status' => $status)); ?>
                 <?php if ($isViewing) : ?>
-                    <span class="contentguard-history__viewing"><?php echo esc_html(AuditPresentation::viewingAuditLabel()); ?></span>
+                    <span class="contentlatch-history__viewing"><?php echo esc_html(AuditPresentation::viewingAuditLabel()); ?></span>
                 <?php endif; ?>
             </p>
         </header>
         <?php if ($checkedLabel !== '') : ?>
-            <p class="contentguard-history__stat"><?php echo esc_html($checkedLabel); ?></p>
+            <p class="contentlatch-history__stat"><?php echo esc_html($checkedLabel); ?></p>
         <?php endif; ?>
         <?php if ($outcome !== '') : ?>
-            <p class="contentguard-history__stat"><?php echo esc_html($outcome); ?></p>
+            <p class="contentlatch-history__stat"><?php echo esc_html($outcome); ?></p>
         <?php endif; ?>
         <?php if ($detail !== '') : ?>
-            <p class="contentguard-history__detail"><?php echo esc_html($detail); ?></p>
+            <p class="contentlatch-history__detail"><?php echo esc_html($detail); ?></p>
         <?php endif; ?>
     </div>
     <?php if ($actionUrl !== '' && $actionLabel !== '') : ?>
-        <p class="contentguard-history__action">
+        <p class="contentlatch-history__action">
             <a href="<?php echo esc_url($actionUrl); ?>"><?php echo esc_html($actionLabel); ?></a>
         </p>
     <?php elseif ($actionLabel !== '') : ?>
-        <p class="contentguard-history__action contentguard-history__action--static">
+        <p class="contentlatch-history__action contentlatch-history__action--static">
             <?php echo esc_html($actionLabel); ?>
         </p>
     <?php endif; ?>

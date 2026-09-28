@@ -1,32 +1,32 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Audit;
+namespace ContentLatch\Tests\Unit\Application\Audit;
 
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\FieldInstance;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Exception\AuditException;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\FieldInstance;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class ContentAuditServiceTest extends TestCase
@@ -636,12 +636,12 @@ final class ContentAuditServiceTest extends TestCase
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
             new AcfIntegration($catalog),
-            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$store): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$store): \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider {
                 $maps = $catalog->nestedResolutionMaps($postType, $fieldTypes);
 
-                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                return new \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider(
                     $postId,
-                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    new \ContentLatch\Infrastructure\ACF\AcfValueNormalizer(),
                     $fieldTypes,
                     static fn (string $key): mixed => $store[$postId][$key] ?? null,
                     $maps['paths'],
@@ -754,7 +754,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->store->saveRun($run->withStatus(AuditRunStatus::Complete, '2026-01-01 00:01:00'));
 
         $this->store->replaceFindingsForPosts(1, array(42, 99), array(
-            new \ContentGuard\Application\Audit\AuditFinding(
+            new \ContentLatch\Application\Audit\AuditFinding(
                 0,
                 1,
                 42,
@@ -767,7 +767,7 @@ final class ContentAuditServiceTest extends TestCase
                 'Description is required',
                 '2026-01-01 00:00:00'
             ),
-            new \ContentGuard\Application\Audit\AuditFinding(
+            new \ContentLatch\Application\Audit\AuditFinding(
                 0,
                 1,
                 42,
@@ -780,7 +780,7 @@ final class ContentAuditServiceTest extends TestCase
                 'Yield is required',
                 '2026-01-01 00:00:00'
             ),
-            new \ContentGuard\Application\Audit\AuditFinding(
+            new \ContentLatch\Application\Audit\AuditFinding(
                 0,
                 1,
                 99,
@@ -793,7 +793,7 @@ final class ContentAuditServiceTest extends TestCase
                 'Secret from another post',
                 '2026-01-01 00:00:00'
             ),
-            new \ContentGuard\Application\Audit\AuditFinding(
+            new \ContentLatch\Application\Audit\AuditFinding(
                 0,
                 1,
                 42,
@@ -833,7 +833,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfRepeaterFixtures::ingredientRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -841,7 +841,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT => array(
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT => array(
                     new FieldInstance('', array('display_row' => 1)),
                     new FieldInstance('Salt', array('display_row' => 2)),
                     new FieldInstance('', array('display_row' => 3)),
@@ -860,7 +860,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame($run->id, $findings[0]->runId);
         $this->assertSame(10, $findings[0]->postId);
         $this->assertSame(60, $findings[0]->ruleId);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $findings[0]->fieldKey);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::INGREDIENT, $findings[0]->fieldKey);
         $this->assertSame('v-required', $findings[0]->validationId);
         $this->assertSame('required', $findings[0]->code);
         $this->assertSame('Ingredient is required in 3 rows (rows 1, 3, 5).', $findings[0]->message);
@@ -878,7 +878,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -886,7 +886,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
                     new FieldInstance('', array(
                         'display_row' => 2,
                         'layout'      => 'hero',
@@ -909,7 +909,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame($run->id, $findings[0]->runId);
         $this->assertSame(10, $findings[0]->postId);
         $this->assertSame(80, $findings[0]->ruleId);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $findings[0]->fieldKey);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $findings[0]->fieldKey);
         $this->assertSame('v-required', $findings[0]->validationId);
         $this->assertSame('required', $findings[0]->code);
         $this->assertSame('Title is required in 2 Hero rows (rows 2, 5).', $findings[0]->message);
@@ -928,7 +928,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -936,7 +936,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(
                     new FieldInstance('', array(
                         'display_row' => 3,
                         'layout'      => 'hero',
@@ -967,7 +967,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -975,7 +975,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(),
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => array(),
             ),
         );
         $service = $this->service(
@@ -996,7 +996,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfRepeaterFixtures::productSizeRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1005,12 +1005,12 @@ final class ContentAuditServiceTest extends TestCase
 
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(
                     new FieldInstance('', array('display_row' => 2)),
                 ),
             ),
             20 => array(
-                \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(),
+                \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE => array(),
             ),
         );
         $service = $this->service(
@@ -1028,7 +1028,7 @@ final class ContentAuditServiceTest extends TestCase
         $byPost = array();
         foreach ($findings as $finding) {
             $byPost[$finding->postId] = $finding;
-            $this->assertSame(\ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $finding->fieldKey);
+            $this->assertSame(\ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE, $finding->fieldKey);
             $this->assertSame('v-required', $finding->validationId);
         }
         $this->assertSame('Product Size is required in row 2.', $byPost[10]->message);
@@ -1038,7 +1038,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertSame('no_rows', $byPost[20]->code);
         $this->assertSame(
             'Product Information → Item Size → Product Size',
-            AuditPresentation::fieldLabel($rule, \ContentGuard\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE)
+            AuditPresentation::fieldLabel($rule, \ContentLatch\Tests\Support\AcfRepeaterFixtures::PRODUCT_SIZE)
         );
     }
 
@@ -1051,7 +1051,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1059,7 +1059,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
                     $this->nestedCell('', 1, 1),
                     $this->nestedCell('', 1, 2),
                     $this->nestedCell('Grill', 2, 2),
@@ -1075,7 +1075,7 @@ final class ContentAuditServiceTest extends TestCase
 
         $findings = $this->store->findFindings($run->id);
         $this->assertCount(1, $findings);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $findings[0]->fieldKey);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME, $findings[0]->fieldKey);
         $this->assertSame('required', $findings[0]->code);
         $this->assertSame('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $findings[0]->message);
         $this->assertStringContainsString('1/1', $findings[0]->message);
@@ -1102,7 +1102,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1110,7 +1110,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
                     $this->nestedCell('', 1, 1),
                 ),
             ),
@@ -1135,7 +1135,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1143,7 +1143,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
                     $this->nestedCell('', 1, 1),
                     $this->nestedCell('', 1, 2),
                     $this->nestedCell('', 2, 1),
@@ -1157,7 +1157,7 @@ final class ContentAuditServiceTest extends TestCase
         $run = $service->processBatch($service->start(1)->id);
 
         $stored = $this->store->findFindings($run->id)[0];
-        $hydrated = new \ContentGuard\Application\Audit\AuditFinding(
+        $hydrated = new \ContentLatch\Application\Audit\AuditFinding(
             $stored->id,
             $stored->runId,
             $stored->postId,
@@ -1191,25 +1191,25 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
             ),
         ));
-        $catalog = \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
+        $catalog = \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::recipeCatalog();
         $types   = $catalog->fieldTypesForPostType('recipe');
         $maps    = $catalog->nestedResolutionMaps('recipe', $types);
         $payload = array(
             array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
-                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
-                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                    array(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                    array(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
                 ),
             ),
             array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
-                    array(\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS => array(
+                    array(\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => ''),
                 ),
             ),
         );
@@ -1223,13 +1223,13 @@ final class ContentAuditServiceTest extends TestCase
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
             new AcfIntegration($catalog),
-            static function () use ($types, $maps, $payload): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
-                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+            static function () use ($types, $maps, $payload): \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider {
+                return new \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider(
                     10,
-                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    new \ContentLatch\Infrastructure\ACF\AcfValueNormalizer(),
                     $types,
                     static function (string $key) use ($payload): mixed {
-                        return $key === \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
+                        return $key === \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS
                             ? $payload
                             : null;
                     },
@@ -1269,7 +1269,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1277,7 +1277,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
                     $this->nestedCell('', 1, 2),
                     $this->nestedCell('', 1, 3),
                     $this->nestedCell('', 2, 2),
@@ -1304,7 +1304,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-nested',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1324,7 +1324,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->values = array(
             10 => array(
                 'field_description' => '',
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(
                     $this->nestedCell('', 3, 3),
                     $this->nestedCell('', 3, 4),
                 ),
@@ -1344,11 +1344,11 @@ final class ContentAuditServiceTest extends TestCase
         }
         $this->assertSame(
             array(array(3, 3), array(3, 4)),
-            AuditRepeaterCoordinates::pairsFromFinding($byField[\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME])
+            AuditRepeaterCoordinates::pairsFromFinding($byField[\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME])
         );
         $this->assertSame(
             'Name is required in 2 rows (rows 3/3, 3/4).',
-            $byField[\ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME]->message
+            $byField[\ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME]->message
         );
         $this->assertSame(array(), AuditRepeaterCoordinates::pairsFromFinding($byField['field_description']));
         $this->assertSame('This field is required.', $byField['field_description']->message);
@@ -1363,7 +1363,7 @@ final class ContentAuditServiceTest extends TestCase
             'validations' => array(
                 RuleFactory::validation(array(
                     'id'         => 'v-required',
-                    'field'      => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
+                    'field'      => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::stepNameRef(),
                     'type'       => 'required',
                     'quantifier' => 'every',
                 )),
@@ -1371,10 +1371,10 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
             ),
             20 => array(
-                \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
+                \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEP_NAME => array(),
             ),
         );
         $service = $this->service(
@@ -1406,7 +1406,7 @@ final class ContentAuditServiceTest extends TestCase
                 RuleFactory::validation(array(
                     'id'    => 'v-clone',
                     'field' => RuleFactory::field(
-                        \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
+                        \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted(),
                         'title',
                         'Shared Content → Title'
                     ),
@@ -1426,7 +1426,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
         $this->values = array(
             10 => array(
-                \ContentGuard\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
+                \ContentLatch\Tests\Support\AcfCloneFixtures::cloneATitlePosted() => '',
                 'title' => '',
             ),
         );
@@ -1465,7 +1465,7 @@ final class ContentAuditServiceTest extends TestCase
         $this->assertNull($service->evaluateStoredPost(10, ''));
     }
 
-    private function drain(ContentAuditService $service): \ContentGuard\Application\Audit\AuditRun
+    private function drain(ContentAuditService $service): \ContentLatch\Application\Audit\AuditRun
     {
         $run = $service->start(1);
         do {
@@ -1476,7 +1476,7 @@ final class ContentAuditServiceTest extends TestCase
     }
 
     /**
-     * @param array<int, \ContentGuard\Domain\Rule> $rules
+     * @param array<int, \ContentLatch\Domain\Rule> $rules
      * @param array<int, array{id: int, postType: string, status: string}> $posts
      */
     private function service(
@@ -1567,13 +1567,13 @@ final class ContentAuditServiceTest extends TestCase
         return new FieldInstance($value, array(
             'repeater_rows' => array(
                 array(
-                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
+                    'repeater'    => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::DIRECTIONS,
                     'key'         => 'row-' . ($outer - 1),
                     'index'       => $outer - 1,
                     'display_row' => $outer,
                 ),
                 array(
-                    'repeater'    => \ContentGuard\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
+                    'repeater'    => \ContentLatch\Tests\Support\AcfNestedRepeaterFixtures::STEPS,
                     'key'         => 'row-' . ($inner - 1),
                     'index'       => $inner - 1,
                     'display_row' => $inner,
@@ -1582,7 +1582,7 @@ final class ContentAuditServiceTest extends TestCase
         ));
     }
 
-    private function signatureRule(): \ContentGuard\Domain\Rule
+    private function signatureRule(): \ContentLatch\Domain\Rule
     {
         return RuleFactory::rule(
             array(

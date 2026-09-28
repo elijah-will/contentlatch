@@ -2,28 +2,28 @@
 /**
  * $wpdb-backed audit persistence.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom audit tables have no Core API equivalent.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Live audit run/findings state must not be served from object cache.
-// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentGuard table constants; values use $wpdb->prepare with %i/%d/%s.
+// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Identifiers are $wpdb->prefix + ContentLatch table constants; values use $wpdb->prepare with %i/%d/%s.
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditFindingQuery;
-use ContentGuard\Application\Audit\AuditRepeaterCoordinates;
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\Audit\AuditStoreInterface;
-use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditFindingQuery;
+use ContentLatch\Application\Audit\AuditRepeaterCoordinates;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\Audit\AuditStoreInterface;
+use ContentLatch\Application\Exception\AuditException;
+use ContentLatch\Domain\RuleSeverity;
 
 final class WpAuditStore implements AuditStoreInterface
 {
@@ -542,6 +542,6 @@ WHERE id = %d';
             ? (string) $wpdb->last_error
             : '';
 
-        error_log('ContentGuard audit persistence failed: ' . $message . ($detail !== '' ? ' ' . $detail : ''));
+        error_log('ContentLatch audit persistence failed: ' . $message . ($detail !== '' ? ' ' . $detail : ''));
     }
 }

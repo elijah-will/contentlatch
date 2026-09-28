@@ -2,12 +2,12 @@
 /**
  * Shared editor notice chrome for warning and blocking issues.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
@@ -18,7 +18,7 @@ final class EditorNoticePresentation
 
     public static function title(string $severity): string
     {
-        return __('ContentGuard', 'contentguard') . ' · ' . self::severityLabel($severity);
+        return __('ContentLatch', 'contentlatch') . ' · ' . self::severityLabel($severity);
     }
 
     public static function countLabel(string $severity, int $count): string
@@ -30,14 +30,14 @@ final class EditorNoticePresentation
         if ($severity === self::SEVERITY_WARNING) {
             return sprintf(
                 /* translators: %d: Number of warnings. */
-                __('%d warnings', 'contentguard'),
+                __('%d warnings', 'contentlatch'),
                 $count
             );
         }
 
         return sprintf(
             /* translators: %d: Number of blocking issues. */
-            __('%d blocking issues', 'contentguard'),
+            __('%d blocking issues', 'contentlatch'),
             $count
         );
     }
@@ -96,7 +96,7 @@ final class EditorNoticePresentation
 
     /**
      * Blocking copy for surfaces that can only deliver one text node
-     * (Classic ACF global errors). Always includes ContentGuard · Blocking
+     * (Classic ACF global errors). Always includes ContentLatch · Blocking
      * so a single Core/condition-only issue matches Gutenberg identity.
      *
      * @param list<string> $itemText
@@ -146,7 +146,7 @@ final class EditorNoticePresentation
             return $message;
         }
 
-        $required          = __('This field is required.', 'contentguard');
+        $required          = __('This field is required.', 'contentlatch');
         $isDefaultRequired = $code === 'required'
             && ($message === '' || $message === $required || $message === 'This field is required.');
         $isLabelRequired   = $label !== '' && $message === $label . ' is required.';
@@ -161,23 +161,23 @@ final class EditorNoticePresentation
 
         $line = $message !== '' ? $message : $label;
 
-        return $line !== '' ? $line : __('ContentGuard validation failed.', 'contentguard');
+        return $line !== '' ? $line : __('ContentLatch validation failed.', 'contentlatch');
     }
 
     private static function severityLabel(string $severity): string
     {
         if ($severity === self::SEVERITY_WARNING) {
-            return __('Warning', 'contentguard');
+            return __('Warning', 'contentlatch');
         }
 
-        return __('Blocking', 'contentguard');
+        return __('Blocking', 'contentlatch');
     }
 
     private static function rootClass(string $severity): string
     {
         return $severity === self::SEVERITY_WARNING
-            ? 'contentguard-editor-warnings'
-            : 'contentguard-audit-blockers';
+            ? 'contentlatch-editor-warnings'
+            : 'contentlatch-audit-blockers';
     }
 
     private static function escapeHtml(string $value): string
@@ -191,7 +191,7 @@ final class EditorNoticePresentation
 
     /**
      * Allowlist for already-escaped notice markup. wp_kses_post() strips
-     * <button> and data-contentguard-* attributes, which removes click-to-focus.
+     * <button> and data-contentlatch-* attributes, which removes click-to-focus.
      *
      * @return array<string, array<string, bool>>
      */
@@ -204,11 +204,11 @@ final class EditorNoticePresentation
             'role'                            => true,
             'aria-hidden'                     => true,
             'aria-label'                      => true,
-            'data-contentguard-field'         => true,
-            'data-contentguard-core'          => true,
-            'data-contentguard-layout'        => true,
-            'data-contentguard-display-row'   => true,
-            'data-contentguard-repeater-path' => true,
+            'data-contentlatch-field'         => true,
+            'data-contentlatch-core'          => true,
+            'data-contentlatch-layout'        => true,
+            'data-contentlatch-display-row'   => true,
+            'data-contentlatch-repeater-path' => true,
         );
 
         return array(

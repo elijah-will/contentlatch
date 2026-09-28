@@ -2,18 +2,18 @@
 /**
  * CPT store that mimics WordPress post/meta slashing and type checks.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Exception\RulePersistenceException;
-use ContentGuard\Infrastructure\WordPress\RuleDocumentCodec;
-use ContentGuard\Infrastructure\WordPress\RulePostRecord;
-use ContentGuard\Infrastructure\WordPress\RulePostStoreInterface;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Application\Exception\RulePersistenceException;
+use ContentLatch\Infrastructure\WordPress\RuleDocumentCodec;
+use ContentLatch\Infrastructure\WordPress\RulePostRecord;
+use ContentLatch\Infrastructure\WordPress\RulePostStoreInterface;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
 
 final class WordPressLikeRulePostStore implements RulePostStoreInterface
 {

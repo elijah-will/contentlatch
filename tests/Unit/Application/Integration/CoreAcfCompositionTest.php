@@ -2,39 +2,39 @@
 /**
  * Phase 12A: Core + ACF catalog/provider composition without RuleEngine changes.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application\Integration;
+namespace ContentLatch\Tests\Unit\Application\Integration;
 
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\FieldInstance;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
-use ContentGuard\Tests\Support\AcfFlexibleFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\FieldInstance;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Tests\Support\AcfFlexibleFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class CoreAcfCompositionTest extends TestCase

@@ -1,26 +1,26 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\ACF;
+namespace ContentLatch\Tests\Unit\Infrastructure\ACF;
 
-use ContentGuard\Application\Integration\CompositeFieldCatalog;
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleDocumentValidator;
-use ContentGuard\Dependencies;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\ACF\AcfStoredValueProvider;
-use ContentGuard\Infrastructure\ACF\AcfValueNormalizer;
-use ContentGuard\Tests\Support\AcfCloneFixtures;
-use ContentGuard\Tests\Support\AcfFlexibleFixtures;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Application\Integration\CompositeFieldCatalog;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleDocumentValidator;
+use ContentLatch\Dependencies;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\ACF\AcfStoredValueProvider;
+use ContentLatch\Infrastructure\ACF\AcfValueNormalizer;
+use ContentLatch\Tests\Support\AcfCloneFixtures;
+use ContentLatch\Tests\Support\AcfFlexibleFixtures;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class AcfIntegrationTest extends TestCase

@@ -11,15 +11,15 @@
  *     └── Directions (Repeater)  → Section Title (text)
  *                                → Section Directions (Repeater) → Direction
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 
 final class AcfHollandHouseRecipeFixtures
 {

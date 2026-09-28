@@ -2,17 +2,17 @@
 /**
  * Production gettext must stay statically discoverable.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Application\DomainMessages;
-use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Application\DomainMessages;
+use ContentLatch\Application\EditorNoticePresentation;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
 use PHPUnit\Framework\TestCase;
 
 final class GettextLiteralsTest extends TestCase
@@ -21,7 +21,7 @@ final class GettextLiteralsTest extends TestCase
     {
         $failures = $this->dynamicGettextCalls($this->pluginRoot() . '/includes');
         $failures = array_merge($failures, $this->dynamicGettextCalls($this->pluginRoot() . '/admin'));
-        $main     = $this->pluginRoot() . '/contentguard.php';
+        $main     = $this->pluginRoot() . '/contentlatch.php';
         if (is_file($main)) {
             $failures = array_merge($failures, $this->dynamicCallsInFile($main));
         }
@@ -65,11 +65,11 @@ final class GettextLiteralsTest extends TestCase
     public function testEditorNoticeCopyIsUnchanged(): void
     {
         $this->assertSame(
-            'ContentGuard · Warning',
+            'ContentLatch · Warning',
             EditorNoticePresentation::title(EditorNoticePresentation::SEVERITY_WARNING)
         );
         $this->assertSame(
-            'ContentGuard · Blocking',
+            'ContentLatch · Blocking',
             EditorNoticePresentation::title(EditorNoticePresentation::SEVERITY_BLOCKING)
         );
         $this->assertSame('', EditorNoticePresentation::countLabel(EditorNoticePresentation::SEVERITY_WARNING, 1));
@@ -142,7 +142,7 @@ final class GettextLiteralsTest extends TestCase
         $this->assertStringNotContainsString('Text::translate', $script);
         $this->assertStringContainsString('make-pot', $script);
 
-        $pot = (string) file_get_contents($this->pluginRoot() . '/languages/contentguard.pot');
+        $pot = (string) file_get_contents($this->pluginRoot() . '/languages/contentlatch.pot');
         foreach (
             array(
                 'This field is required.',
@@ -248,7 +248,7 @@ final class GettextLiteralsTest extends TestCase
 
             $domain = $args[count($args) - 1] ?? array();
             if (!$this->isDomainLiteral($domain)) {
-                $failures[] = $path . ':' . $line . ' ' . $name . '() text domain is not the literal contentguard';
+                $failures[] = $path . ':' . $line . ' ' . $name . '() text domain is not the literal contentlatch';
             }
         }
 
@@ -362,7 +362,7 @@ final class GettextLiteralsTest extends TestCase
                 continue;
             }
 
-            return in_array($token[1], array("'contentguard'", '"contentguard"'), true);
+            return in_array($token[1], array("'contentlatch'", '"contentlatch"'), true);
         }
 
         return false;

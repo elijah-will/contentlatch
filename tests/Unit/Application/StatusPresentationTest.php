@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\StatusPresentation;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\StatusPresentation;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
 use PHPUnit\Framework\TestCase;
 
 final class StatusPresentationTest extends TestCase

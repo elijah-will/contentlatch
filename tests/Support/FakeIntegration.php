@@ -3,18 +3,18 @@
  * Test-only integration used to prove multi-adapter catalog/provider composition.
  * Never registered by Plugin.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Support;
+namespace ContentLatch\Tests\Support;
 
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\Integration\Integration;
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\FieldRef;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\Integration\Integration;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\FieldRef;
 
 final class FakeIntegration implements FieldCatalog
 {

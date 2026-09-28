@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\AuditPresentation;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\AuditPresentation;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class AuditPresentationTest extends TestCase

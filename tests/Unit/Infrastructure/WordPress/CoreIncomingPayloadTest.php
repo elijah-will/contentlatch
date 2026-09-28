@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Infrastructure\WordPress;
+namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
-use ContentGuard\Infrastructure\WordPress\CoreIncomingPayload;
+use ContentLatch\Infrastructure\WordPress\CoreIncomingPayload;
 use PHPUnit\Framework\TestCase;
 
 final class CoreIncomingPayloadTest extends TestCase

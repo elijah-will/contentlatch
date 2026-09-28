@@ -5,24 +5,24 @@
  * WordPress admin.php treats `post_type` as reserved: if it names a real CPT,
  * `$typenow` is set and the plugin page is looked up as
  * `admin.php?post_type={type}` instead of `admin.php`. That makes
- * `get_plugin_page_hook('contentguard-audit', ...)` miss and WordPress dies
- * with "Cannot load contentguard-audit."
+ * `get_plugin_page_hook('contentlatch-audit', ...)` miss and WordPress dies
+ * with "Cannot load contentlatch-audit."
  *
  * This remapper must run on `plugins_loaded`, before admin.php reads
  * `$_REQUEST['post_type']`.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
 final class AuditAdminRequest
 {
-    public const TYPE_QUERY_ARG = 'cg_type';
+    public const TYPE_QUERY_ARG = 'cl_type';
 
     public static function register(): void
     {
@@ -78,7 +78,7 @@ final class AuditAdminRequest
     }
 
     /**
-     * WordPress dies with "Cannot load contentguard-audit." when these stay
+     * WordPress dies with "Cannot load contentlatch-audit." when these stay
      * on the Audit admin request for a registered post type.
      *
      * @param array<string, mixed> $request

@@ -5,12 +5,12 @@
  * Distinguishes an actual pass from content that was never evaluated
  * (no applicable rules).
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 enum ContentStatus: string
 {

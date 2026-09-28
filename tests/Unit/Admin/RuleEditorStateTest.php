@@ -1,16 +1,16 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\RuleEditorState;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\RuleEditorState;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEditorStateTest extends TestCase
@@ -141,7 +141,7 @@ final class RuleEditorStateTest extends TestCase
     {
         $snapshot = RuleEditorState::snapshot(array(
             '_wpnonce'   => 'secret',
-            'action'     => 'contentguard_save_rule',
+            'action'     => 'contentlatch_save_rule',
             'name'       => 'Kept',
             'post_type'  => 'product',
             'extra'      => 'drop-me',

@@ -6,14 +6,14 @@
  * that do not collide with another integration. Catalog entries may include
  * `integration` as composition metadata; it is not persisted on FieldRef.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
-use ContentGuard\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Exception\InvalidRuleException;
 
 final class FieldRef
 {

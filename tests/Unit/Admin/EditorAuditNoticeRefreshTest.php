@@ -1,29 +1,29 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Admin;
+namespace ContentLatch\Tests\Unit\Admin;
 
-use ContentGuard\Admin\EditorAuditNotice;
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\Audit\AuditRunStatus;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\EditorAuditIssues;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Tests\Support\InMemoryAuditLock;
-use ContentGuard\Tests\Support\InMemoryAuditPostScanner;
-use ContentGuard\Tests\Support\InMemoryAuditStore;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Admin\EditorAuditNotice;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditRunStatus;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\EditorAuditIssues;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Tests\Support\InMemoryAuditLock;
+use ContentLatch\Tests\Support\InMemoryAuditPostScanner;
+use ContentLatch\Tests\Support\InMemoryAuditStore;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class EditorAuditNoticeRefreshTest extends TestCase
@@ -70,7 +70,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
         $this->assertSame(array(), $resolved['issues']);
         $this->assertSame('', $resolved['html']);
         $this->assertSame('', $resolved['text']);
-        $this->assertSame('', \ContentGuard\Application\EditorAuditIssues::classicNoticeHtml($resolved['issues']));
+        $this->assertSame('', \ContentLatch\Application\EditorAuditIssues::classicNoticeHtml($resolved['issues']));
     }
 
     public function testUnresolvedIssueRemainsWhenTheStoredValueStillFails(): void
@@ -118,18 +118,18 @@ final class EditorAuditNoticeRefreshTest extends TestCase
     {
         $values = array(
             42 => array(
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES => array(
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES => array(
                     array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                     array(
                         'acf_fc_layout' => 'cta',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => 'Shop',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::CTA_TITLE => 'Shop',
                     ),
                     array(
                         'acf_fc_layout' => 'hero',
-                        \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
+                        \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE => '',
                     ),
                 ),
             ),
@@ -140,23 +140,23 @@ final class EditorAuditNoticeRefreshTest extends TestCase
 
         $before = $notice->issuesForRequest(42, $request);
         $this->assertCount(1, $before);
-        $this->assertSame(\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $before[0]['fieldKey']);
+        $this->assertSame(\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE, $before[0]['fieldKey']);
         $this->assertSame('hero', $before[0]['layout']);
         $this->assertSame(array(1, 3), $before[0]['affectedRows']);
-        $this->assertStringContainsString('data-contentguard-display-row="1"', EditorAuditIssues::issueHtml($before[0]));
-        $this->assertStringContainsString('data-contentguard-display-row="3"', EditorAuditIssues::issueHtml($before[0]));
+        $this->assertStringContainsString('data-contentlatch-display-row="1"', EditorAuditIssues::issueHtml($before[0]));
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', EditorAuditIssues::issueHtml($before[0]));
 
-        $values[42][\ContentGuard\Tests\Support\AcfFlexibleFixtures::MODULES][0][\ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE] = 'Welcome';
+        $values[42][\ContentLatch\Tests\Support\AcfFlexibleFixtures::MODULES][0][\ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE] = 'Welcome';
 
         $after = $notice->issuesForRequest(42, $request);
         $this->assertCount(1, $after);
         $this->assertSame(array(3), $after[0]['affectedRows']);
         $this->assertSame('hero', $after[0]['layout']);
         $html = EditorAuditIssues::issueHtml($after[0]);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
-        $this->assertStringNotContainsString('data-contentguard-display-row="1"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', $html);
+        $this->assertStringNotContainsString('data-contentlatch-display-row="1"', $html);
         $this->assertStringNotContainsString('>Row 1</button>', $html);
-        $this->assertStringNotContainsString('contentguard_row', $html);
+        $this->assertStringNotContainsString('contentlatch_row', $html);
     }
 
     public function testSuccessfulSaveRedirectKeepsTheAuditRun(): void
@@ -164,7 +164,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
         $values = array();
         $notice = $this->notice($values);
         $previous = $_GET;
-        $_GET = array('contentguard_run' => '7');
+        $_GET = array('contentlatch_run' => '7');
 
         try {
             $location = $notice->preserveAuditRunOnRedirect(
@@ -174,7 +174,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
             $_GET = $previous;
         }
 
-        $this->assertStringContainsString('contentguard_run=7', $location);
+        $this->assertStringContainsString('contentlatch_run=7', $location);
         $this->assertStringContainsString('post.php?post=42', $location);
     }
 
@@ -190,16 +190,16 @@ final class EditorAuditNoticeRefreshTest extends TestCase
         $_POST = array();
 
         try {
-            $_SERVER['HTTP_REFERER'] = 'http://evil.test/wp-admin/post.php?post=9&contentguard_run=9';
+            $_SERVER['HTTP_REFERER'] = 'http://evil.test/wp-admin/post.php?post=9&contentlatch_run=9';
             $kept = $notice->preserveAuditRunOnRedirect($location);
-            $this->assertStringContainsString('contentguard_run=9', $kept);
+            $this->assertStringContainsString('contentlatch_run=9', $kept);
             $this->assertStringStartsWith('http://example.test/', $kept);
             $this->assertStringNotContainsString('evil.test', $kept);
 
-            $_SERVER['HTTP_REFERER'] = 'javascript:alert(document.domain)//?contentguard_run=4';
+            $_SERVER['HTTP_REFERER'] = 'javascript:alert(document.domain)//?contentlatch_run=4';
             $this->assertSame($location, $notice->preserveAuditRunOnRedirect($location));
 
-            $_SERVER['HTTP_REFERER'] = 'http://example.test/wp-admin/post.php?post=42&contentguard_run=9abc';
+            $_SERVER['HTTP_REFERER'] = 'http://example.test/wp-admin/post.php?post=42&contentlatch_run=9abc';
             $this->assertSame($location, $notice->preserveAuditRunOnRedirect($location));
         } finally {
             $_GET = $previousGet;
@@ -287,13 +287,13 @@ final class EditorAuditNoticeRefreshTest extends TestCase
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
             new AcfIntegration($catalog),
-            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$values): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$values): \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider {
                 unset($fieldTypes);
                 $maps = $catalog->nestedResolutionMaps($postType, $catalog->fieldTypesForPostType($postType));
 
-                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                return new \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider(
                     $postId,
-                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    new \ContentLatch\Infrastructure\ACF\AcfValueNormalizer(),
                     $catalog->fieldTypesForPostType($postType),
                     static fn (string $key): mixed => $values[$postId][$key] ?? null,
                     $maps['paths'],
@@ -336,7 +336,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
                 'validations' => array(
                     RuleFactory::validation(array(
                         'id'         => 'v-hero-title',
-                        'field'      => \ContentGuard\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
+                        'field'      => \ContentLatch\Tests\Support\AcfFlexibleFixtures::heroTitleRef(),
                         'type'       => 'required',
                         'quantifier' => 'every',
                     )),
@@ -346,7 +346,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
 
         $store      = new InMemoryAuditStore();
         $repository = new InMemoryRuleRepository($rules);
-        $catalog    = \ContentGuard\Tests\Support\AcfFlexibleFixtures::pageCatalog();
+        $catalog    = \ContentLatch\Tests\Support\AcfFlexibleFixtures::pageCatalog();
         $service    = new ContentAuditService(
             $store,
             new InMemoryAuditPostScanner(array()),
@@ -354,13 +354,13 @@ final class EditorAuditNoticeRefreshTest extends TestCase
             $repository,
             new ContentEvaluator($repository, RuleEngine::v1()),
             new AcfIntegration($catalog),
-            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$values): \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider {
+            static function (int $postId, string $postType, array $fieldTypes) use ($catalog, &$values): \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider {
                 unset($fieldTypes);
                 $maps = $catalog->nestedResolutionMaps($postType, $catalog->fieldTypesForPostType($postType));
 
-                return new \ContentGuard\Infrastructure\ACF\AcfStoredValueProvider(
+                return new \ContentLatch\Infrastructure\ACF\AcfStoredValueProvider(
                     $postId,
-                    new \ContentGuard\Infrastructure\ACF\AcfValueNormalizer(),
+                    new \ContentLatch\Infrastructure\ACF\AcfValueNormalizer(),
                     $catalog->fieldTypesForPostType($postType),
                     static fn (string $key): mixed => $values[$postId][$key] ?? null,
                     $maps['paths'],
@@ -385,7 +385,7 @@ final class EditorAuditNoticeRefreshTest extends TestCase
                 42,
                 'page',
                 80,
-                \ContentGuard\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
+                \ContentLatch\Tests\Support\AcfFlexibleFixtures::HERO_TITLE,
                 'v-hero-title',
                 'required',
                 RuleSeverity::Fail,

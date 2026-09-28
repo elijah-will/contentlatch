@@ -1,12 +1,12 @@
 (function () {
-  var config = window.contentguardEditorWarnings;
+  var config = window.contentlatchEditorWarnings;
   if (!config || !config.postId) {
     return;
   }
 
   var i18nApi = (window.wp && wp.i18n) ? wp.i18n : null;
   function __(text) {
-    return i18nApi ? i18nApi.__(text, "contentguard") : text;
+    return i18nApi ? i18nApi.__(text, "contentlatch") : text;
   }
   function sprintf(fmt) {
     if (i18nApi && typeof i18nApi.sprintf === "function") {
@@ -20,7 +20,7 @@
     });
   }
 
-  var NOTICE_ID = "contentguard-editor-warnings";
+  var NOTICE_ID = "contentlatch-editor-warnings";
 
   function editorSelect() {
     return window.wp && wp.data && wp.data.select ? wp.data.select("core/editor") : null;
@@ -39,7 +39,7 @@
   }
 
   function gutenbergCoreIds() {
-    var core = window.contentguardEditorField && window.contentguardEditorField.core;
+    var core = window.contentlatchEditorField && window.contentlatchEditorField.core;
     if (core && Array.isArray(core.gutenberg)) {
       return core.gutenberg;
     }
@@ -52,8 +52,8 @@
   }
 
   function navigate(fieldKey, layout, displayRow, repeaterPath) {
-    if (typeof window.contentguardNavigateToField === "function") {
-      window.contentguardNavigateToField(fieldKey, layout, displayRow, repeaterPath);
+    if (typeof window.contentlatchNavigateToField === "function") {
+      window.contentlatchNavigateToField(fieldKey, layout, displayRow, repeaterPath);
     }
   }
 
@@ -117,18 +117,18 @@
 
   function fieldTriggerAttributes(fieldKey, layout, displayRow, repeaterPath, pathBlocked) {
     if (isSupportedCore(fieldKey) && !isSafeFieldKey(fieldKey)) {
-      return 'data-contentguard-core="' + escapeHtml(fieldKey) + '"';
+      return 'data-contentlatch-core="' + escapeHtml(fieldKey) + '"';
     }
 
-    var attrs = 'data-contentguard-field="' + escapeHtml(fieldKey) + '"';
+    var attrs = 'data-contentlatch-field="' + escapeHtml(fieldKey) + '"';
     if (safeLayout(layout)) {
-      attrs += ' data-contentguard-layout="' + escapeHtml(layout) + '"';
+      attrs += ' data-contentlatch-layout="' + escapeHtml(layout) + '"';
     }
     if (displayRow > 0 && !(Array.isArray(repeaterPath) && repeaterPath.length) && !pathBlocked) {
-      attrs += ' data-contentguard-display-row="' + displayRow + '"';
+      attrs += ' data-contentlatch-display-row="' + displayRow + '"';
     }
     if (pathBlocked) {
-      attrs += ' data-contentguard-repeater-path="invalid"';
+      attrs += ' data-contentlatch-repeater-path="invalid"';
     } else if (Array.isArray(repeaterPath) && repeaterPath.length) {
       var encoded = [];
       for (var i = 0; i < repeaterPath.length; i++) {
@@ -145,7 +145,7 @@
         encoded.push('{"repeater":"' + step.repeater + '","display_row":' + row + '}');
       }
       if (encoded.length) {
-        attrs += ' data-contentguard-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
+        attrs += ' data-contentlatch-repeater-path="' + escapeHtml('[' + encoded.join(',') + ']') + '"';
       }
     }
     return attrs;
@@ -159,7 +159,7 @@
     var buttons = rows.map(function (row) {
       var aria = sprintf(__("Go to %1$s, row %2$d"), label, row);
       return (
-        '<button type="button" class="contentguard-warning-field contentguard-warning-row" ' +
+        '<button type="button" class="contentlatch-warning-field contentlatch-warning-row" ' +
         fieldTriggerAttributes(fieldKey, layout, row) +
         ' aria-label="' +
         escapeHtml(aria) +
@@ -169,7 +169,7 @@
       );
     });
 
-    return ' <span class="contentguard-warning-rows">' + buttons.join('<span aria-hidden="true"> · </span>') + "</span>";
+    return ' <span class="contentlatch-warning-rows">' + buttons.join('<span aria-hidden="true"> · </span>') + "</span>";
   }
 
   function itemHtml(warning) {
@@ -186,7 +186,7 @@
       : ((config.i18n && config.i18n.goToField) || __("Go to field: %s")).replace("%s", label);
 
     return (
-      '<button type="button" class="contentguard-warning-field" ' +
+      '<button type="button" class="contentlatch-warning-field" ' +
       fieldTriggerAttributes(fieldKey, layout, primaryRow, repeaterPath, pathBlocked) +
       ' aria-label="' +
       escapeHtml(aria) +
@@ -199,7 +199,7 @@
   }
 
   function noticeTitle() {
-    return __("ContentGuard") + " · " + ((config.i18n && config.i18n.warning) || __("Warning"));
+    return __("ContentLatch") + " · " + ((config.i18n && config.i18n.warning) || __("Warning"));
   }
 
   function noticeCount(count) {
@@ -235,13 +235,13 @@
       return { html: "", text: "" };
     }
 
-    var html = '<div class="contentguard-editor-warnings">';
-    html += '<p class="contentguard-editor-warnings__title">' + escapeHtml(noticeTitle()) + "</p>";
+    var html = '<div class="contentlatch-editor-warnings">';
+    html += '<p class="contentlatch-editor-warnings__title">' + escapeHtml(noticeTitle()) + "</p>";
     var count = noticeCount(items.length);
     if (count !== "") {
-      html += '<p class="contentguard-editor-warnings__count">' + escapeHtml(count) + "</p>";
+      html += '<p class="contentlatch-editor-warnings__count">' + escapeHtml(count) + "</p>";
     }
-    html += '<ul class="contentguard-editor-warnings__list">';
+    html += '<ul class="contentlatch-editor-warnings__list">';
     items.forEach(function (item) {
       html += "<li>" + item + "</li>";
     });
@@ -312,13 +312,13 @@
 
   document.addEventListener("click", function (event) {
     var trigger = event.target && event.target.closest
-      ? event.target.closest(".contentguard-warning-field[data-contentguard-field]")
+      ? event.target.closest(".contentlatch-warning-field[data-contentlatch-field]")
       : null;
     if (!trigger) {
       return;
     }
 
-    var fieldKey = trigger.getAttribute("data-contentguard-field") || "";
+    var fieldKey = trigger.getAttribute("data-contentlatch-field") || "";
     if (!isSafeFieldKey(fieldKey)) {
       return;
     }
@@ -328,9 +328,9 @@
     }
     navigate(
       fieldKey,
-      trigger.getAttribute("data-contentguard-layout") || "",
-      trigger.getAttribute("data-contentguard-display-row") || 0,
-      trigger.getAttribute("data-contentguard-repeater-path")
+      trigger.getAttribute("data-contentlatch-layout") || "",
+      trigger.getAttribute("data-contentlatch-display-row") || 0,
+      trigger.getAttribute("data-contentlatch-repeater-path")
     );
   });
 

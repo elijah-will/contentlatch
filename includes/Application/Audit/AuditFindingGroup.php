@@ -5,17 +5,17 @@
  * Does not change finding identity or persistence. Multiple validation_id
  * rows remain separate; this only combines them for display.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\StatusPresentation;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Application\StatusPresentation;
+use ContentLatch\Domain\RuleSeverity;
 
 final class AuditFindingGroup
 {

@@ -1,19 +1,19 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\Audit\AuditFinding;
-use ContentGuard\Application\EditorAuditIssues;
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\EvaluationStatus;
-use ContentGuard\Domain\RuleSeverity;
+use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\EditorAuditIssues;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\EvaluationStatus;
+use ContentLatch\Domain\RuleSeverity;
 use PHPUnit\Framework\TestCase;
 
 final class EditorAuditIssuesTest extends TestCase
@@ -34,14 +34,14 @@ final class EditorAuditIssuesTest extends TestCase
 
         $html = EditorAuditIssues::classicNoticeHtml($issues);
         $this->assertStringContainsString('notice notice-error', $html);
-        $this->assertStringContainsString('ContentGuard · Blocking', $html);
+        $this->assertStringContainsString('ContentLatch · Blocking', $html);
         $this->assertStringContainsString('Recipe Description', $html);
         $this->assertStringContainsString('Description is required', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
-        $this->assertStringNotContainsString('contentguard-audit-blockers__count', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $html);
+        $this->assertStringNotContainsString('contentlatch-audit-blockers__count', $html);
         $this->assertStringNotContainsString('[object Object]', $html);
         $this->assertSame(
-            "ContentGuard · Blocking\nRecipe Description — Description is required",
+            "ContentLatch · Blocking\nRecipe Description — Description is required",
             EditorAuditIssues::noticeText($issues)
         );
     }
@@ -88,10 +88,10 @@ final class EditorAuditIssuesTest extends TestCase
         );
 
         $html = EditorAuditIssues::noticeHtml($issues);
-        $this->assertStringContainsString('ContentGuard · Blocking', $html);
+        $this->assertStringContainsString('ContentLatch · Blocking', $html);
         $this->assertStringContainsString('3 blocking issues', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_yield"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_yield"', $html);
         $this->assertStringContainsString('Go to field: Recipe Description', $html);
         $this->assertStringContainsString('Go to field: Yield', $html);
         $this->assertStringNotContainsString('[object Object]', $html);
@@ -127,7 +127,7 @@ final class EditorAuditIssuesTest extends TestCase
 
         $html = EditorAuditIssues::noticeHtml($issues);
         $this->assertStringNotContainsString('<button', $html);
-        $this->assertStringNotContainsString('data-contentguard-field', $html);
+        $this->assertStringNotContainsString('data-contentlatch-field', $html);
         $this->assertStringContainsString('Description is required', $html);
     }
 
@@ -196,7 +196,7 @@ final class EditorAuditIssuesTest extends TestCase
     {
         $evaluation = new ContentEvaluation(
             42,
-            \ContentGuard\Domain\ContentStatus::Failed,
+            \ContentLatch\Domain\ContentStatus::Failed,
             array(
                 new EvaluationResult(
                     EvaluationStatus::Failed,
@@ -264,7 +264,7 @@ final class EditorAuditIssuesTest extends TestCase
     {
         $evaluation = new ContentEvaluation(
             42,
-            \ContentGuard\Domain\ContentStatus::Failed,
+            \ContentLatch\Domain\ContentStatus::Failed,
             array(
                 $this->flexFailure(1, 'This field is required.'),
                 $this->flexFailure(3, 'This field is required.'),
@@ -294,14 +294,14 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertSame(array(3), $issues[1]['affectedRows']);
 
         $html = EditorAuditIssues::noticeHtml($issues);
-        $this->assertStringContainsString('data-contentguard-layout="hero"', $html);
-        $this->assertStringContainsString('data-contentguard-display-row="1"', $html);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('data-contentlatch-layout="hero"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="1"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', $html);
         $this->assertStringContainsString('Go to Modules → Hero → Title, row 1', $html);
         $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
         $this->assertStringContainsString('>Row 1</button>', $html);
         $this->assertStringContainsString('>Row 3</button>', $html);
-        $this->assertStringNotContainsString('contentguard_row', $html);
+        $this->assertStringNotContainsString('contentlatch_row', $html);
     }
 
     public function testSingleFlexibleRowNavigatesDirectlyWithoutRowButtons(): void
@@ -309,7 +309,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array($this->flexFailure(3, 'This field is required.'))
             ),
             42
@@ -317,10 +317,10 @@ final class EditorAuditIssuesTest extends TestCase
 
         $this->assertSame(array(3), $issues[0]['affectedRows']);
         $html = EditorAuditIssues::issueHtml($issues[0]);
-        $this->assertStringContainsString('data-contentguard-display-row="3"', $html);
+        $this->assertStringContainsString('data-contentlatch-display-row="3"', $html);
         $this->assertStringContainsString('Go to Modules → Hero → Title, row 3', $html);
         $this->assertStringNotContainsString('>Row 3</button>', $html);
-        $this->assertStringNotContainsString('contentguard-warning-rows', $html);
+        $this->assertStringNotContainsString('contentlatch-warning-rows', $html);
     }
 
     public function testPersistedFlexibleSnapshotExposesRowsAndRepeaterSnapshotsDoNot(): void
@@ -346,7 +346,7 @@ final class EditorAuditIssuesTest extends TestCase
         );
         $this->assertArrayNotHasKey('affectedRows', $repeater[0]);
         $this->assertArrayNotHasKey('layout', $repeater[0]);
-        $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($repeater[0]));
+        $this->assertStringNotContainsString('contentlatch-warning-rows', EditorAuditIssues::issueHtml($repeater[0]));
 
         $nested = EditorAuditIssues::fromFindings(
             array($this->finding(array(
@@ -358,7 +358,7 @@ final class EditorAuditIssuesTest extends TestCase
         );
         $this->assertArrayNotHasKey('affectedRows', $nested[0]);
         $this->assertArrayNotHasKey('layout', $nested[0]);
-        $this->assertStringNotContainsString('contentguard-warning-rows', EditorAuditIssues::issueHtml($nested[0]));
+        $this->assertStringNotContainsString('contentlatch-warning-rows', EditorAuditIssues::issueHtml($nested[0]));
         $this->assertStringContainsString('Name is required in 3 rows (rows 1/1, 1/2, 2/1).', $nested[0]['message']);
         $this->assertArrayNotHasKey('repeaterPath', $nested[0]);
     }
@@ -401,11 +401,11 @@ final class EditorAuditIssuesTest extends TestCase
         );
         $html = EditorAuditIssues::issueHtml($issues[0]);
         $this->assertStringContainsString('Name is required in row 1/14.', $html);
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $html);
         $this->assertStringContainsString('field_directions', $html);
         $this->assertStringContainsString('field_steps', $html);
         $this->assertStringContainsString('14', $html);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $html);
     }
 
     public function testMalformedNestedCoordinatesBlockClickNavigation(): void
@@ -413,7 +413,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array(
                     new EvaluationResult(
                         EvaluationStatus::Failed,
@@ -439,7 +439,7 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertTrue($issues[0]['repeaterPathInvalid']);
         $this->assertArrayNotHasKey('repeaterPath', $issues[0]);
         $this->assertStringContainsString(
-            'data-contentguard-repeater-path="invalid"',
+            'data-contentlatch-repeater-path="invalid"',
             EditorAuditIssues::issueHtml($issues[0])
         );
     }
@@ -448,7 +448,7 @@ final class EditorAuditIssuesTest extends TestCase
     {
         $evaluation = new ContentEvaluation(
             42,
-            \ContentGuard\Domain\ContentStatus::Failed,
+            \ContentLatch\Domain\ContentStatus::Failed,
             array(
                 $this->nestedFailure(1, 1),
                 $this->nestedFailure(1, 2),
@@ -466,8 +466,8 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertStringContainsString('1/1', $html);
         $this->assertStringContainsString('1/2', $html);
         $this->assertStringContainsString('2/1', $html);
-        $this->assertStringNotContainsString('data-contentguard-display-row', $html);
-        $this->assertStringNotContainsString('contentguard-warning-rows', $html);
+        $this->assertStringNotContainsString('data-contentlatch-display-row', $html);
+        $this->assertStringNotContainsString('contentlatch-warning-rows', $html);
         $this->assertSame(
             array(
                 array('repeater' => 'field_directions', 'display_row' => 1),
@@ -475,7 +475,7 @@ final class EditorAuditIssuesTest extends TestCase
             ),
             $issues[0]['repeaterPath']
         );
-        $this->assertStringContainsString('data-contentguard-repeater-path=', $html);
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', $html);
         $this->assertStringContainsString('field_directions', $html);
         $this->assertStringContainsString('field_steps', $html);
     }
@@ -485,13 +485,13 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 374,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array(
                     new EvaluationResult(
                         EvaluationStatus::Failed,
                         74,
                         374,
-                        \ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
+                        \ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures::SECTION_TITLE,
                         'This field is required.',
                         RuleSeverity::Fail,
                         'required',
@@ -516,7 +516,7 @@ final class EditorAuditIssuesTest extends TestCase
             EditorAuditIssues::issueHtml($issues[0])
         );
         $this->assertStringNotContainsString(
-            'data-contentguard-display-row',
+            'data-contentlatch-display-row',
             EditorAuditIssues::issueHtml($issues[0])
         );
         $this->assertSame(
@@ -529,7 +529,7 @@ final class EditorAuditIssuesTest extends TestCase
             $issues[0]['repeaterPath']
         );
         $this->assertStringContainsString(
-            'data-contentguard-repeater-path=',
+            'data-contentlatch-repeater-path=',
             EditorAuditIssues::issueHtml($issues[0])
         );
         $this->assertStringContainsString(
@@ -543,7 +543,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array($this->nestedFailure(2, 1))
             ),
             42
@@ -551,7 +551,7 @@ final class EditorAuditIssuesTest extends TestCase
 
         $this->assertSame('Name is required in row 2/1.', $issues[0]['message']);
         $this->assertStringContainsString('2/1', EditorAuditIssues::issueHtml($issues[0]));
-        $this->assertStringNotContainsString('data-contentguard-display-row', EditorAuditIssues::issueHtml($issues[0]));
+        $this->assertStringNotContainsString('data-contentlatch-display-row', EditorAuditIssues::issueHtml($issues[0]));
         $this->assertSame(
             array(
                 array('repeater' => 'field_directions', 'display_row' => 2),
@@ -559,7 +559,7 @@ final class EditorAuditIssuesTest extends TestCase
             ),
             $issues[0]['repeaterPath']
         );
-        $this->assertStringContainsString('data-contentguard-repeater-path=', EditorAuditIssues::issueHtml($issues[0]));
+        $this->assertStringContainsString('data-contentlatch-repeater-path=', EditorAuditIssues::issueHtml($issues[0]));
         $this->assertStringNotContainsString('in row 2/1', json_encode($issues[0]['repeaterPath']) ?: '');
     }
 
@@ -568,7 +568,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array($this->coreFailure('title', 'Title'))
             ),
             42
@@ -578,7 +578,7 @@ final class EditorAuditIssuesTest extends TestCase
         $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG));
         $this->assertTrue(EditorAuditIssues::isClickable($issues[0], EditorCoreNavigation::SURFACE_CLASSIC));
         $this->assertStringContainsString(
-            'data-contentguard-core="title"',
+            'data-contentlatch-core="title"',
             EditorAuditIssues::issueHtml($issues[0], EditorCoreNavigation::SURFACE_GUTENBERG)
         );
     }
@@ -588,7 +588,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array(
                     $this->coreFailure('slug', 'Slug'),
                     $this->coreFailure('author', 'Author'),
@@ -612,7 +612,7 @@ final class EditorAuditIssuesTest extends TestCase
         $issues = EditorAuditIssues::fromEvaluation(
             new ContentEvaluation(
                 42,
-                \ContentGuard\Domain\ContentStatus::Failed,
+                \ContentLatch\Domain\ContentStatus::Failed,
                 array(
                     $this->coreFailure('content', 'Content'),
                     new EvaluationResult(
@@ -631,8 +631,8 @@ final class EditorAuditIssuesTest extends TestCase
         );
 
         $html = EditorAuditIssues::noticeHtml($issues, EditorCoreNavigation::SURFACE_GUTENBERG);
-        $this->assertStringContainsString('data-contentguard-core="content"', $html);
-        $this->assertStringContainsString('data-contentguard-field="field_description"', $html);
+        $this->assertStringContainsString('data-contentlatch-core="content"', $html);
+        $this->assertStringContainsString('data-contentlatch-field="field_description"', $html);
         $this->assertStringContainsString('2 blocking issues', $html);
         $this->assertSame(
             array($issues[0]),

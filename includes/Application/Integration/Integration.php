@@ -2,12 +2,12 @@
 /**
  * Small integration descriptor. Not a capability god-object.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Integration;
+namespace ContentLatch\Application\Integration;
 
 defined('ABSPATH') || exit;
 

@@ -1,20 +1,20 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Domain;
+namespace ContentLatch\Tests\Unit\Domain;
 
-use ContentGuard\Domain\ArrayValueProvider;
-use ContentGuard\Domain\Contracts\OperatorInterface;
-use ContentGuard\Domain\Contracts\ValidatorInterface;
-use ContentGuard\Domain\Operators\OperatorRegistry;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Domain\ValidatorOutcome;
-use ContentGuard\Domain\Validators\ValidatorRegistry;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Domain\ArrayValueProvider;
+use ContentLatch\Domain\Contracts\OperatorInterface;
+use ContentLatch\Domain\Contracts\ValidatorInterface;
+use ContentLatch\Domain\Operators\OperatorRegistry;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Domain\ValidatorOutcome;
+use ContentLatch\Domain\Validators\ValidatorRegistry;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEngineExtensibilityTest extends TestCase

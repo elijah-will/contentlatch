@@ -1,22 +1,22 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Domain\FieldRef;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Tests\Support\InMemoryRuleRepository;
-use ContentGuard\Infrastructure\WordPress\CoreFieldCatalog;
-use ContentGuard\Tests\Support\CoreCatalogFixtures;
-use ContentGuard\Tests\Support\IncomingSaveFixtures;
-use ContentGuard\Tests\Support\RuleFactory;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Domain\FieldRef;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Tests\Support\InMemoryRuleRepository;
+use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
+use ContentLatch\Tests\Support\CoreCatalogFixtures;
+use ContentLatch\Tests\Support\IncomingSaveFixtures;
+use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/Support/wordpress-rest-functions.php';
@@ -25,8 +25,8 @@ final class IncomingSaveEvaluatorTest extends TestCase
 {
     protected function setUp(): void
     {
-        $GLOBALS['contentguard_test_post_fields'] = array();
-        $GLOBALS['contentguard_test_thumbnails'] = array();
+        $GLOBALS['contentlatch_test_post_fields'] = array();
+        $GLOBALS['contentlatch_test_thumbnails'] = array();
     }
 
     public function testEmptyTitleWithBlockingRequiredIsRejected(): void
@@ -361,7 +361,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testOmittedFeaturedMediaUsesStoredThumbnailOnExistingPost(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][13214] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][13214] = 123;
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::featuredImageRef())))
             ->evaluate(13214, 'post', array('content' => '<p>Hello world</p>'), null);
 
@@ -371,7 +371,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testSubmittedFeaturedMediaZeroFailsEvenWhenStoredThumbnailExists(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][13214] = 123;
+        $GLOBALS['contentlatch_test_thumbnails'][13214] = 123;
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::featuredImageRef())))
             ->evaluate(13214, 'post', array('featured_media' => 0), null);
 
@@ -398,7 +398,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testOmittedFeaturedMediaWithNoStoredThumbnailFailsRequired(): void
     {
-        $GLOBALS['contentguard_test_thumbnails'][13214] = 0;
+        $GLOBALS['contentlatch_test_thumbnails'][13214] = 0;
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::featuredImageRef())))
             ->evaluate(13214, 'post', array('content' => '<p>Hello world</p>'), null);
 
@@ -408,7 +408,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testOmittedTitleUsesStoredTitleOnExistingPost(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][13214] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][13214] = array('post_title' => 'Existing title');
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::titleRef())))
             ->evaluate(13214, 'post', array('content' => '<p>Hello world</p>'), null);
 
@@ -417,7 +417,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testSubmittedEmptyTitleFailsEvenWhenStoredTitleExists(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][13214] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_post_fields'][13214] = array('post_title' => 'Existing title');
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::titleRef())))
             ->evaluate(13214, 'post', array('title' => ''), null);
 
@@ -427,7 +427,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testOmittedContentUsesStoredContentOnExistingPost(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][13214] = array(
+        $GLOBALS['contentlatch_test_post_fields'][13214] = array(
             'post_content' => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
         );
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::contentRef())))
@@ -438,7 +438,7 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testSubmittedEmptyContentFailsEvenWhenStoredContentExists(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][13214] = array(
+        $GLOBALS['contentlatch_test_post_fields'][13214] = array(
             'post_content' => '<!-- wp:paragraph --><p>Hello world</p><!-- /wp:paragraph -->',
         );
         $evaluation = $this->coreOnly(array($this->requiredRule(CoreCatalogFixtures::contentRef())))
@@ -450,8 +450,8 @@ final class IncomingSaveEvaluatorTest extends TestCase
 
     public function testGutenbergPartialPayloadPassesWhenStoredCoreFieldsSatisfyTheRule(): void
     {
-        $GLOBALS['contentguard_test_post_fields'][13214] = array('post_title' => 'Existing title');
-        $GLOBALS['contentguard_test_thumbnails'][13214] = 123;
+        $GLOBALS['contentlatch_test_post_fields'][13214] = array('post_title' => 'Existing title');
+        $GLOBALS['contentlatch_test_thumbnails'][13214] = 123;
         $evaluation = $this->coreOnly(array(
             RuleFactory::rule(array(
                 'id'          => 10,

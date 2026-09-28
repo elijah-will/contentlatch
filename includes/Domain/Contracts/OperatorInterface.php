@@ -2,12 +2,12 @@
 /**
  * Condition operator.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain\Contracts;
+namespace ContentLatch\Domain\Contracts;
 
 interface OperatorInterface
 {

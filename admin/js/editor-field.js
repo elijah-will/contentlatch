@@ -1,5 +1,5 @@
 (function () {
-  var config = window.contentguardEditorField || {};
+  var config = window.contentlatchEditorField || {};
 
   function prefersReducedMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -486,10 +486,10 @@
   }
 
   function announce(field, displayRow) {
-    var live = document.getElementById("contentguard-field-nav-status");
+    var live = document.getElementById("contentlatch-field-nav-status");
     if (!live) {
       live = document.createElement("div");
-      live.id = "contentguard-field-nav-status";
+      live.id = "contentlatch-field-nav-status";
       live.className = "screen-reader-text";
       live.setAttribute("role", "status");
       live.setAttribute("aria-live", "polite");
@@ -796,15 +796,15 @@
     tryCoreFocus(fieldId, 20, coreNavGeneration);
   }
 
-  window.contentguardNavigateToField = navigateToField;
-  window.contentguardNavigateToCore = navigateToCore;
+  window.contentlatchNavigateToField = navigateToField;
+  window.contentlatchNavigateToCore = navigateToCore;
 
   document.addEventListener("click", function (event) {
     var coreTrigger = event.target && event.target.closest
-      ? event.target.closest("[data-contentguard-core]")
+      ? event.target.closest("[data-contentlatch-core]")
       : null;
     if (coreTrigger) {
-      var coreId = coreTrigger.getAttribute("data-contentguard-core") || "";
+      var coreId = coreTrigger.getAttribute("data-contentlatch-core") || "";
       if (!isSupportedCore(coreId)) {
         return;
       }
@@ -815,13 +815,13 @@
     }
 
     var trigger = event.target && event.target.closest
-      ? event.target.closest("[data-contentguard-field]")
+      ? event.target.closest("[data-contentlatch-field]")
       : null;
     if (!trigger) {
       return;
     }
 
-    var fieldKey = trigger.getAttribute("data-contentguard-field") || "";
+    var fieldKey = trigger.getAttribute("data-contentlatch-field") || "";
     if (!isSafeFieldKey(fieldKey)) {
       return;
     }
@@ -829,9 +829,9 @@
     event.preventDefault();
     navigateToField(
       fieldKey,
-      trigger.getAttribute("data-contentguard-layout") || config.layout || "",
-      trigger.getAttribute("data-contentguard-display-row") || config.displayRow || 0,
-      trigger.getAttribute("data-contentguard-repeater-path")
+      trigger.getAttribute("data-contentlatch-layout") || config.layout || "",
+      trigger.getAttribute("data-contentlatch-display-row") || config.displayRow || 0,
+      trigger.getAttribute("data-contentlatch-repeater-path")
     );
   });
 

@@ -10,19 +10,19 @@
  * revisions, REST requests, and non-editpost admin posts are not blocked.
  * Gutenberg REST remains RestSaveValidator's responsibility.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Application\IncomingSaveEvaluator;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Infrastructure\ACF\IntendedPostStatusResolver;
+use ContentLatch\Application\EditorNoticePresentation;
+use ContentLatch\Application\IncomingSaveEvaluator;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
 use Throwable;
 
 final class CoreSaveValidator
@@ -73,7 +73,7 @@ final class CoreSaveValidator
             $this->abort($messages);
         } catch (Throwable $exception) {
             if (defined('WP_DEBUG') && WP_DEBUG && function_exists('error_log')) {
-                error_log('ContentGuard Classic save validation failed safely: ' . $exception->getMessage());
+                error_log('ContentLatch Classic save validation failed safely: ' . $exception->getMessage());
             }
         }
     }

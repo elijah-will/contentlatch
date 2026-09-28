@@ -2,20 +2,20 @@
 /**
  * Phase 15C-1: Builder exposure for supported Repeater scalars.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Infrastructure\ACF\AcfFieldCatalog;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Tests\Support\AcfHollandHouseRecipeFixtures as HH;
-use ContentGuard\Tests\Support\AcfNestedRepeaterFixtures;
-use ContentGuard\Tests\Support\AcfRepeaterFixtures;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Tests\Support\AcfHollandHouseRecipeFixtures as HH;
+use ContentLatch\Tests\Support\AcfNestedRepeaterFixtures;
+use ContentLatch\Tests\Support\AcfRepeaterFixtures;
 use PHPUnit\Framework\TestCase;
 
 final class NestedRepeaterBuilderEligibilityTest extends TestCase

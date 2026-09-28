@@ -2,12 +2,12 @@
 /**
  * Per-validation or per-skip evaluation status.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Domain;
+namespace ContentLatch\Domain;
 
 enum EvaluationStatus: string
 {

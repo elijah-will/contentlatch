@@ -2,36 +2,36 @@
 /**
  * Site-wide content audit orchestration.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application\Audit;
+namespace ContentLatch\Application\Audit;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\Exception\AuditException;
-use ContentGuard\Application\DomainMessages;
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\ContentStatus;
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\WordPress\WpAuditLock;
-use ContentGuard\Infrastructure\WordPress\WpAuditPostScanner;
-use ContentGuard\Infrastructure\WordPress\WpAuditStore;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\Exception\AuditException;
+use ContentLatch\Application\DomainMessages;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\ContentStatus;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\WordPress\WpAuditLock;
+use ContentLatch\Infrastructure\WordPress\WpAuditPostScanner;
+use ContentLatch\Infrastructure\WordPress\WpAuditStore;
 use Throwable;
 
 final class ContentAuditService
 {
     public const BATCH_SIZE           = 100;
     public const STALE_AFTER_SECONDS  = 900;
-    public const NONCE_ACTION         = 'contentguard_audit';
+    public const NONCE_ACTION         = 'contentlatch_audit';
     public const AUDITED_STATUSES     = array('publish', 'private');
 
     /**
@@ -103,7 +103,7 @@ final class ContentAuditService
             }
 
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('Another audit start is already in progress.', 'contentguard'));
+            throw new AuditException(__('Another audit start is already in progress.', 'contentlatch'));
         }
 
         try {
@@ -134,7 +134,7 @@ final class ContentAuditService
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('This audit run is no longer active.', 'contentguard'));
+            throw new AuditException(__('This audit run is no longer active.', 'contentlatch'));
         }
 
         try {
@@ -153,7 +153,7 @@ final class ContentAuditService
         $run = $this->requireRun($runId);
         if (!$run->isActive()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('This audit run is no longer active.', 'contentguard'));
+            throw new AuditException(__('This audit run is no longer active.', 'contentlatch'));
         }
 
         $cancelled = $this->store->saveRun(
@@ -400,13 +400,13 @@ final class ContentAuditService
         $factory = $this->providerFactory;
         if (!is_callable($factory)) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('Audit value provider is not configured.', 'contentguard'));
+            throw new AuditException(__('Audit value provider is not configured.', 'contentlatch'));
         }
 
         $provider = $factory($post->id, $post->postType, $this->fieldTypesFor($post->postType));
         if (!$provider instanceof FieldValueProviderInterface) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('Audit value provider is invalid.', 'contentguard'));
+            throw new AuditException(__('Audit value provider is invalid.', 'contentlatch'));
         }
 
         return $this->evaluator->evaluate($post->id, $post->postType, $provider);
@@ -525,7 +525,7 @@ final class ContentAuditService
             if ($row > 0 && $layoutLabel !== '') {
                 return sprintf(
                     /* translators: 1: Base validation message. 2: Flexible Content layout label. 3: 1-based row number. */
-                    __('%1$s in %2$s row %3$d.', 'contentguard'),
+                    __('%1$s in %2$s row %3$d.', 'contentlatch'),
                     rtrim($base, '.'),
                     $layoutLabel,
                     $row
@@ -535,7 +535,7 @@ final class ContentAuditService
             if ($row > 0) {
                 return sprintf(
                     /* translators: 1: Base validation message. 2: 1-based row number. */
-                    __('%1$s in row %2$d.', 'contentguard'),
+                    __('%1$s in row %2$d.', 'contentlatch'),
                     rtrim($base, '.'),
                     $row
                 );
@@ -561,7 +561,7 @@ final class ContentAuditService
         if ($layoutLabel !== '') {
             return sprintf(
                 /* translators: 1: Base validation message. 2: Number of rows. 3: Flexible Content layout label. 4: Comma-separated row numbers. */
-                __('%1$s in %2$d %3$s rows (rows %4$s).', 'contentguard'),
+                __('%1$s in %2$d %3$s rows (rows %4$s).', 'contentlatch'),
                 rtrim($base, '.'),
                 count($rows),
                 $layoutLabel,
@@ -571,7 +571,7 @@ final class ContentAuditService
 
         return sprintf(
             /* translators: 1: Base validation message. 2: Number of rows. 3: Comma-separated row numbers. */
-            __('%1$s in %2$d rows (rows %3$s).', 'contentguard'),
+            __('%1$s in %2$d rows (rows %3$s).', 'contentlatch'),
             rtrim($base, '.'),
             count($rows),
             implode(', ', $rows)
@@ -587,7 +587,7 @@ final class ContentAuditService
         $stockRequired = 'This field is required.';
         if ($result->message !== ''
             && $result->message !== $stockRequired
-            && $result->message !== __('This field is required.', 'contentguard')
+            && $result->message !== __('This field is required.', 'contentlatch')
         ) {
             return DomainMessages::present($result->message);
         }
@@ -598,13 +598,13 @@ final class ContentAuditService
             $label = $this->leafLabel((string) ($result->context['field_label'] ?? ''));
             if ($label !== '') {
                 /* translators: %s: Field label. */
-                return sprintf(__('%s is required.', 'contentguard'), $label);
+                return sprintf(__('%s is required.', 'contentlatch'), $label);
             }
         }
 
         return $result->message !== ''
             ? DomainMessages::present($result->message)
-            : __('This field is required.', 'contentguard');
+            : __('This field is required.', 'contentlatch');
     }
 
     private function layoutLabel(EvaluationResult $result): string
@@ -667,13 +667,13 @@ final class ContentAuditService
     {
         if ($runId <= 0) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('Invalid audit run.', 'contentguard'));
+            throw new AuditException(__('Invalid audit run.', 'contentlatch'));
         }
 
         $run = $this->store->findRun($runId);
         if ($run === null) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception messages are application/domain data and are escaped at the presentation boundary.
-            throw new AuditException(__('Audit run not found.', 'contentguard'));
+            throw new AuditException(__('Audit run not found.', 'contentlatch'));
         }
 
         return $run;
@@ -694,7 +694,7 @@ final class ContentAuditService
     private function log(Throwable $exception): void
     {
         if (defined('WP_DEBUG') && WP_DEBUG && function_exists('error_log')) {
-            error_log('ContentGuard audit failed: ' . $exception->getMessage());
+            error_log('ContentLatch audit failed: ' . $exception->getMessage());
         }
     }
 }

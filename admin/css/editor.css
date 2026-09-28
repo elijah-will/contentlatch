@@ -1,4 +1,4 @@
-.contentguard-warning-field {
+.contentlatch-warning-field {
     background: none;
     border: 0;
     border-radius: 0;
@@ -10,68 +10,68 @@
     text-underline-offset: 2px;
 }
 
-.contentguard-warning-field:hover {
+.contentlatch-warning-field:hover {
     color: var(--wp-admin-theme-color, #2271b1);
 }
 
-.contentguard-warning-field:focus {
+.contentlatch-warning-field:focus {
     outline: 2px solid var(--wp-admin-theme-color, #2271b1);
     outline-offset: 2px;
 }
 
-.contentguard-warning-field:focus:not(:focus-visible) {
+.contentlatch-warning-field:focus:not(:focus-visible) {
     outline: none;
 }
 
-.contentguard-warning-field:focus-visible {
+.contentlatch-warning-field:focus-visible {
     outline: 2px solid var(--wp-admin-theme-color, #2271b1);
     outline-offset: 2px;
 }
 
-.contentguard-audit-blockers,
-.contentguard-editor-warnings {
+.contentlatch-audit-blockers,
+.contentlatch-editor-warnings {
     margin: 0;
 }
 
-.contentguard-audit-blockers__title,
-.contentguard-editor-warnings__title {
+.contentlatch-audit-blockers__title,
+.contentlatch-editor-warnings__title {
     font-weight: 600;
     margin: 0 0 4px;
 }
 
-.contentguard-audit-blockers__count,
-.contentguard-editor-warnings__count {
+.contentlatch-audit-blockers__count,
+.contentlatch-editor-warnings__count {
     margin: 0 0 6px;
 }
 
-.contentguard-audit-blockers__list,
-.contentguard-editor-warnings__list {
+.contentlatch-audit-blockers__list,
+.contentlatch-editor-warnings__list {
     margin: 0;
     padding-left: 1.25em;
 }
 
-.contentguard-audit-blockers__list li,
-.contentguard-editor-warnings__list li {
+.contentlatch-audit-blockers__list li,
+.contentlatch-editor-warnings__list li {
     margin: 0 0 4px;
 }
 
-.contentguard-warning-rows {
+.contentlatch-warning-rows {
     display: inline;
     white-space: nowrap;
 }
 
-.contentguard-warning-row {
+.contentlatch-warning-row {
     font-weight: 600;
 }
 
-.notice.contentguard-audit-blockers-notice,
-.notice.contentguard-editor-warnings-notice {
+.notice.contentlatch-audit-blockers-notice,
+.notice.contentlatch-editor-warnings-notice {
     padding: 8px 12px;
 }
 
 /*
  * Classic ACF renders global errors inside one <p> and concatenates them
- * with ". ". ContentGuard sends a single preformatted message; keep its
+ * with ". ". ContentLatch sends a single preformatted message; keep its
  * newlines as separate lines without changing ACF's outer wrapper.
  */
 .acf-notice.acf-error-message p {
@@ -79,7 +79,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .contentguard-warning-field {
+    .contentlatch-warning-field {
         transition: none;
         scroll-behavior: auto;
     }

@@ -1,36 +1,36 @@
 <?php
 /**
- * ContentGuard Rules admin list and editor.
+ * ContentLatch Rules admin list and editor.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Admin;
+namespace ContentLatch\Admin;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Audit\AuditRuleImpact;
-use ContentGuard\Application\Audit\AuditRun;
-use ContentGuard\Application\Audit\ContentAuditService;
-use ContentGuard\Application\AdminNotice;
-use ContentGuard\Application\ConditionOperators;
-use ContentGuard\Application\RuleCommandService;
-use ContentGuard\Application\RuleDocumentFactory;
-use ContentGuard\Application\RuleMutationPresentation;
-use ContentGuard\Application\RulePresentation;
-use ContentGuard\Application\RulePreview;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\Exception\InvalidRuleException;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleSeverity;
-use ContentGuard\Domain\RuleStatus;
-use ContentGuard\Infrastructure\WordPress\Capabilities;
+use ContentLatch\Application\Audit\AuditRuleImpact;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\ContentAuditService;
+use ContentLatch\Application\AdminNotice;
+use ContentLatch\Application\ConditionOperators;
+use ContentLatch\Application\RuleCommandService;
+use ContentLatch\Application\RuleDocumentFactory;
+use ContentLatch\Application\RuleMutationPresentation;
+use ContentLatch\Application\RulePresentation;
+use ContentLatch\Application\RulePreview;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\Exception\InvalidRuleException;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleSeverity;
+use ContentLatch\Domain\RuleStatus;
+use ContentLatch\Infrastructure\WordPress\Capabilities;
 
 final class RulesPage
 {
-    public const SLUG = 'contentguard';
+    public const SLUG = 'contentlatch';
 
     public function __construct(
         private RuleRepositoryInterface $rules,
@@ -56,8 +56,8 @@ final class RulesPage
     public function addMenu(): void
     {
         add_menu_page(
-            __('ContentGuard Rules', 'contentguard'),
-            __('ContentGuard', 'contentguard'),
+            __('ContentLatch Rules', 'contentlatch'),
+            __('ContentLatch', 'contentlatch'),
             Capabilities::MANAGE,
             self::SLUG,
             array($this, 'render'),
@@ -66,8 +66,8 @@ final class RulesPage
         );
         add_submenu_page(
             self::SLUG,
-            __('Rules', 'contentguard'),
-            __('Rules', 'contentguard'),
+            __('Rules', 'contentlatch'),
+            __('Rules', 'contentlatch'),
             Capabilities::MANAGE,
             self::SLUG,
             array($this, 'render')
@@ -83,26 +83,26 @@ final class RulesPage
         AdminAssets::enqueueShared();
 
         wp_register_style(
-            'contentguard-rules',
-            CONTENTGUARD_URL . 'admin/css/rules.css',
+            'contentlatch-rules',
+            CONTENTLATCH_URL . 'admin/css/rules.css',
             array(AdminAssets::STYLE),
-            \ContentGuard\Plugin::VERSION
+            \ContentLatch\Plugin::VERSION
         );
-        wp_enqueue_style('contentguard-rules');
+        wp_enqueue_style('contentlatch-rules');
 
         wp_register_script(
-            'contentguard-rules',
-            CONTENTGUARD_URL . 'admin/js/rules.js',
+            'contentlatch-rules',
+            CONTENTLATCH_URL . 'admin/js/rules.js',
             array('wp-i18n'),
-            \ContentGuard\Plugin::VERSION,
+            \ContentLatch\Plugin::VERSION,
             true
         );
         if (function_exists('wp_set_script_translations')) {
-            wp_set_script_translations('contentguard-rules', 'contentguard', CONTENTGUARD_DIR . 'languages');
+            wp_set_script_translations('contentlatch-rules', 'contentlatch', CONTENTLATCH_DIR . 'languages');
         }
         wp_localize_script(
-            'contentguard-rules',
-            'contentguardRules',
+            'contentlatch-rules',
+            'contentlatchRules',
             array(
                 'ajaxUrl'         => admin_url('admin-ajax.php'),
                 'nonce'           => wp_create_nonce(RuleCommandService::NONCE_ACTION),
@@ -110,15 +110,15 @@ final class RulesPage
                 'catalogFields'   => $this->catalogFieldsForRequest(),
                 'deleteConfirm'   => __(
                     'Delete this rule? Audit findings for this rule will be kept.',
-                    'contentguard'
+                    'contentlatch'
                 ),
                 'operators'       => $this->operatorLabels('text'),
                 'operatorsByType' => $this->operatorsByType(),
                 'validators'      => array(
-                    'required'       => __('is required', 'contentguard'),
-                    'min_length'     => __('Minimum length', 'contentguard'),
-                    'max_length'     => __('Maximum length', 'contentguard'),
-                    'allowed_values' => __('Allowed values', 'contentguard'),
+                    'required'       => __('is required', 'contentlatch'),
+                    'min_length'     => __('Minimum length', 'contentlatch'),
+                    'max_length'     => __('Maximum length', 'contentlatch'),
+                    'allowed_values' => __('Allowed values', 'contentlatch'),
                 ),
                 'preview'         => array(
                     'needThen'              => RulePreview::needThenMessage(),
@@ -129,53 +129,53 @@ final class RulesPage
                     'conditionOnlyWarning'  => RulePreview::conditionOnlyWarningMessage(),
                 ),
                 'i18n'            => array(
-                    'chooseField'         => __('Choose a field', 'contentguard'),
-                    'field'               => __('Field', 'contentguard'),
-                    'yes'                 => __('Yes', 'contentguard'),
-                    'no'                  => __('No', 'contentguard'),
-                    'remove'              => __('Remove', 'contentguard'),
-                    'whenField'           => __('WHEN field', 'contentguard'),
-                    'operator'            => __('Operator', 'contentguard'),
-                    'value'               => __('Value', 'contentguard'),
-                    'thenField'           => __('THEN field', 'contentguard'),
-                    'requirement'         => __('Requirement', 'contentguard'),
-                    'customMessage'       => __('Custom message (optional)', 'contentguard'),
-                    'characters'          => __('characters', 'contentguard'),
-                    'warning'             => __('Warning:', 'contentguard'),
+                    'chooseField'         => __('Choose a field', 'contentlatch'),
+                    'field'               => __('Field', 'contentlatch'),
+                    'yes'                 => __('Yes', 'contentlatch'),
+                    'no'                  => __('No', 'contentlatch'),
+                    'remove'              => __('Remove', 'contentlatch'),
+                    'whenField'           => __('WHEN field', 'contentlatch'),
+                    'operator'            => __('Operator', 'contentlatch'),
+                    'value'               => __('Value', 'contentlatch'),
+                    'thenField'           => __('THEN field', 'contentlatch'),
+                    'requirement'         => __('Requirement', 'contentlatch'),
+                    'customMessage'       => __('Custom message (optional)', 'contentlatch'),
+                    'characters'          => __('characters', 'contentlatch'),
+                    'warning'             => __('Warning:', 'contentlatch'),
                     /* translators: %d: Condition number. */
-                    'removeCondition'     => __('Remove condition %d', 'contentguard'),
+                    'removeCondition'     => __('Remove condition %d', 'contentlatch'),
                     /* translators: %d: Requirement number. */
-                    'removeRequirement'   => __('Remove requirement %d', 'contentguard'),
+                    'removeRequirement'   => __('Remove requirement %d', 'contentlatch'),
                     'emptyAndNotEmpty'    => __(
                         'This rule cannot be saved because a field cannot be both empty and not empty.',
-                        'contentguard'
+                        'contentlatch'
                     ),
-                    'missingThen'         => __('Each requirement needs a field and a validator.', 'contentguard'),
+                    'missingThen'         => __('Each requirement needs a field and a validator.', 'contentlatch'),
                     'emptyAndRequired'    => __(
                         'This rule cannot be saved because a field cannot be required when the rule only applies when that same field is empty.',
-                        'contentguard'
+                        'contentlatch'
                     ),
                     'notEmptyAndRequired' => __(
                         'This rule cannot be saved because a field is already required to have a value by the WHEN condition.',
-                        'contentguard'
+                        'contentlatch'
                     ),
                     'equalsAndRequired'   => __(
                         'This rule cannot be saved because a field that must already have a specific value does not need to be required.',
-                        'contentguard'
+                        'contentlatch'
                     ),
-                    'allowedValues'       => __('Enter at least one allowed value.', 'contentguard'),
-                    'minGtMax'            => __('Minimum length cannot be greater than maximum length.', 'contentguard'),
-                    'missingWhenOrThen'   => __('Add a WHEN condition or THEN requirement.', 'contentguard'),
+                    'allowedValues'       => __('Enter at least one allowed value.', 'contentlatch'),
+                    'minGtMax'            => __('Minimum length cannot be greater than maximum length.', 'contentlatch'),
+                    'missingWhenOrThen'   => __('Add a WHEN condition or THEN requirement.', 'contentlatch'),
                 ),
             )
         );
-        wp_enqueue_script('contentguard-rules');
+        wp_enqueue_script('contentlatch-rules');
     }
 
     public function render(): void
     {
         if (!Capabilities::currentUserCanManage()) {
-            wp_die(esc_html__('You are not allowed to access this page.', 'contentguard'));
+            wp_die(esc_html__('You are not allowed to access this page.', 'contentlatch'));
         }
 
         $ruleId = isset($_GET['rule']) ? absint(wp_unslash((string) $_GET['rule'])) : 0;
@@ -231,7 +231,7 @@ final class RulesPage
         $postTypeLabels = $this->factory->allowedPostTypes();
         $allInactive    = self::allRulesInactive($rules);
         $rules          = self::sortForList($rules);
-        $view           = CONTENTGUARD_DIR . 'admin/views/rules-list.php';
+        $view           = CONTENTLATCH_DIR . 'admin/views/rules-list.php';
         require $view;
     }
 
@@ -247,25 +247,25 @@ final class RulesPage
         $buckets = array(
             'active-fail' => array(
                 'id'    => 'active-blocking',
-                'title' => __('Active Blocking', 'contentguard'),
+                'title' => __('Active Blocking', 'contentlatch'),
                 'open'  => true,
                 'rules' => array(),
             ),
             'active-warning' => array(
                 'id'    => 'active-warning',
-                'title' => __('Active Warning', 'contentguard'),
+                'title' => __('Active Warning', 'contentlatch'),
                 'open'  => true,
                 'rules' => array(),
             ),
             'inactive-fail' => array(
                 'id'    => 'inactive-blocking',
-                'title' => __('Inactive Blocking', 'contentguard'),
+                'title' => __('Inactive Blocking', 'contentlatch'),
                 'open'  => false,
                 'rules' => array(),
             ),
             'inactive-warning' => array(
                 'id'    => 'inactive-warning',
-                'title' => __('Inactive Warning', 'contentguard'),
+                'title' => __('Inactive Warning', 'contentlatch'),
                 'open'  => false,
                 'rules' => array(),
             ),
@@ -338,20 +338,20 @@ final class RulesPage
     public static function allInactiveNotice(): string
     {
         return __(
-            'None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentGuard to validate content.',
-            'contentguard'
+            'None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentLatch to validate content.',
+            'contentlatch'
         );
     }
 
     public static function ruleImpactLabel(?AuditRun $latestComplete, Rule $rule, ?AuditRuleImpact $impact): string
     {
         if ($latestComplete === null) {
-            return __('No completed audit yet', 'contentguard');
+            return __('No completed audit yet', 'contentlatch');
         }
 
         $postCount = $impact?->postCount ?? 0;
         if ($postCount === 0) {
-            return __('No findings in latest audit', 'contentguard');
+            return __('No findings in latest audit', 'contentlatch');
         }
 
         if ($rule->severity === RuleSeverity::Warning) {
@@ -361,7 +361,7 @@ final class RulesPage
                     '%d content item with warnings',
                     '%d content items with warnings',
                     $postCount,
-                    'contentguard'
+                    'contentlatch'
                 ),
                 $postCount
             );
@@ -373,7 +373,7 @@ final class RulesPage
                 '%d content item failing',
                 '%d content items failing',
                 $postCount,
-                'contentguard'
+                'contentlatch'
             ),
             $postCount
         );
@@ -478,7 +478,7 @@ final class RulesPage
         }
 
         $notice = $noticeOverride ?? $this->notice();
-        $view   = CONTENTGUARD_DIR . 'admin/views/rule-edit.php';
+        $view   = CONTENTLATCH_DIR . 'admin/views/rule-edit.php';
         require $view;
     }
 
@@ -506,10 +506,10 @@ final class RulesPage
             'message' => RuleMutationPresentation::missingRuleMessage(),
         );
 
-        echo '<div class="wrap contentguard"><div class="notice notice-error"><p>'
+        echo '<div class="wrap contentlatch"><div class="notice notice-error"><p>'
             . esc_html($notice['message'])
             . '</p><p><a href="' . esc_url(admin_url('admin.php?page=' . self::SLUG)) . '">'
-            . esc_html__('Back to rules', 'contentguard')
+            . esc_html__('Back to rules', 'contentlatch')
             . '</a></p></div></div>';
     }
 
@@ -519,11 +519,11 @@ final class RulesPage
     private function notice(): ?array
     {
         $query = array();
-        if (isset($_GET['contentguard_notice'])) {
-            $query['contentguard_notice'] = sanitize_key(wp_unslash((string) $_GET['contentguard_notice']));
+        if (isset($_GET['contentlatch_notice'])) {
+            $query['contentlatch_notice'] = sanitize_key(wp_unslash((string) $_GET['contentlatch_notice']));
         }
-        if (isset($_GET['contentguard_msg'])) {
-            $query['contentguard_msg'] = sanitize_text_field(wp_unslash((string) $_GET['contentguard_msg']));
+        if (isset($_GET['contentlatch_msg'])) {
+            $query['contentlatch_msg'] = sanitize_text_field(wp_unslash((string) $_GET['contentlatch_msg']));
         }
 
         return AdminNotice::fromQuery($query);

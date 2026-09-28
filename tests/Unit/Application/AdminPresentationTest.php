@@ -1,13 +1,13 @@
 <?php
 /**
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Tests\Unit\Application;
+namespace ContentLatch\Tests\Unit\Application;
 
-use ContentGuard\Application\AdminPresentation;
+use ContentLatch\Application\AdminPresentation;
 use PHPUnit\Framework\TestCase;
 
 final class AdminPresentationTest extends TestCase

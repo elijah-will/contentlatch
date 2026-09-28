@@ -5,16 +5,16 @@
  * Availability is supports-based. Internal/system types are excluded here
  * rather than by changing EditablePostTypes globally.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\WordPress;
+namespace ContentLatch\Infrastructure\WordPress;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Integration\FieldCatalog;
+use ContentLatch\Application\Integration\FieldCatalog;
 
 final class CoreFieldCatalog implements FieldCatalog
 {
@@ -145,7 +145,7 @@ final class CoreFieldCatalog implements FieldCatalog
                 'name'        => $definition['name'],
                 'label'       => self::fieldLabel($id),
                 'type'        => $definition['type'],
-                'group_label' => __('WordPress', 'contentguard'),
+                'group_label' => __('WordPress', 'contentlatch'),
             );
         }
 
@@ -155,12 +155,12 @@ final class CoreFieldCatalog implements FieldCatalog
     private static function fieldLabel(string $id): string
     {
         return match ($id) {
-            self::TITLE => __('Title', 'contentguard'),
-            self::CONTENT => __('Content', 'contentguard'),
-            self::EXCERPT => __('Excerpt', 'contentguard'),
-            self::SLUG => __('Slug', 'contentguard'),
-            self::FEATURED_IMAGE => __('Featured Image', 'contentguard'),
-            self::AUTHOR => __('Author', 'contentguard'),
+            self::TITLE => __('Title', 'contentlatch'),
+            self::CONTENT => __('Content', 'contentlatch'),
+            self::EXCERPT => __('Excerpt', 'contentlatch'),
+            self::SLUG => __('Slug', 'contentlatch'),
+            self::FEATURED_IMAGE => __('Featured Image', 'contentlatch'),
+            self::AUTHOR => __('Author', 'contentlatch'),
             default => self::FIELDS[$id]['label'] ?? $id,
         };
     }

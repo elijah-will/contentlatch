@@ -20,36 +20,36 @@
  * Clickable field labels reuse EditorFieldFocus / editor-field.js. Top-level
  * ACF fields and Group children (leaf field keys).
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Infrastructure\ACF;
+namespace ContentLatch\Infrastructure\ACF;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Admin\EditorFieldFocus;
-use ContentGuard\Application\ContentEvaluator;
-use ContentGuard\Application\EditorCoreNavigation;
-use ContentGuard\Application\EditorFieldNavigation;
-use ContentGuard\Application\EditorNoticePresentation;
-use ContentGuard\Application\DomainMessages;
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Application\RuleRepositoryInterface;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\Contracts\FieldValueProviderInterface;
-use ContentGuard\Domain\EvaluationResult;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\WordPress\RulePostType;
+use ContentLatch\Admin\EditorFieldFocus;
+use ContentLatch\Application\ContentEvaluator;
+use ContentLatch\Application\EditorCoreNavigation;
+use ContentLatch\Application\EditorFieldNavigation;
+use ContentLatch\Application\EditorNoticePresentation;
+use ContentLatch\Application\DomainMessages;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\Contracts\FieldValueProviderInterface;
+use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\WordPress\RulePostType;
 use Throwable;
 use WP_REST_Request;
 use WP_REST_Response;
 
 final class SaveWarningNotifier
 {
-    public const REST_NAMESPACE = 'contentguard/v1';
+    public const REST_NAMESPACE = 'contentlatch/v1';
     public const REST_ROUTE     = '/warnings/(?P<id>\d+)';
 
     /**
@@ -204,7 +204,7 @@ final class SaveWarningNotifier
             return;
         }
 
-        // Only republish contentguardEditorField when there are warnings to
+        // Only republish contentlatchEditorField when there are warnings to
         // navigate. An empty extras localize overwrites Audit arrival state.
         if ($warnings !== array()) {
             EditorFieldFocus::enqueueAssets(
@@ -214,18 +214,18 @@ final class SaveWarningNotifier
         }
 
         wp_register_script(
-            'contentguard-editor-warnings',
-            CONTENTGUARD_URL . 'admin/js/editor-warnings.js',
-            array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentguard-editor-field'),
-            \ContentGuard\Plugin::VERSION,
+            'contentlatch-editor-warnings',
+            CONTENTLATCH_URL . 'admin/js/editor-warnings.js',
+            array('wp-api-fetch', 'wp-data', 'wp-i18n', 'contentlatch-editor-field'),
+            \ContentLatch\Plugin::VERSION,
             true
         );
         if (function_exists('wp_set_script_translations')) {
-            wp_set_script_translations('contentguard-editor-warnings', 'contentguard', CONTENTGUARD_DIR . 'languages');
+            wp_set_script_translations('contentlatch-editor-warnings', 'contentlatch', CONTENTLATCH_DIR . 'languages');
         }
         wp_localize_script(
-            'contentguard-editor-warnings',
-            'contentguardEditorWarnings',
+            'contentlatch-editor-warnings',
+            'contentlatchEditorWarnings',
             array(
                 'postId'   => $postId,
                 'messages' => $messages,
@@ -234,13 +234,13 @@ final class SaveWarningNotifier
                 'html'     => self::noticeHtml($warnings, EditorCoreNavigation::SURFACE_GUTENBERG),
                 'text'     => self::noticeText($warnings),
                 'i18n'     => array(
-                    'warning'   => __('Warning', 'contentguard'),
+                    'warning'   => __('Warning', 'contentlatch'),
                     /* translators: %s: Field label. */
-                    'goToField' => __('Go to field: %s', 'contentguard'),
+                    'goToField' => __('Go to field: %s', 'contentlatch'),
                 ),
             )
         );
-        wp_enqueue_script('contentguard-editor-warnings');
+        wp_enqueue_script('contentlatch-editor-warnings');
     }
 
     public function shouldRenderClassicNotices(): bool
@@ -297,7 +297,7 @@ final class SaveWarningNotifier
         } catch (Throwable $exception) {
             $this->pageCache[$postId] = array();
             if (defined('WP_DEBUG') && WP_DEBUG && function_exists('error_log')) {
-                error_log('ContentGuard warning notice failed safely: ' . $exception->getMessage());
+                error_log('ContentLatch warning notice failed safely: ' . $exception->getMessage());
             }
         }
 
@@ -394,7 +394,7 @@ final class SaveWarningNotifier
             return '';
         }
 
-        return '<div class="notice notice-warning is-dismissible contentguard-editor-warnings-notice">' . $inner . '</div>';
+        return '<div class="notice notice-warning is-dismissible contentlatch-editor-warnings-notice">' . $inner . '</div>';
     }
 
     /**
@@ -448,7 +448,7 @@ final class SaveWarningNotifier
             (string) ($warning['fieldKey'] ?? ''),
             (string) ($warning['label'] ?? ''),
             (string) ($warning['message'] ?? ''),
-            __('Content warning.', 'contentguard'),
+            __('Content warning.', 'contentlatch'),
             $surface,
             EditorFieldNavigation::layoutFromItem($warning),
             EditorFieldNavigation::affectedRowsFromItem($warning),
@@ -561,7 +561,7 @@ final class SaveWarningNotifier
         $label   = trim((string) ($result->context['field_label'] ?? ''));
         $message = $result->message !== ''
             ? DomainMessages::present($result->message)
-            : __('Content warning.', 'contentguard');
+            : __('Content warning.', 'contentlatch');
 
         return EditorFieldNavigation::withEvaluationRowTargets(
             array(
@@ -685,7 +685,7 @@ final class SaveWarningNotifier
         $label   = (string) ($result->context['field_label'] ?? '');
         $message = $result->message !== ''
             ? DomainMessages::present($result->message)
-            : __('Content warning.', 'contentguard');
+            : __('Content warning.', 'contentlatch');
 
         if ($label !== '' && !str_contains($message, $label)) {
             return $label . ': ' . $message;

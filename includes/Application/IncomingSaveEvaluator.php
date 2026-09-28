@@ -10,22 +10,22 @@
  * so an existing featured image is not treated as empty when Gutenberg leaves
  * featured_media out of the request. Explicit empty submissions still win.
  *
- * @package ContentGuard
+ * @package ContentLatch
  */
 
 declare(strict_types=1);
 
-namespace ContentGuard\Application;
+namespace ContentLatch\Application;
 
 defined('ABSPATH') || exit;
 
-use ContentGuard\Application\Integration\CompositeValueProvider;
-use ContentGuard\Application\Integration\FieldCatalog;
-use ContentGuard\Domain\ContentEvaluation;
-use ContentGuard\Domain\Rule;
-use ContentGuard\Domain\RuleEngine;
-use ContentGuard\Infrastructure\ACF\AcfIntegration;
-use ContentGuard\Infrastructure\WordPress\CoreIntegration;
+use ContentLatch\Application\Integration\CompositeValueProvider;
+use ContentLatch\Application\Integration\FieldCatalog;
+use ContentLatch\Domain\ContentEvaluation;
+use ContentLatch\Domain\Rule;
+use ContentLatch\Domain\RuleEngine;
+use ContentLatch\Infrastructure\ACF\AcfIntegration;
+use ContentLatch\Infrastructure\WordPress\CoreIntegration;
 
 final class IncomingSaveEvaluator
 {
