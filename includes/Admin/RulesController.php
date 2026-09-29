@@ -82,11 +82,15 @@ final class RulesController
             return;
         }
 
-        $nonce = isset($_POST['_wpnonce'])
+        $nativeOk = function_exists('wp_verify_nonce')
+            && wp_verify_nonce(
+                sanitize_text_field(wp_unslash((string) ($_POST['_wpnonce'] ?? ''))),
+                RuleCommandService::NONCE_ACTION
+            ) !== false;
+        $nonce    = isset($_POST['_wpnonce'])
             ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
             : '';
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
+        if (!$this->nonceAllows($nonce, $nativeOk)) {
             $this->respondAdmin(
                 array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
@@ -112,11 +116,15 @@ final class RulesController
             return;
         }
 
-        $nonce = isset($_GET['_wpnonce'])
+        $nativeOk = function_exists('wp_verify_nonce')
+            && wp_verify_nonce(
+                sanitize_text_field(wp_unslash((string) ($_GET['_wpnonce'] ?? ''))),
+                RuleCommandService::NONCE_ACTION
+            ) !== false;
+        $nonce    = isset($_GET['_wpnonce'])
             ? sanitize_text_field(wp_unslash((string) $_GET['_wpnonce']))
             : '';
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
+        if (!$this->nonceAllows($nonce, $nativeOk)) {
             $this->respondAdmin(
                 array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
@@ -146,11 +154,15 @@ final class RulesController
             return;
         }
 
-        $nonce = isset($_GET['_wpnonce'])
+        $nativeOk = function_exists('wp_verify_nonce')
+            && wp_verify_nonce(
+                sanitize_text_field(wp_unslash((string) ($_GET['_wpnonce'] ?? ''))),
+                RuleCommandService::NONCE_ACTION
+            ) !== false;
+        $nonce    = isset($_GET['_wpnonce'])
             ? sanitize_text_field(wp_unslash((string) $_GET['_wpnonce']))
             : '';
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
+        if (!$this->nonceAllows($nonce, $nativeOk)) {
             $this->respondAdmin(
                 array('ok' => false, 'message' => __('Invalid rule management nonce.', 'contentlatch')),
                 $fallback
@@ -181,11 +193,12 @@ final class RulesController
             return;
         }
 
-        $nonce = isset($_POST['_wpnonce'])
+        $nativeOk = function_exists('check_ajax_referer')
+            && (bool) check_ajax_referer(RuleCommandService::NONCE_ACTION, '_wpnonce', false);
+        $nonce    = isset($_POST['_wpnonce'])
             ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
             : '';
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
+        if (!$this->nonceAllows($nonce, $nativeOk)) {
             $this->sendFields(array(
                 'ok'      => false,
                 'message' => __('Invalid rule management nonce.', 'contentlatch'),
@@ -407,7 +420,10 @@ final class RulesController
         }
 
         if (array_key_exists('conditions', $input)) {
-            $clean['conditions'] = self::cleanRows($input['conditions'], array(
+            $conditions = is_array($input['conditions'])
+                ? map_deep($input['conditions'], 'sanitize_text_field')
+                : array();
+            $clean['conditions'] = self::cleanRows($conditions, array(
                 'id'        => 'key',
                 'field_key' => 'text',
                 'operator'  => 'key',
@@ -416,7 +432,10 @@ final class RulesController
         }
 
         if (array_key_exists('validations', $input)) {
-            $clean['validations'] = self::cleanRows($input['validations'], array(
+            $validations = is_array($input['validations'])
+                ? map_deep($input['validations'], 'sanitize_text_field')
+                : array();
+            $clean['validations'] = self::cleanRows($validations, array(
                 'id'        => 'key',
                 'field_key' => 'text',
                 'type'      => 'key',
@@ -441,6 +460,8 @@ final class RulesController
 
         if (!($payload['ok'] ?? false)) {
             wp_send_json($payload, 400);
+
+            return;
         }
 
         wp_send_json($payload);
@@ -458,6 +479,16 @@ final class RulesController
      */
     private function postedSaveRequest(string $nonce): array
     {
+        $nativeOk = function_exists('wp_verify_nonce')
+            && wp_verify_nonce($nonce, RuleCommandService::NONCE_ACTION) !== false;
+        if (!$this->nonceAllows($nonce, $nativeOk)) {
+            return array(
+                '_wpnonce' => $nonce,
+                'name'     => '',
+                'message'  => '',
+            );
+        }
+
         $input = array(
             '_wpnonce' => $nonce,
             'name'     => isset($_POST['name']) ? sanitize_text_field(wp_unslash((string) $_POST['name'])) : '',
@@ -477,28 +508,29 @@ final class RulesController
             $input['severity'] = sanitize_key(wp_unslash((string) $_POST['severity']));
         }
         if (isset($_POST['conditions'])) {
-            $conditions = wp_unslash($_POST['conditions']);
-            $input['conditions'] = self::cleanRows(is_array($conditions) ? $conditions : array(), array(
-                'id'        => 'key',
-                'field_key' => 'text',
-                'operator'  => 'key',
-                'operand'   => 'text',
-            ));
+            // Nested arrays stay nested. Every scalar leaf is sanitized before cleanRows().
+            $conditions = map_deep(wp_unslash($_POST['conditions']), 'sanitize_text_field');
+            $input['conditions'] = is_array($conditions) ? $conditions : array();
         }
         if (isset($_POST['validations'])) {
-            $validations = wp_unslash($_POST['validations']);
-            $input['validations'] = self::cleanRows(is_array($validations) ? $validations : array(), array(
-                'id'        => 'key',
-                'field_key' => 'text',
-                'type'      => 'key',
-                'min'       => 'text',
-                'max'       => 'text',
-                'values'    => 'text',
-                'message'   => 'text',
-            ));
+            $validations = map_deep(wp_unslash($_POST['validations']), 'sanitize_text_field');
+            $input['validations'] = is_array($validations) ? $validations : array();
         }
 
         return self::cleanSaveInput($input);
+    }
+
+    /**
+     * Test doubles supply $verifyNonce. Production also calls wp_verify_nonce
+     * or check_ajax_referer in the caller before other request fields are read.
+     */
+    private function nonceAllows(string $nonce, bool $nativeOk): bool
+    {
+        if (is_callable($this->verifyNonce)) {
+            return (bool) ($this->verifyNonce)($nonce);
+        }
+
+        return $nativeOk;
     }
 
     /**

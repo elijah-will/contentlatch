@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace ContentLatch\Tests\Unit\Admin;
 
+require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
+
 use ContentLatch\Admin\RuleEditorDraftStore;
 use ContentLatch\Admin\RulesController;
 use ContentLatch\Application\RuleCommandService;
@@ -176,6 +178,164 @@ final class RulesControllerTest extends TestCase
         $this->assertStringNotContainsString('HttpRequest::unslash', $src);
         $this->assertDoesNotMatchRegularExpression('/\$_POST\s*=/', $src);
         $this->assertStringNotContainsString('$_REQUEST', $src);
+    }
+
+    public function testPostedConditionsAndValidationsDeepSanitizeAtRequestBoundary(): void
+    {
+        $src = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/RulesController.php');
+        $method = substr($src, (int) strpos($src, 'function postedSaveRequest'));
+        $method = substr($method, 0, (int) strpos($method, 'function cleanRows'));
+
+        $this->assertStringContainsString(
+            "map_deep(wp_unslash(\$_POST['conditions']), 'sanitize_text_field')",
+            $method
+        );
+        $this->assertStringContainsString(
+            "map_deep(wp_unslash(\$_POST['validations']), 'sanitize_text_field')",
+            $method
+        );
+        $this->assertStringNotContainsString('self::cleanRows(is_array($conditions)', $method);
+        $this->assertStringNotContainsString('self::cleanRows(is_array($validations)', $method);
+    }
+
+    public function testPostedNestedRuleRowsStripMarkupBeforePersistence(): void
+    {
+        $repository = new InMemoryRuleRepository(array(), RuleDocumentValidator::v1());
+        $controller = $this->controller(true, true, $repository);
+        $previousPost = $_POST;
+
+        $_POST = array(
+            '_wpnonce'         => 'ok',
+            'name'             => 'Nested sanitize',
+            'message'          => '',
+            'target_post_type' => 'product',
+            'severity'         => 'fail',
+            'conditions'       => array(
+                array(
+                    'id'        => 'c1<script>alert(1)</script>',
+                    'field_key' => 'field_type',
+                    'operator'  => 'equals',
+                    'operand'   => "sauce<img src=x onerror=alert(1)>",
+                ),
+            ),
+            'validations'      => array(
+                array(
+                    'id'        => 'v1"><script>alert(1)</script>',
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'allowed_values',
+                    'min'       => '',
+                    'max'       => '',
+                    'values'    => 'sauce,<script>evil</script>rub,dry',
+                    'message'   => 'Only <b>sauce</b> or <script>x</script>rub.',
+                ),
+            ),
+        );
+
+        try {
+            $controller->save();
+            $saved = $repository->find(1);
+            $this->assertNotNull($saved);
+            $this->assertSame('c1', $saved->conditions[0]->id);
+            $this->assertSame('sauce', $saved->conditions[0]->operand);
+            $this->assertSame('v1', $saved->validations[0]->id);
+            $this->assertSame(array('sauce', 'rub', 'dry'), $saved->validations[0]->params['values']);
+            $this->assertSame('Only sauce or rub.', $saved->validations[0]->message);
+            $this->assertStringNotContainsString('<', $saved->conditions[0]->operand);
+            $this->assertStringNotContainsString('<', $saved->validations[0]->message);
+            $this->assertStringNotContainsString('script', $saved->conditions[0]->id);
+            $this->assertStringNotContainsString('script', $saved->validations[0]->id);
+        } finally {
+            $_POST = $previousPost;
+        }
+    }
+
+    public function testPostedNestedRuleRowsPreserveLegitimateValues(): void
+    {
+        $repository = new InMemoryRuleRepository(array(), RuleDocumentValidator::v1());
+        $controller = $this->controller(true, true, $repository);
+        $previousPost = $_POST;
+
+        $_POST = array(
+            '_wpnonce'         => 'ok',
+            'name'             => 'Legitimate nested values',
+            'message'          => '',
+            'target_post_type' => 'product',
+            'severity'         => 'warning',
+            'conditions'       => array(
+                array(
+                    'id'        => 'cond_1',
+                    'field_key' => 'field_type',
+                    'operator'  => 'equals',
+                    'operand'   => "O\\'Brien «Nuevo» タグ",
+                ),
+            ),
+            'validations'      => array(
+                array(
+                    'id'        => 'val_1',
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'allowed_values',
+                    'min'       => '',
+                    'max'       => '',
+                    'values'    => 'sauce, rub, dry',
+                    'message'   => 'Use sauce, rub, or dry only.',
+                ),
+            ),
+        );
+
+        try {
+            $controller->save();
+            $saved = $repository->find(1);
+            $this->assertNotNull($saved);
+            $this->assertSame('cond_1', $saved->conditions[0]->id);
+            $this->assertSame('field_type', $saved->conditions[0]->field->key);
+            $this->assertSame('equals', $saved->conditions[0]->operator);
+            $this->assertSame("O'Brien «Nuevo» タグ", $saved->conditions[0]->operand);
+            $this->assertSame('val_1', $saved->validations[0]->id);
+            $this->assertSame('field_ingredients', $saved->validations[0]->field->key);
+            $this->assertSame('allowed_values', $saved->validations[0]->type);
+            $this->assertSame(array('sauce', 'rub', 'dry'), $saved->validations[0]->params['values']);
+            $this->assertSame('Use sauce, rub, or dry only.', $saved->validations[0]->message);
+            $this->assertSame('warning', $saved->severity->value);
+        } finally {
+            $_POST = $previousPost;
+        }
+    }
+
+    public function testCleanSaveInputStripsMarkupFromNestedRuleLeaves(): void
+    {
+        $clean = RulesController::cleanSaveInput(array(
+            'name'        => 'Nested leaf sanitize',
+            'message'     => '',
+            'conditions'  => array(
+                array(
+                    'id'        => 'row<script>x</script>',
+                    'field_key' => 'field_type',
+                    'operator'  => 'contains',
+                    'operand'   => 'healthy<b>!</b>',
+                ),
+            ),
+            'validations' => array(
+                array(
+                    'id'        => 'need<script>',
+                    'field_key' => 'field_ingredients',
+                    'type'      => 'allowed_values',
+                    'min'       => '',
+                    'max'       => '',
+                    'values'    => 'a,<img src=x>,b',
+                    'message'   => 'Pick <em>a</em> or b',
+                ),
+            ),
+        ));
+
+        $this->assertSame('row', $clean['conditions'][0]['id']);
+        $this->assertSame('healthy!', $clean['conditions'][0]['operand']);
+        $this->assertSame('contains', $clean['conditions'][0]['operator']);
+        $this->assertSame('field_type', $clean['conditions'][0]['field_key']);
+        $this->assertSame('need', $clean['validations'][0]['id']);
+        $this->assertSame('a,,b', $clean['validations'][0]['values']);
+        $this->assertSame('Pick a or b', $clean['validations'][0]['message']);
+        $this->assertSame('allowed_values', $clean['validations'][0]['type']);
+        $this->assertSame('field_ingredients', $clean['validations'][0]['field_key']);
     }
 
     public function testUnauthorizedAndInvalidNonceAreRejected(): void
@@ -414,6 +574,51 @@ final class RulesControllerTest extends TestCase
         );
         $this->assertTrue($ok['ok']);
         $this->assertSame('field_type', $ok['fields'][0]['key']);
+    }
+
+    public function testFieldsAjaxReturnsJsonErrorForInvalidNonceWithoutDying(): void
+    {
+        unset($GLOBALS['contentlatch_test_json']);
+        $controller = $this->controller(true, false);
+        $previous = $_POST;
+        $_POST = array(
+            '_wpnonce'  => 'forged',
+            'post_type' => 'product',
+        );
+
+        try {
+            $controller->fields();
+            $payload = $GLOBALS['contentlatch_test_json']['response'] ?? null;
+            $this->assertIsArray($payload);
+            $this->assertFalse($payload['ok']);
+            $this->assertSame('Invalid rule management nonce.', $payload['message']);
+            $this->assertSame(400, $GLOBALS['contentlatch_test_json']['status']);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_json']);
+        }
+    }
+
+    public function testFieldsAjaxReturnsJsonForAValidRequest(): void
+    {
+        unset($GLOBALS['contentlatch_test_json']);
+        $controller = $this->controller(true, true);
+        $previous = $_POST;
+        $_POST = array(
+            '_wpnonce'  => 'ok',
+            'post_type' => 'product',
+        );
+
+        try {
+            $controller->fields();
+            $payload = $GLOBALS['contentlatch_test_json']['response'] ?? null;
+            $this->assertIsArray($payload);
+            $this->assertTrue($payload['ok']);
+            $this->assertSame('field_type', $payload['fields'][0]['key']);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_json']);
+        }
     }
 
     public function testShowNewTagYesRequiresPageId(): void

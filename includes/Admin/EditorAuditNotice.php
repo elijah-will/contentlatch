@@ -414,7 +414,9 @@ final class EditorAuditNotice
 
     private function editorPostId(): int
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for displaying a notice. absint only. No mutation.
         if (isset($_GET['post'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for displaying a notice. absint only. No mutation.
             return absint(wp_unslash((string) $_GET['post']));
         }
 
@@ -436,13 +438,19 @@ final class EditorAuditNotice
         $runArg  = EditorFieldNavigation::AUDIT_RUN_ARG;
         $fieldArg = EditorFieldNavigation::QUERY_ARG;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit-run navigation arg. sanitize_text_field only. No mutation.
         if (isset($_GET[$runArg])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit-run navigation arg. sanitize_text_field only. No mutation.
             $request[$runArg] = sanitize_text_field(wp_unslash((string) $_GET[$runArg]));
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only audit-run navigation arg copied from the editor request. sanitize_text_field only. No mutation.
         } elseif (isset($_POST[$runArg])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only audit-run navigation arg copied from the editor request. sanitize_text_field only. No mutation.
             $request[$runArg] = sanitize_text_field(wp_unslash((string) $_POST[$runArg]));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only field-focus query arg. Allowlisted by isQueryTarget. No mutation.
         if (isset($_GET[$fieldArg])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only field-focus query arg. Allowlisted by isQueryTarget. No mutation.
             $field = sanitize_text_field(wp_unslash((string) $_GET[$fieldArg]));
             if (EditorFieldNavigation::isQueryTarget($field)) {
                 $request[$fieldArg] = $field;

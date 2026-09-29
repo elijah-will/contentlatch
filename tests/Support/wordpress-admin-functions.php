@@ -227,6 +227,19 @@ if (!function_exists('wp_json_encode')) {
     }
 }
 
+if (!function_exists('wp_send_json')) {
+    /**
+     * @param mixed $response
+     */
+    function wp_send_json(mixed $response, int $status = 200): void
+    {
+        $GLOBALS['contentlatch_test_json'] = array(
+            'response' => $response,
+            'status'   => $status,
+        );
+    }
+}
+
 if (!function_exists('paginate_links')) {
     /**
      * @param array<string, mixed> $args

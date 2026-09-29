@@ -71,52 +71,94 @@ final class WpAuditStore implements AuditStoreInterface
     {
         global $wpdb;
 
-        $finishedSql = $run->finishedAt === null ? 'NULL' : '%s';
-        $errorSql    = $run->errorMessage === null ? 'NULL' : '%s';
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- finished_at/error_message are literal NULL or %s; table uses %i.
-        $sql         = 'UPDATE %i SET
-status = %s,
-finished_at = ' . $finishedSql . ',
-heartbeat_at = %s,
-posts_scanned = %d,
-posts_passed = %d,
-posts_warned = %d,
-posts_failed = %d,
-posts_not_evaluated = %d,
-posts_total = %d,
-' . AuditSchema::CURSOR_COLUMN . ' = %d,
-actor_user_id = %d,
-post_types = %s,
-error_message = ' . $errorSql . '
-WHERE id = %d';
+        $table  = AuditSchema::runsTable();
+        $status = $run->status->value;
+        $types  = wp_json_encode(array_values($run->postTypes));
 
-        $args = array(AuditSchema::runsTable(), $run->status->value);
-        if ($run->finishedAt !== null) {
-            $args[] = $run->finishedAt;
+        // Each UPDATE is a complete literal. finished_at and error_message stay SQL NULL
+        // or a %s argument. Placeholders are passed one-for-one so the call is static.
+        if ($run->finishedAt === null && $run->errorMessage === null) {
+            $updated = $wpdb->query(
+                $wpdb->prepare(
+                    'UPDATE %i SET status = %s, finished_at = NULL, heartbeat_at = %s, posts_scanned = %d, posts_passed = %d, posts_warned = %d, posts_failed = %d, posts_not_evaluated = %d, posts_total = %d, scan_cursor = %d, actor_user_id = %d, post_types = %s, error_message = NULL WHERE id = %d',
+                    $table,
+                    $status,
+                    $run->heartbeatAt,
+                    $run->postsScanned,
+                    $run->postsPassed,
+                    $run->postsWarned,
+                    $run->postsFailed,
+                    $run->postsNotEvaluated,
+                    $run->postsTotal,
+                    $run->cursor,
+                    $run->actorUserId,
+                    $types,
+                    $run->id
+                )
+            );
+        } elseif ($run->finishedAt !== null && $run->errorMessage === null) {
+            $updated = $wpdb->query(
+                $wpdb->prepare(
+                    'UPDATE %i SET status = %s, finished_at = %s, heartbeat_at = %s, posts_scanned = %d, posts_passed = %d, posts_warned = %d, posts_failed = %d, posts_not_evaluated = %d, posts_total = %d, scan_cursor = %d, actor_user_id = %d, post_types = %s, error_message = NULL WHERE id = %d',
+                    $table,
+                    $status,
+                    $run->finishedAt,
+                    $run->heartbeatAt,
+                    $run->postsScanned,
+                    $run->postsPassed,
+                    $run->postsWarned,
+                    $run->postsFailed,
+                    $run->postsNotEvaluated,
+                    $run->postsTotal,
+                    $run->cursor,
+                    $run->actorUserId,
+                    $types,
+                    $run->id
+                )
+            );
+        } elseif ($run->finishedAt === null && $run->errorMessage !== null) {
+            $updated = $wpdb->query(
+                $wpdb->prepare(
+                    'UPDATE %i SET status = %s, finished_at = NULL, heartbeat_at = %s, posts_scanned = %d, posts_passed = %d, posts_warned = %d, posts_failed = %d, posts_not_evaluated = %d, posts_total = %d, scan_cursor = %d, actor_user_id = %d, post_types = %s, error_message = %s WHERE id = %d',
+                    $table,
+                    $status,
+                    $run->heartbeatAt,
+                    $run->postsScanned,
+                    $run->postsPassed,
+                    $run->postsWarned,
+                    $run->postsFailed,
+                    $run->postsNotEvaluated,
+                    $run->postsTotal,
+                    $run->cursor,
+                    $run->actorUserId,
+                    $types,
+                    $run->errorMessage,
+                    $run->id
+                )
+            );
+        } else {
+            $updated = $wpdb->query(
+                $wpdb->prepare(
+                    'UPDATE %i SET status = %s, finished_at = %s, heartbeat_at = %s, posts_scanned = %d, posts_passed = %d, posts_warned = %d, posts_failed = %d, posts_not_evaluated = %d, posts_total = %d, scan_cursor = %d, actor_user_id = %d, post_types = %s, error_message = %s WHERE id = %d',
+                    $table,
+                    $status,
+                    $run->finishedAt,
+                    $run->heartbeatAt,
+                    $run->postsScanned,
+                    $run->postsPassed,
+                    $run->postsWarned,
+                    $run->postsFailed,
+                    $run->postsNotEvaluated,
+                    $run->postsTotal,
+                    $run->cursor,
+                    $run->actorUserId,
+                    $types,
+                    $run->errorMessage,
+                    $run->id
+                )
+            );
         }
 
-        array_push(
-            $args,
-            $run->heartbeatAt,
-            $run->postsScanned,
-            $run->postsPassed,
-            $run->postsWarned,
-            $run->postsFailed,
-            $run->postsNotEvaluated,
-            $run->postsTotal,
-            $run->cursor,
-            $run->actorUserId,
-            wp_json_encode(array_values($run->postTypes))
-        );
-
-        if ($run->errorMessage !== null) {
-            $args[] = $run->errorMessage;
-        }
-
-        $args[] = $run->id;
-
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- finished_at/error_message are literal NULL or %s; placeholders and $args are built together from the same null checks.
-        $updated = $wpdb->query($wpdb->prepare($sql, ...$args));
         if ($updated === false) {
             $this->logDbError('Could not save audit run.');
             throw new AuditException('Could not save audit run.');
@@ -194,13 +236,13 @@ WHERE id = %d';
         global $wpdb;
 
         $postIds = array_values(array_filter(array_map('intval', $postIds)));
-        if ($postIds !== array()) {
-            $placeholders = implode(',', array_fill(0, count($postIds), '%d'));
+        foreach ($postIds as $postId) {
             $wpdb->query(
                 $wpdb->prepare(
-                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN placeholders are generated as %d tokens from intval'd IDs; arguments are the same ID list.
-                    'DELETE FROM %i WHERE run_id = %d AND post_id IN (' . $placeholders . ')',
-                    array_merge(array(AuditSchema::findingsTable(), $runId), $postIds)
+                    'DELETE FROM %i WHERE run_id = %d AND post_id = %d',
+                    AuditSchema::findingsTable(),
+                    $runId,
+                    $postId
                 )
             );
         }
@@ -268,19 +310,115 @@ WHERE id = %d';
     {
         global $wpdb;
 
-        [$where, $args] = $this->findingWhere($query);
-        $args[]         = $query->limit;
-        $args[]         = $query->offset;
+        $table    = AuditSchema::findingsTable();
+        $runId    = $query->runId;
+        $limit    = $query->limit;
+        $offset   = $query->offset;
+        $severity = $query->severity;
+        $ruleId   = $query->ruleId !== null ? (string) $query->ruleId : null;
+        $postType = $query->postType;
 
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
-                'SELECT * FROM %i WHERE ' . $where . ' ORDER BY id ASC LIMIT %d OFFSET %d',
-                AuditSchema::findingsTable(),
-                ...$args
-            ),
-            ARRAY_A
-        );
+        if ($severity !== null && $ruleId !== null && $postType !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s AND post_type = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId,
+                    $postType,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($severity !== null && $ruleId !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($severity !== null && $postType !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND severity = %s AND post_type = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $severity,
+                    $postType,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($ruleId !== null && $postType !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND rule_id = %s AND post_type = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $ruleId,
+                    $postType,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($severity !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND severity = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $severity,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($ruleId !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND rule_id = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $ruleId,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } elseif ($postType !== null) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d AND post_type = %s ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $postType,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        } else {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT * FROM %i WHERE run_id = %d ORDER BY id ASC LIMIT %d OFFSET %d',
+                    $table,
+                    $runId,
+                    $limit,
+                    $offset
+                ),
+                ARRAY_A
+            );
+        }
 
         if (!is_array($rows)) {
             return array();
@@ -300,14 +438,99 @@ WHERE id = %d';
     {
         global $wpdb;
 
-        [$where, $args] = $this->findingWhere($query);
+        $table    = AuditSchema::findingsTable();
+        $runId    = $query->runId;
+        $severity = $query->severity;
+        $ruleId   = $query->ruleId !== null ? (string) $query->ruleId : null;
+        $postType = $query->postType;
+
+        if ($severity !== null && $ruleId !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId,
+                    $postType
+                )
+            );
+        }
+
+        if ($severity !== null && $ruleId !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId
+                )
+            );
+        }
+
+        if ($severity !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND severity = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $postType
+                )
+            );
+        }
+
+        if ($ruleId !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND rule_id = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $ruleId,
+                    $postType
+                )
+            );
+        }
+
+        if ($severity !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND severity = %s',
+                    $table,
+                    $runId,
+                    $severity
+                )
+            );
+        }
+
+        if ($ruleId !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND rule_id = %s',
+                    $table,
+                    $runId,
+                    $ruleId
+                )
+            );
+        }
+
+        if ($postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i WHERE run_id = %d AND post_type = %s',
+                    $table,
+                    $runId,
+                    $postType
+                )
+            );
+        }
 
         return (int) $wpdb->get_var(
             $wpdb->prepare(
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
-                'SELECT COUNT(*) FROM %i WHERE ' . $where,
-                AuditSchema::findingsTable(),
-                ...$args
+                'SELECT COUNT(*) FROM %i WHERE run_id = %d',
+                $table,
+                $runId
             )
         );
     }
@@ -316,14 +539,99 @@ WHERE id = %d';
     {
         global $wpdb;
 
-        [$where, $args] = $this->findingWhere($query);
+        $table    = AuditSchema::findingsTable();
+        $runId    = $query->runId;
+        $severity = $query->severity;
+        $ruleId   = $query->ruleId !== null ? (string) $query->ruleId : null;
+        $postType = $query->postType;
+
+        if ($severity !== null && $ruleId !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId,
+                    $postType
+                )
+            );
+        }
+
+        if ($severity !== null && $ruleId !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND severity = %s AND rule_id = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $ruleId
+                )
+            );
+        }
+
+        if ($severity !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND severity = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $severity,
+                    $postType
+                )
+            );
+        }
+
+        if ($ruleId !== null && $postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND rule_id = %s AND post_type = %s',
+                    $table,
+                    $runId,
+                    $ruleId,
+                    $postType
+                )
+            );
+        }
+
+        if ($severity !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND severity = %s',
+                    $table,
+                    $runId,
+                    $severity
+                )
+            );
+        }
+
+        if ($ruleId !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND rule_id = %s',
+                    $table,
+                    $runId,
+                    $ruleId
+                )
+            );
+        }
+
+        if ($postType !== null) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d AND post_type = %s',
+                    $table,
+                    $runId,
+                    $postType
+                )
+            );
+        }
 
         return (int) $wpdb->get_var(
             $wpdb->prepare(
-                // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- WHERE fragments are fixed %d/%s tokens; arguments come from the same findingWhere() builder.
-                'SELECT COUNT(DISTINCT post_id) FROM %i WHERE ' . $where,
-                AuditSchema::findingsTable(),
-                ...$args
+                'SELECT COUNT(DISTINCT post_id) FROM %i WHERE run_id = %d',
+                $table,
+                $runId
             )
         );
     }
@@ -444,32 +752,6 @@ WHERE id = %d';
                 AuditSchema::runsTable()
             )
         );
-    }
-
-    /**
-     * @return array{0: string, 1: array<int, int|string>}
-     */
-    private function findingWhere(AuditFindingQuery $query): array
-    {
-        $where = array('run_id = %d');
-        $args  = array($query->runId);
-
-        if ($query->severity !== null) {
-            $where[] = 'severity = %s';
-            $args[]  = $query->severity;
-        }
-
-        if ($query->ruleId !== null) {
-            $where[] = 'rule_id = %s';
-            $args[]  = (string) $query->ruleId;
-        }
-
-        if ($query->postType !== null) {
-            $where[] = 'post_type = %s';
-            $args[]  = $query->postType;
-        }
-
-        return array(implode(' AND ', $where), $args);
     }
 
     /**

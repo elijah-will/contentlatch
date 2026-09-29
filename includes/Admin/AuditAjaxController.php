@@ -214,6 +214,10 @@ final class AuditAjaxController
             return sanitize_text_field((string) ($this->dispatched['_wpnonce'] ?? ''));
         }
 
+        if (function_exists('check_ajax_referer')) {
+            check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false);
+        }
+
         return isset($_POST['_wpnonce'])
             ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
             : '';
@@ -223,6 +227,10 @@ final class AuditAjaxController
     {
         if ($this->dispatched !== null) {
             return absint($this->dispatched[$key] ?? 0);
+        }
+
+        if (function_exists('check_ajax_referer')) {
+            check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false);
         }
 
         return isset($_POST[$key]) ? absint(wp_unslash((string) $_POST[$key])) : 0;

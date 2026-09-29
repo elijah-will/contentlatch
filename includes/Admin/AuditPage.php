@@ -337,6 +337,7 @@ final class AuditPage
      */
     private function auditQuery(): array
     {
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only Audit screen filters. Values are absint, sanitize_key, or an allowlist. They do not mutate state.
         $query = array();
 
         if (isset($_GET['run'])) {
@@ -372,6 +373,7 @@ final class AuditPage
                 $query['post_type'] = $type;
             }
         }
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
         return $query;
     }

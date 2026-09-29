@@ -13,7 +13,6 @@ defined('ABSPATH') || exit;
 
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- ID/cursor audit scans have no Core API equivalent that preserves this query.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching -- Cursor pagination must read live wp_posts rows, not object cache.
-// phpcs:disable PluginCheck.Security.DirectDB.UnescapedDBParameter -- Uses $wpdb->posts plus generated %s/%d placeholders; all values pass through $wpdb->prepare.
 
 use ContentLatch\Application\Audit\AuditPost;
 use ContentLatch\Application\Audit\AuditPostScanner;
@@ -72,22 +71,37 @@ final class WpAuditPostScanner implements AuditPostScanner
             return array();
         }
 
-        $typePlaceholders   = implode(',', array_fill(0, count($postTypes), '%s'));
-        $statusPlaceholders = implode(',', array_fill(0, count($statuses), '%s'));
-
-        if ($count) {
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN lists are %s tokens from array_fill, not user SQL.
-            $sql = "SELECT COUNT(ID) AS total FROM {$wpdb->posts} WHERE post_type IN ({$typePlaceholders}) AND post_status IN ({$statusPlaceholders})";
-            $args = array_merge($postTypes, $statuses);
-        } else {
-            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN lists are %s tokens from array_fill, not user SQL.
-            $sql = "SELECT ID, post_type FROM {$wpdb->posts} WHERE post_type IN ({$typePlaceholders}) AND post_status IN ({$statusPlaceholders}) AND ID > %d ORDER BY ID ASC LIMIT %d";
-            $args = array_merge($postTypes, $statuses, array($cursor, $limit));
+        $typePlaceholders   = $this->stringPlaceholders(count($postTypes));
+        $statusPlaceholders = $this->stringPlaceholders(count($statuses));
+        if ($typePlaceholders === '' || $statusPlaceholders === '') {
+            return array();
         }
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Placeholder count matches the type/status arrays (and cursor/limit when not counting); $sql is built only from %s/%d tokens and $wpdb->posts.
-        $rows = $wpdb->get_results($wpdb->prepare($sql, $args), ARRAY_A);
+        if ($count) {
+            $sql  = 'SELECT COUNT(ID) AS total FROM %i WHERE post_type IN (' . $typePlaceholders . ') AND post_status IN (' . $statusPlaceholders . ')';
+            $args = array_merge(array($wpdb->posts), $postTypes, $statuses);
+        } else {
+            $sql  = 'SELECT ID, post_type FROM %i WHERE post_type IN (' . $typePlaceholders . ') AND post_status IN (' . $statusPlaceholders . ') AND ID > %d ORDER BY ID ASC LIMIT %d';
+            $args = array_merge(array($wpdb->posts), $postTypes, $statuses, array($cursor, $limit));
+        }
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $wpdb->prepare() has no array placeholder. stringPlaceholders() contributes only %s tokens; post types, statuses, cursor, and limit are prepare arguments.
+        $rows = $wpdb->get_results($wpdb->prepare($sql, ...$args), ARRAY_A);
 
         return is_array($rows) ? $rows : array();
+    }
+
+    /**
+     * Comma-separated %s tokens for a variable IN list. Never contains values.
+     */
+    private function stringPlaceholders(int $count): string
+    {
+        if ($count < 1) {
+            return '';
+        }
+
+        $placeholders = implode(',', array_fill(0, $count, '%s'));
+
+        return preg_match('/^%s(?:,%s)*$/', $placeholders) === 1 ? $placeholders : '';
     }
 }

@@ -660,6 +660,10 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertStringContainsString("current_user_can('edit_post'", $src);
         $this->assertStringContainsString('wp_verify_nonce', $src);
         $this->assertStringContainsString("'update-post_'", $src);
+        $parser = substr($src, (int) strpos($src, 'function submittedClassicRequest'));
+        $parser = substr($parser, 0, (int) strpos($parser, 'function validate'));
+        $this->assertLessThan(strpos($parser, 'wp_verify_nonce'), strpos($parser, 'userCanEditPost'));
+        $this->assertLessThan(strpos($parser, "\$_POST['post_type']"), strpos($parser, 'wp_verify_nonce'));
         $this->assertLessThan(
             strpos($src, '$this->incoming->evaluate'),
             strpos($src, 'isAuthorizedClassicSave')

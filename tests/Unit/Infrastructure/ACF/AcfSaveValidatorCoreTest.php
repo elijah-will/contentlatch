@@ -265,6 +265,79 @@ final class AcfSaveValidatorCoreTest extends TestCase
         $this->assertStringNotContainsString('required..', $this->errors[0]['message']);
     }
 
+    public function testRejectedAcfAjaxNonceDoesNotValidate(): void
+    {
+        $GLOBALS['contentlatch_test_acf_ajax_nonce'] = false;
+        $previous = $_POST;
+        $_POST = array(
+            'post_ID'     => '42',
+            'post_type'   => 'post',
+            'post_status' => 'auto-draft',
+            'publish'     => 'Publish',
+            'post_title'  => '',
+            'action'      => 'acf/validate_save_post',
+        );
+
+        try {
+            $this->hookValidator(array($this->titleRequired()))->onValidateSavePost();
+            $this->assertSame(array(), $this->errors);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_acf_ajax_nonce']);
+        }
+    }
+
+    public function testAcceptedAcfAjaxNonceStillValidatesSubmittedFields(): void
+    {
+        $GLOBALS['contentlatch_test_acf_ajax_nonce'] = true;
+        $previous = $_POST;
+        $_POST = array(
+            'post_ID'     => '42',
+            'post_type'   => 'post',
+            'post_status' => 'auto-draft',
+            'publish'     => 'Publish',
+            'post_title'  => '',
+            'action'      => 'acf/validate_save_post',
+        );
+
+        try {
+            $this->hookValidator(array($this->titleRequired()))->onValidateSavePost();
+            $this->assertNotSame(array(), $this->errors);
+            $this->assertStringContainsString('Title', $this->errors[0]['message']);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_acf_ajax_nonce']);
+        }
+    }
+
+    /**
+     * @param array<int, mixed> $rules
+     */
+    private function hookValidator(array $rules): AcfSaveValidator
+    {
+        $this->errors = array();
+        $repository   = new InMemoryRuleRepository($rules);
+        $catalog      = $this->postAcfCatalog();
+        $incoming     = IncomingSaveFixtures::evaluator(
+            $repository,
+            $catalog,
+            CoreCatalogFixtures::integration(CoreCatalogFixtures::fullPost('post'))
+        );
+
+        return new AcfSaveValidator(
+            $repository,
+            $catalog,
+            new IntendedPostStatusResolver(),
+            function (string $input, string $message): void {
+                $this->errors[] = array(
+                    'input'   => $input,
+                    'message' => $message,
+                );
+            },
+            $incoming
+        );
+    }
+
     /**
      * @param array<int, mixed>    $rules
      * @param array<string, mixed> $acfPayload

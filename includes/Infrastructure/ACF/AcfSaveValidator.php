@@ -71,9 +71,10 @@ final class AcfSaveValidator
     }
 
     /**
-     * ACF already authenticated this save. Routing scalars are sanitized.
-     * The acf field tree and Core content are unslashed only so validation
-     * still sees the submitted markup.
+     * ACF ajax validation already verified its nonce before this hook.
+     * acf_verify_ajax() repeats that check when ACF is loaded. Routing
+     * scalars are sanitized. The acf field tree and Core content are
+     * unslashed only so validation still sees the submitted markup.
      *
      * Action stays sanitize_text_field: ACF sends acf/validate_save_post,
      * and sanitize_key would remove the slash.
@@ -82,6 +83,11 @@ final class AcfSaveValidator
      */
     private function submittedAcfRequest(): array
     {
+        if (function_exists('acf_verify_ajax') && !acf_verify_ajax()) {
+            return array();
+        }
+
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- acf/validate_save_post runs only after ACF verifies its ajax nonce. acf_verify_ajax() rechecks that nonce. ContentLatch does not add a nonce ACF forms do not send.
         $request = array();
 
         foreach (array('post_ID', 'post_id', '_acf_post_id') as $key) {
@@ -138,6 +144,7 @@ final class AcfSaveValidator
             $request['acf'] = wp_unslash($_POST['acf']);
         }
 
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
         return $request;
     }
 

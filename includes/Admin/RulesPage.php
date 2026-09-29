@@ -178,7 +178,9 @@ final class RulesPage
             wp_die(esc_html__('You are not allowed to access this page.', 'contentlatch'));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only rules screen selector. absint/sanitize_key only. No mutation.
         $ruleId = isset($_GET['rule']) ? absint(wp_unslash((string) $_GET['rule'])) : 0;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only rules screen selector. sanitize_key only. No mutation.
         $action = isset($_GET['action']) ? sanitize_key(wp_unslash((string) $_GET['action'])) : '';
         if ($action === 'new') {
             $this->renderEditor(null, 0);
@@ -439,19 +441,23 @@ final class RulesPage
 
     private function requestAction(): string
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor/list navigation. sanitize_key only. No mutation.
         if (!isset($_GET['action'])) {
             return '';
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor/list navigation. sanitize_key only. No mutation.
         return sanitize_key(wp_unslash((string) $_GET['action']));
     }
 
     private function requestRuleId(): int
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only rule id for the editor screen. absint only. No mutation.
         if (!isset($_GET['rule'])) {
             return 0;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only rule id for the editor screen. absint only. No mutation.
         return absint(wp_unslash((string) $_GET['rule']));
     }
 
@@ -519,10 +525,14 @@ final class RulesPage
     private function notice(): ?array
     {
         $query = array();
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin notice type from a redirect query arg. sanitize_key only. No mutation.
         if (isset($_GET['contentlatch_notice'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin notice type from a redirect query arg. sanitize_key only. No mutation.
             $query['contentlatch_notice'] = sanitize_key(wp_unslash((string) $_GET['contentlatch_notice']));
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin notice text from a redirect query arg. sanitize_text_field only. No mutation.
         if (isset($_GET['contentlatch_msg'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin notice text from a redirect query arg. sanitize_text_field only. No mutation.
             $query['contentlatch_msg'] = sanitize_text_field(wp_unslash((string) $_GET['contentlatch_msg']));
         }
 

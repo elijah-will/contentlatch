@@ -118,18 +118,24 @@ final class EditorFieldFocus
         $fieldArg = EditorFieldNavigation::QUERY_ARG;
         $runArg   = EditorFieldNavigation::AUDIT_RUN_ARG;
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only field-focus query arg. Allowlisted by isQueryTarget. No mutation.
         if (isset($_GET[$fieldArg])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only field-focus query arg. Allowlisted by isQueryTarget. No mutation.
             $field = sanitize_text_field(wp_unslash((string) $_GET[$fieldArg]));
             if (EditorFieldNavigation::isQueryTarget($field)) {
                 $request[$fieldArg] = $field;
             }
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit-run navigation arg. sanitize_text_field only. No mutation.
         if (isset($_GET[$runArg])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only audit-run navigation arg. sanitize_text_field only. No mutation.
             $request[$runArg] = sanitize_text_field(wp_unslash((string) $_GET[$runArg]));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id used to focus a field. absint only. No mutation.
         if (isset($_GET['post'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id used to focus a field. absint only. No mutation.
             $request['post'] = absint(wp_unslash((string) $_GET['post']));
         }
 

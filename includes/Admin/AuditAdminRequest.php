@@ -38,6 +38,7 @@ final class AuditAdminRequest
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing -- Read-only admin routing remap. Moves a reserved post_type query arg aside so admin.php can load the Audit screen. No ContentLatch state is mutated.
         self::apply($_GET, $_REQUEST, $_POST);
     }
 

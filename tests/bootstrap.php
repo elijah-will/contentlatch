@@ -39,8 +39,13 @@ if (!function_exists('_nx')) {
 }
 
 if (!function_exists('sanitize_text_field')) {
-    function sanitize_text_field(string $text): string
+    function sanitize_text_field(mixed $text): string
     {
+        if (is_object($text) || is_array($text)) {
+            return '';
+        }
+
+        $text = (string) $text;
         $text = preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', $text) ?? $text;
         $text = strip_tags($text);
         $text = preg_replace('/[\r\n\t ]+/', ' ', $text) ?? $text;
@@ -87,6 +92,17 @@ if (!function_exists('esc_url_raw')) {
     }
 }
 
+if (!function_exists('acf_verify_ajax')) {
+    function acf_verify_ajax(): bool
+    {
+        if (!array_key_exists('contentlatch_test_acf_ajax_nonce', $GLOBALS)) {
+            return true;
+        }
+
+        return (bool) $GLOBALS['contentlatch_test_acf_ajax_nonce'];
+    }
+}
+
 if (!function_exists('wp_unslash')) {
     function wp_unslash(mixed $value): mixed
     {
@@ -95,6 +111,29 @@ if (!function_exists('wp_unslash')) {
         }
 
         return is_string($value) ? stripslashes($value) : $value;
+    }
+}
+
+if (!function_exists('map_deep')) {
+    function map_deep(mixed $value, callable $callback): mixed
+    {
+        if (is_array($value)) {
+            foreach ($value as $index => $item) {
+                $value[$index] = map_deep($item, $callback);
+            }
+
+            return $value;
+        }
+
+        if (is_object($value)) {
+            foreach (get_object_vars($value) as $property => $item) {
+                $value->{$property} = map_deep($item, $callback);
+            }
+
+            return $value;
+        }
+
+        return $callback($value);
     }
 }
 

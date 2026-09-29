@@ -53,19 +53,18 @@ final class CoreSaveValidator
     public function onLoadPost(): void
     {
         try {
-            $postId = isset($_POST['post_ID']) ? absint(wp_unslash((string) $_POST['post_ID'])) : 0;
-            $nonce  = isset($_POST['_wpnonce'])
-                ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
-                : '';
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Distinguishes Classic editpost from other load-post requests. edit_post capability and the update-post_{id} nonce are verified before any field is read.
             $action = isset($_POST['action']) ? sanitize_key(wp_unslash((string) $_POST['action'])) : '';
             if ($action !== 'editpost' || $this->servingRestRequest() || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
                 return;
             }
-            if (!$this->userCanEditPost($postId) || !$this->classicUpdateNonceIsValid(array('_wpnonce' => $nonce), $postId)) {
+
+            $request = $this->submittedClassicRequest($action);
+            if ($request === null) {
                 return;
             }
 
-            $messages = $this->validate($this->submittedClassicRequest($nonce, $postId, $action));
+            $messages = $this->validate($request);
             if ($messages === null) {
                 return;
             }
@@ -79,14 +78,37 @@ final class CoreSaveValidator
     }
 
     /**
-     * Authorized Classic editpost fields. Routing scalars are sanitized.
-     * Post content and the ACF tree are unslashed only: text sanitizers would
-     * strip markup and change validation.
+     * Classic editpost fields. Capability and the update-post_{id} nonce are
+     * established before title, content, or ACF values are read. Routing
+     * scalars are sanitized. Post content and the ACF tree are unslashed only:
+     * text sanitizers would strip markup and change validation.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null Null when the request is not an authorized Classic save.
      */
-    private function submittedClassicRequest(string $nonce, int $postId, string $action): array
+    private function submittedClassicRequest(string $action): ?array
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- post_ID selects edit_post and the update-post_{id} nonce action. No content field is read until both checks pass.
+        $postId = isset($_POST['post_ID']) ? absint(wp_unslash((string) $_POST['post_ID'])) : 0;
+        if (!$this->userCanEditPost($postId)) {
+            return null;
+        }
+
+        $nonceAction = 'update-post_' . $postId;
+        $nativeOk    = function_exists('wp_verify_nonce')
+            && wp_verify_nonce(
+                sanitize_text_field(wp_unslash((string) ($_POST['_wpnonce'] ?? ''))),
+                $nonceAction
+            ) !== false;
+        $nonce       = isset($_POST['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+            : '';
+        $verified    = is_callable($this->verifyNonce)
+            ? (bool) ($this->verifyNonce)($nonce, $nonceAction)
+            : $nativeOk;
+        if (!$verified) {
+            return null;
+        }
+
         $request = array(
             '_wpnonce' => $nonce,
             'post_ID'  => $postId,

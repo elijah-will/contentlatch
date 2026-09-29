@@ -605,11 +605,15 @@ final class SaveWarningNotifier
 
     private function editorPostId(): int
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for a warning notice. absint only. No mutation.
         if (isset($_GET['post'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for a warning notice. absint only. No mutation.
             return absint(wp_unslash((string) $_GET['post']));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for a warning notice. absint only. No mutation.
         if (isset($_GET['post_ID'])) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only editor post id for a warning notice. absint only. No mutation.
             return absint(wp_unslash((string) $_GET['post_ID']));
         }
 
