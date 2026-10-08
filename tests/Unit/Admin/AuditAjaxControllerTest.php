@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace ContentLatch\Tests\Unit\Admin;
 
+require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
+
 use ContentLatch\Admin\AuditAjaxController;
 use ContentLatch\Application\Audit\ContentAuditService;
 use ContentLatch\Application\ContentEvaluator;
@@ -52,16 +54,7 @@ final class AuditAjaxControllerTest extends TestCase
 
     public function testHttpStartBatchAndCancelSanitizeNonceAndIds(): void
     {
-        $seen = null;
-        $controller = $this->controller(
-            true,
-            true,
-            static function (string $nonce) use (&$seen): bool {
-                $seen = $nonce;
-
-                return $nonce === 'ok';
-            }
-        );
+        $controller = $this->controller(true, true);
         $previous = $_POST;
 
         try {
@@ -76,7 +69,6 @@ final class AuditAjaxControllerTest extends TestCase
             $this->assertNull($idle['run']);
 
             $controller->start();
-            $this->assertSame('ok', $seen);
             $started = $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'));
             $this->assertNotNull($started['run']);
             $runId = (int) $started['run']['id'];
@@ -102,6 +94,110 @@ final class AuditAjaxControllerTest extends TestCase
         } finally {
             $_POST = $previous;
         }
+    }
+
+    public function testWordPressAjaxEntryRejectsMissingInvalidNonceAndMissingCapability(): void
+    {
+        unset($GLOBALS['contentlatch_test_json']);
+        $controller = $this->controller(true, true);
+        $deniedCap  = $this->controller(false, true);
+        $previous   = $_POST;
+
+        try {
+            $_POST = array('_wpnonce' => '', 'user_id' => '4');
+            $controller->start();
+            $this->assertFalse(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? true));
+            $this->assertSame('Invalid audit nonce.', $GLOBALS['contentlatch_test_json']['response']['message']);
+            $idle = $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'));
+            $this->assertNull($idle['run']);
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST['_wpnonce'] = 'forged';
+            $controller->start();
+            $this->assertFalse(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? true));
+            $this->assertNull(
+                $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'))['run']
+            );
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST['_wpnonce'] = 'ok';
+            $deniedCap->start();
+            $this->assertFalse(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? true));
+            $this->assertSame(
+                'You are not allowed to run ContentLatch audits.',
+                $GLOBALS['contentlatch_test_json']['response']['message']
+            );
+            $this->assertNull(
+                $controller->dispatch(AuditAjaxController::ACTION_STATUS, array('_wpnonce' => 'ok'))['run']
+            );
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $controller->start();
+            $this->assertTrue(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? false));
+            $runId = (int) ($GLOBALS['contentlatch_test_json']['response']['run']['id'] ?? 0);
+            $this->assertGreaterThan(0, $runId);
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST = array('_wpnonce' => 'forged', 'run_id' => (string) $runId);
+            $controller->batch();
+            $this->assertFalse(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? true));
+            $this->assertSame(
+                'pending',
+                $controller->dispatch(
+                    AuditAjaxController::ACTION_STATUS,
+                    array('_wpnonce' => 'ok', 'run_id' => (string) $runId)
+                )['run']['status']
+            );
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST['_wpnonce'] = '';
+            $controller->cancel();
+            $this->assertFalse(($GLOBALS['contentlatch_test_json']['response']['ok'] ?? true));
+            $this->assertSame(
+                'pending',
+                $controller->dispatch(
+                    AuditAjaxController::ACTION_STATUS,
+                    array('_wpnonce' => 'ok', 'run_id' => (string) $runId)
+                )['run']['status']
+            );
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST['_wpnonce'] = 'ok';
+            $deniedCap->cancel();
+            $this->assertSame(
+                'pending',
+                $controller->dispatch(
+                    AuditAjaxController::ACTION_STATUS,
+                    array('_wpnonce' => 'ok', 'run_id' => (string) $runId)
+                )['run']['status']
+            );
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_json']);
+        }
+    }
+
+    public function testWordPressAjaxEntryUsesExplicitCheckAjaxReferer(): void
+    {
+        $src = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/AuditAjaxController.php');
+        $this->assertStringContainsString(
+            "check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false) === false",
+            $src
+        );
+        $this->assertStringNotContainsString("function_exists('check_ajax_referer')", $src);
+        $method = substr($src, (int) strpos($src, 'function authorizeWordPressAjax'));
+        $method = substr($method, 0, (int) strpos($method, 'function authorizeDispatched'));
+        $this->assertStringContainsString('check_ajax_referer', $method);
+        $this->assertStringNotContainsString('$this->verifyNonce', $method);
+
+        $postedInt = substr($src, (int) strpos($src, 'function postedInt'));
+        $this->assertStringNotContainsString('check_ajax_referer', $postedInt);
+        $this->assertStringNotContainsString('$_POST', $postedInt);
+
+        $postedNonce = substr($src, (int) strpos($src, 'function postedNonce'));
+        $postedNonce = substr($postedNonce, 0, (int) strpos($postedNonce, 'function postedInt'));
+        $this->assertStringNotContainsString('$_POST', $postedNonce);
+        $this->assertStringContainsString('$this->dispatched', $method);
     }
 
     public function testAuthorizedStartReturnsRun(): void

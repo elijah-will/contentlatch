@@ -22,6 +22,7 @@ defined('ABSPATH') || exit;
 use ContentLatch\Application\EditorNoticePresentation;
 use ContentLatch\Application\IncomingSaveEvaluator;
 use ContentLatch\Domain\EvaluationResult;
+use ContentLatch\Infrastructure\ACF\AcfFieldCatalog;
 use ContentLatch\Infrastructure\ACF\IntendedPostStatusResolver;
 use Throwable;
 
@@ -157,12 +158,26 @@ final class CoreSaveValidator
             'post_author',
         ) as $key) {
             if (array_key_exists($key, $_POST)) {
-                $request[$key] = wp_unslash($_POST[$key]);
+                // Auth/nonce already verified above. IncomingSubmissionSanitizer applies
+                // field-appropriate WP sanitizers (wp_kses_post, sanitize_textarea_field,
+                // absint, -1 thumbnail sentinel, etc.). Not a recognized sniff callback.
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $request[$key] = IncomingSubmissionSanitizer::coreField($key, wp_unslash($_POST[$key]));
             }
         }
 
         if (isset($_POST['acf']) && is_array($_POST['acf'])) {
-            $request['acf'] = wp_unslash($_POST['acf']);
+            $postType = isset($request['post_type']) ? (string) $request['post_type'] : '';
+            $types    = array();
+            if ($postType !== '') {
+                // Catalog metadata only (no per-field DB reads). Empty when ACF is absent.
+                $types = IncomingSubmissionSanitizer::acfFieldTypes(
+                    (new AcfFieldCatalog())->fieldsForPostType($postType)
+                );
+            }
+            // Evaluation-only. Type-aware recursive sanitize; arrays never stringified.
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $request['acf'] = IncomingSubmissionSanitizer::acfTree(wp_unslash($_POST['acf']), $types);
         }
 
         return $request;

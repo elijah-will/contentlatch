@@ -655,7 +655,9 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertStringContainsString('IntendedPostStatusResolver', $src);
         $this->assertStringContainsString('REST_REQUEST', $src);
         $this->assertStringContainsString('wp_is_serving_rest_request', $src);
-        $this->assertStringContainsString("request['acf']", $src);
+        $this->assertStringContainsString('IncomingSubmissionSanitizer::acfTree', $src);
+        $this->assertStringContainsString('IncomingSubmissionSanitizer::coreField', $src);
+        $this->assertStringNotContainsString("\$request['acf'] = wp_unslash(\$_POST['acf'])", $src);
         $this->assertStringContainsString('EditorNoticePresentation', $src);
         $this->assertStringContainsString("current_user_can('edit_post'", $src);
         $this->assertStringContainsString('wp_verify_nonce', $src);
@@ -675,6 +677,130 @@ final class CoreSaveValidatorTest extends TestCase
         $this->assertStringNotContainsString('save_post', $src);
         $this->assertStringNotContainsString('has_post_thumbnail', $src);
         $this->assertStringNotContainsString('set_post_thumbnail', $src);
+    }
+
+    public function testClassicBoundarySanitizesCoreContentAndDoesNotFlipFailingEquals(): void
+    {
+        $previous = $_POST;
+        $_POST = array(
+            'action'       => 'editpost',
+            'post_ID'      => '42',
+            '_wpnonce'     => 'valid-classic-nonce',
+            'post_type'    => 'post',
+            'post_status'  => 'draft',
+            'publish'      => 'Publish',
+            'post_title'   => 'Keep',
+            'post_content' => '<p>Nope</p><script>alert(1)</script>',
+            'post_excerpt' => "line1\nline2",
+            'post_name'    => 'My Slug!',
+            'post_author'  => '7',
+            '_thumbnail_id'=> '9',
+        );
+
+        try {
+            $this->validator(
+                array(
+                    RuleFactory::rule(array(
+                        'postType'    => 'post',
+                        'conditions'  => array(),
+                        'validations' => array(
+                            RuleFactory::validation(array(
+                                'field'  => CoreCatalogFixtures::contentRef(),
+                                'type'   => 'allowed_values',
+                                'params' => array('values' => array('Expected')),
+                            )),
+                        ),
+                    )),
+                ),
+                null,
+                null,
+                'post',
+                null,
+                null,
+                static fn (string $nonce, string $action): bool => $nonce === 'valid-classic-nonce'
+            )->onLoadPost();
+
+            $this->assertCount(1, $this->deaths);
+            $this->assertStringContainsString('Content', $this->deaths[0]['message']);
+        } finally {
+            $_POST = $previous;
+        }
+    }
+
+    public function testClassicBoundarySanitizesAcfTreeWithoutPersisting(): void
+    {
+        $previous = $_POST;
+        $_POST = array(
+            'action'      => 'editpost',
+            'post_ID'     => '42',
+            '_wpnonce'    => 'valid-classic-nonce',
+            'post_type'   => 'product',
+            'post_status' => 'draft',
+            'publish'     => 'Publish',
+            'post_title'  => 'Product',
+            'acf'         => array(
+                'field_type' => 'Seasoning<script>x</script>',
+            ),
+        );
+
+        try {
+            $this->productValidator(array(
+                RuleFactory::rule(array(
+                    'postType'    => 'product',
+                    'conditions'  => array(),
+                    'validations' => array(
+                        RuleFactory::validation(array(
+                            'field'  => new \ContentLatch\Domain\FieldRef('field_type', 'product_type', 'Product Type'),
+                            'type'   => 'allowed_values',
+                            'params' => array('values' => array('sauce')),
+                        )),
+                    ),
+                )),
+            ))->onLoadPost();
+
+            $this->assertCount(1, $this->deaths);
+            $src = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/WordPress/CoreSaveValidator.php');
+            $this->assertStringNotContainsString('update_field', $src);
+            $this->assertStringNotContainsString('wp_update_post', $src);
+        } finally {
+            $_POST = $previous;
+        }
+    }
+
+    public function testWarningSeverityStillDoesNotAbortAfterSanitization(): void
+    {
+        $previous = $_POST;
+        $_POST = $this->publishRequest(array(
+            'post_title' => '',
+            '_wpnonce'   => 'ok',
+        ));
+
+        try {
+            $this->validator(
+                array(
+                    RuleFactory::rule(array(
+                        'postType'    => 'post',
+                        'severity'    => \ContentLatch\Domain\RuleSeverity::Warning,
+                        'conditions'  => array(),
+                        'validations' => array(
+                            RuleFactory::validation(array(
+                                'field' => CoreCatalogFixtures::titleRef(),
+                            )),
+                        ),
+                    )),
+                ),
+                null,
+                null,
+                'post',
+                null,
+                null,
+                static fn (string $nonce, string $action): bool => true
+            )->onLoadPost();
+
+            $this->assertSame(array(), $this->deaths);
+        } finally {
+            $_POST = $previous;
+        }
     }
 
     /**

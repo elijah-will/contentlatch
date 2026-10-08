@@ -110,6 +110,57 @@ if (!function_exists('wp_nonce_url')) {
     }
 }
 
+if (!function_exists('wp_verify_nonce')) {
+    /**
+     * Test double for RulesController admin-post handlers.
+     * Accepts the fixtures used in unit tests; rejects empty/forged values.
+     *
+     * @param mixed $nonce
+     * @param mixed $action
+     */
+    function wp_verify_nonce($nonce = '', $action = -1): int|false
+    {
+        unset($action);
+        $nonce = is_scalar($nonce) ? (string) $nonce : '';
+        if ($nonce === '' || $nonce === '0') {
+            return false;
+        }
+
+        return ($nonce === 'ok' || $nonce === 'testnonce') ? 1 : false;
+    }
+}
+
+if (!function_exists('check_ajax_referer')) {
+    /**
+     * Test double for ContentLatch AJAX handlers. Mirrors Core: reads the query
+     * arg, verifies via wp_verify_nonce, returns false on failure when $stop is false.
+     * Does not always succeed.
+     *
+     * @param mixed $action
+     * @param mixed $query_arg
+     */
+    function check_ajax_referer($action = -1, $query_arg = '_wpnonce', bool $stop = true): int|false
+    {
+        $query_arg = is_scalar($query_arg) ? (string) $query_arg : '_wpnonce';
+        $raw       = null;
+        if (isset($_REQUEST[$query_arg])) {
+            $raw = $_REQUEST[$query_arg];
+        } elseif (isset($_POST[$query_arg])) {
+            $raw = $_POST[$query_arg];
+        } elseif (isset($_GET[$query_arg])) {
+            $raw = $_GET[$query_arg];
+        }
+
+        $nonce  = is_scalar($raw) ? sanitize_text_field(wp_unslash((string) $raw)) : '';
+        $result = wp_verify_nonce($nonce, is_scalar($action) ? (string) $action : -1);
+        if ($result === false && $stop) {
+            exit;
+        }
+
+        return $result;
+    }
+}
+
 if (!function_exists('selected')) {
     function selected(mixed $selected, mixed $current = true, bool $display = true): string
     {
@@ -195,7 +246,33 @@ if (!function_exists('_n')) {
 if (!function_exists('wp_kses_post')) {
     function wp_kses_post(string $data): string
     {
+        $data = preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', $data) ?? $data;
+        $data = preg_replace('/\s+on\w+\s*=\s*("|\').*?\1/i', '', $data) ?? $data;
+
         return $data;
+    }
+}
+
+if (!function_exists('sanitize_email')) {
+    function sanitize_email(string $email): string
+    {
+        $email = trim($email);
+        if ($email === '' || !str_contains($email, '@')) {
+            return '';
+        }
+
+        return $email;
+    }
+}
+
+if (!function_exists('sanitize_title')) {
+    function sanitize_title(string $title, string $fallback = ''): string
+    {
+        $title = strtolower(strip_tags($title));
+        $title = preg_replace('/[^a-z0-9_\-]+/', '-', $title) ?? '';
+        $title = trim($title, '-');
+
+        return $title !== '' ? $title : $fallback;
     }
 }
 

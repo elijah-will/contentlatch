@@ -92,6 +92,39 @@ if (!function_exists('esc_url_raw')) {
     }
 }
 
+if (!function_exists('sanitize_email')) {
+    function sanitize_email(string $email): string
+    {
+        $email = trim($email);
+        if ($email === '' || !str_contains($email, '@')) {
+            return '';
+        }
+
+        return $email;
+    }
+}
+
+if (!function_exists('sanitize_title')) {
+    function sanitize_title(string $title, string $fallback = ''): string
+    {
+        $title = strtolower(strip_tags($title));
+        $title = preg_replace('/[^a-z0-9_\-]+/', '-', $title) ?? '';
+        $title = trim($title, '-');
+
+        return $title !== '' ? $title : $fallback;
+    }
+}
+
+if (!function_exists('wp_kses_post')) {
+    function wp_kses_post(string $data): string
+    {
+        $data = preg_replace('@<(script|style)[^>]*?>.*?</\\1>@si', '', $data) ?? $data;
+        $data = preg_replace('/\s+on\w+\s*=\s*("|\').*?\1/i', '', $data) ?? $data;
+
+        return $data;
+    }
+}
+
 if (!function_exists('acf_verify_ajax')) {
     function acf_verify_ajax(): bool
     {

@@ -27,6 +27,7 @@ use ContentLatch\Application\RuleRepositoryInterface;
 use ContentLatch\Domain\EvaluationResult;
 use ContentLatch\Infrastructure\WordPress\CoreFieldCatalog;
 use ContentLatch\Infrastructure\WordPress\CoreIncomingPayload;
+use ContentLatch\Infrastructure\WordPress\IncomingSubmissionSanitizer;
 use Throwable;
 
 final class AcfSaveValidator
@@ -136,12 +137,21 @@ final class AcfSaveValidator
             'post_author',
         ) as $key) {
             if (array_key_exists($key, $_POST)) {
-                $request[$key] = wp_unslash($_POST[$key]);
+                // acf_verify_ajax / ACF hook nonce already passed. IncomingSubmissionSanitizer
+                // applies field-appropriate WP sanitizers; sniff cannot see that callback.
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $request[$key] = IncomingSubmissionSanitizer::coreField($key, wp_unslash($_POST[$key]));
             }
         }
 
         if (isset($_POST['acf']) && is_array($_POST['acf'])) {
-            $request['acf'] = wp_unslash($_POST['acf']);
+            $postType = isset($request['post_type']) ? (string) $request['post_type'] : '';
+            $types    = $postType !== ''
+                ? IncomingSubmissionSanitizer::acfFieldTypes($this->catalog->fieldsForPostType($postType))
+                : array();
+            // Evaluation-only tree. Nested indexes preserved; leaves sanitized by ACF type when known.
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            $request['acf'] = IncomingSubmissionSanitizer::acfTree(wp_unslash($_POST['acf']), $types);
         }
 
         // phpcs:enable WordPress.Security.NonceVerification.Missing

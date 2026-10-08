@@ -178,13 +178,140 @@ final class RulesControllerTest extends TestCase
         $this->assertStringNotContainsString('HttpRequest::unslash', $src);
         $this->assertDoesNotMatchRegularExpression('/\$_POST\s*=/', $src);
         $this->assertStringNotContainsString('$_REQUEST', $src);
+
+        foreach (array('function save', 'function delete', 'function status') as $methodName) {
+            $method = substr($src, (int) strpos($src, $methodName));
+            $method = substr($method, 0, (int) strpos($method, "\n    public function ", 1));
+            $this->assertStringContainsString(
+                'wp_verify_nonce($nonce, RuleCommandService::NONCE_ACTION) === false',
+                $method
+            );
+            $this->assertStringNotContainsString('function_exists(\'wp_verify_nonce\')', $method);
+            $this->assertStringNotContainsString('nonceAllows', $method);
+            $verifyAt = strpos($method, 'wp_verify_nonce($nonce, RuleCommandService::NONCE_ACTION)');
+            $this->assertNotFalse($verifyAt);
+            $this->assertTrue(
+                !str_contains($method, "\$_GET['rule_id']")
+                    || $verifyAt < strpos($method, "\$_GET['rule_id']")
+            );
+            $this->assertTrue(
+                !str_contains($method, "\$_POST['name']")
+                    || $verifyAt < (int) strpos($method, "\$_POST['name']")
+            );
+        }
+    }
+
+    public function testAdminPostHandlersRejectMissingInvalidNonceAndMissingCapabilityWithoutMutation(): void
+    {
+        $repository = new InMemoryRuleRepository(array(
+            RuleFactory::rule(array(
+                'id' => 7,
+                'name' => 'Existing',
+                'postType' => 'product',
+                'status' => RuleStatus::Active,
+            )),
+        ), RuleDocumentValidator::v1());
+        $allowed = $this->controller(true, true, $repository);
+        $deniedCap = $this->controller(false, true, $repository);
+
+        $previousPost = $_POST;
+        $previousGet = $_GET;
+
+        try {
+            $_POST = array(
+                '_wpnonce'         => 'ok',
+                'name'             => 'Created via HTTP',
+                'message'          => '',
+                'target_post_type' => 'product',
+                'severity'         => 'fail',
+                'conditions'       => array(
+                    array(
+                        'field_key' => 'field_type',
+                        'operator'  => 'equals',
+                        'operand'   => 'sauce',
+                    ),
+                ),
+                'validations'      => array(
+                    array(
+                        'field_key' => 'field_ingredients',
+                        'type'      => 'required',
+                    ),
+                ),
+            );
+            $allowed->save();
+            $created = $repository->find(8);
+            $this->assertNotNull($created);
+            $this->assertSame('Created via HTTP', $created->name);
+
+            $_POST['_wpnonce'] = '';
+            $_POST['name'] = 'Must not save missing nonce';
+            $before = count($repository->findAll());
+            $allowed->save();
+            $this->assertCount($before, $repository->findAll());
+            $this->assertNull($repository->find(9));
+
+            $_POST['_wpnonce'] = 'forged';
+            $_POST['name'] = 'Must not save forged nonce';
+            $allowed->save();
+            $this->assertNull($repository->find(9));
+
+            $_POST['_wpnonce'] = 'ok';
+            $_POST['name'] = 'Must not save without capability';
+            $deniedCap->save();
+            $this->assertNull($repository->find(9));
+
+            $_GET = array(
+                '_wpnonce' => '',
+                'rule_id'  => '7',
+            );
+            $allowed->delete();
+            $this->assertNotNull($repository->find(7));
+
+            $_GET['_wpnonce'] = 'forged';
+            $allowed->delete();
+            $this->assertNotNull($repository->find(7));
+
+            $_GET['_wpnonce'] = 'ok';
+            $deniedCap->delete();
+            $this->assertNotNull($repository->find(7));
+
+            $_GET = array(
+                '_wpnonce' => '',
+                'rule_id'  => '7',
+                'status'   => 'inactive',
+            );
+            $allowed->status();
+            $this->assertSame('active', $repository->find(7)->status->value);
+
+            $_GET['_wpnonce'] = 'forged';
+            $allowed->status();
+            $this->assertSame('active', $repository->find(7)->status->value);
+
+            $_GET['_wpnonce'] = 'ok';
+            $deniedCap->status();
+            $this->assertSame('active', $repository->find(7)->status->value);
+
+            $_GET['_wpnonce'] = 'ok';
+            $allowed->status();
+            $this->assertSame('inactive', $repository->find(7)->status->value);
+
+            $_GET = array(
+                '_wpnonce' => 'ok',
+                'rule_id'  => '7',
+            );
+            $allowed->delete();
+            $this->assertNull($repository->find(7));
+        } finally {
+            $_POST = $previousPost;
+            $_GET = $previousGet;
+        }
     }
 
     public function testPostedConditionsAndValidationsDeepSanitizeAtRequestBoundary(): void
     {
         $src = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/RulesController.php');
-        $method = substr($src, (int) strpos($src, 'function postedSaveRequest'));
-        $method = substr($method, 0, (int) strpos($method, 'function cleanRows'));
+        $method = substr($src, (int) strpos($src, 'function save'));
+        $method = substr($method, 0, (int) strpos($method, 'function delete'));
 
         $this->assertStringContainsString(
             "map_deep(wp_unslash(\$_POST['conditions']), 'sanitize_text_field')",
@@ -193,6 +320,15 @@ final class RulesControllerTest extends TestCase
         $this->assertStringContainsString(
             "map_deep(wp_unslash(\$_POST['validations']), 'sanitize_text_field')",
             $method
+        );
+        $this->assertStringContainsString(
+            'wp_verify_nonce($nonce, RuleCommandService::NONCE_ACTION) === false',
+            $method
+        );
+        $verifyAt = (int) strpos($method, 'wp_verify_nonce($nonce, RuleCommandService::NONCE_ACTION)');
+        $this->assertGreaterThan(
+            $verifyAt,
+            (int) strpos($method, "map_deep(wp_unslash(\$_POST['conditions'])")
         );
         $this->assertStringNotContainsString('self::cleanRows(is_array($conditions)', $method);
         $this->assertStringNotContainsString('self::cleanRows(is_array($validations)', $method);
@@ -579,7 +715,7 @@ final class RulesControllerTest extends TestCase
     public function testFieldsAjaxReturnsJsonErrorForInvalidNonceWithoutDying(): void
     {
         unset($GLOBALS['contentlatch_test_json']);
-        $controller = $this->controller(true, false);
+        $controller = $this->controller(true, true);
         $previous = $_POST;
         $_POST = array(
             '_wpnonce'  => 'forged',
@@ -593,6 +729,40 @@ final class RulesControllerTest extends TestCase
             $this->assertFalse($payload['ok']);
             $this->assertSame('Invalid rule management nonce.', $payload['message']);
             $this->assertSame(400, $GLOBALS['contentlatch_test_json']['status']);
+            $this->assertArrayNotHasKey('fields', $payload);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_json']);
+        }
+    }
+
+    public function testFieldsAjaxRejectsMissingNonceAndMissingCapabilityWithoutReturningFields(): void
+    {
+        unset($GLOBALS['contentlatch_test_json']);
+        $allowed = $this->controller(true, true);
+        $denied  = $this->controller(false, true);
+        $previous = $_POST;
+
+        try {
+            $_POST = array(
+                '_wpnonce'  => '',
+                'post_type' => 'product',
+            );
+            $allowed->fields();
+            $payload = $GLOBALS['contentlatch_test_json']['response'] ?? null;
+            $this->assertIsArray($payload);
+            $this->assertFalse($payload['ok']);
+            $this->assertSame('Invalid rule management nonce.', $payload['message']);
+            $this->assertArrayNotHasKey('fields', $payload);
+
+            unset($GLOBALS['contentlatch_test_json']);
+            $_POST['_wpnonce'] = 'ok';
+            $denied->fields();
+            $payload = $GLOBALS['contentlatch_test_json']['response'] ?? null;
+            $this->assertIsArray($payload);
+            $this->assertFalse($payload['ok']);
+            $this->assertSame('You are not allowed to manage ContentLatch rules.', $payload['message']);
+            $this->assertArrayNotHasKey('fields', $payload);
         } finally {
             $_POST = $previous;
             unset($GLOBALS['contentlatch_test_json']);
@@ -619,6 +789,25 @@ final class RulesControllerTest extends TestCase
             $_POST = $previous;
             unset($GLOBALS['contentlatch_test_json']);
         }
+    }
+
+    public function testFieldsAjaxUsesExplicitCheckAjaxReferer(): void
+    {
+        $src = (string) file_get_contents(dirname(__DIR__, 3) . '/includes/Admin/RulesController.php');
+        $method = substr($src, (int) strpos($src, 'function fields'));
+        $method = substr($method, 0, (int) strpos($method, 'function dispatch'));
+        $this->assertStringContainsString(
+            "check_ajax_referer(RuleCommandService::NONCE_ACTION, '_wpnonce', false) === false",
+            $method
+        );
+        $this->assertStringNotContainsString("function_exists('check_ajax_referer')", $method);
+        $this->assertStringNotContainsString('nonceAllows', $method);
+        $verifyAt = strpos($method, 'check_ajax_referer');
+        $this->assertNotFalse($verifyAt);
+        $this->assertLessThan(
+            strpos($method, "\$_POST['post_type']"),
+            $verifyAt
+        );
     }
 
     public function testShowNewTagYesRequiresPageId(): void

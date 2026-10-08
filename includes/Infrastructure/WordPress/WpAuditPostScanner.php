@@ -2,6 +2,19 @@
 /**
  * ID-only post scanner for audits.
  *
+ * SQL shape (prepared; values never concatenated into the query string):
+ *
+ *   SELECT … FROM %i
+ *   WHERE post_type IN ( %s[, %s…] )
+ *     AND post_status IN ( %s[, %s…] )
+ *     [AND ID > %d ORDER BY ID ASC LIMIT %d]
+ *
+ * $wpdb->prepare() has no array/IN placeholder. The IN lists therefore use a
+ * comma-separated run of literal "%s" tokens sized to the filtered list length.
+ * Those tokens are generated from a count only — never from post-type or status
+ * strings. Table name, types, statuses, cursor, and limit are prepare arguments
+ * (%i / %s / %d). Empty type or status lists skip the query entirely.
+ *
  * @package ContentLatch
  */
 
@@ -64,35 +77,74 @@ final class WpAuditPostScanner implements AuditPostScanner
     {
         global $wpdb;
 
-        $postTypes = array_values(array_filter($postTypes, static fn (string $type): bool => $type !== ''));
-        $statuses  = array_values(array_filter($statuses, static fn (string $status): bool => $status !== ''));
+        $postTypes = $this->normalizeSlugs($postTypes);
+        $statuses  = $this->normalizeSlugs($statuses);
 
         if ($postTypes === array() || $statuses === array()) {
             return array();
         }
 
-        $typePlaceholders   = $this->stringPlaceholders(count($postTypes));
-        $statusPlaceholders = $this->stringPlaceholders(count($statuses));
-        if ($typePlaceholders === '' || $statusPlaceholders === '') {
+        // Placeholder fragments contain only the literal token "%s" (comma-separated).
+        // Post-type/status values are never written into these strings.
+        $typeIn   = $this->stringPlaceholders(count($postTypes));
+        $statusIn = $this->stringPlaceholders(count($statuses));
+        if ($typeIn === '' || $statusIn === '') {
             return array();
         }
 
         if ($count) {
-            $sql  = 'SELECT COUNT(ID) AS total FROM %i WHERE post_type IN (' . $typePlaceholders . ') AND post_status IN (' . $statusPlaceholders . ')';
+            // COUNT uses the same type/status filters as scan (no cursor/limit).
+            $sql = 'SELECT COUNT(ID) AS total FROM %i WHERE post_type IN ('
+                . $typeIn
+                . ') AND post_status IN ('
+                . $statusIn
+                . ')';
             $args = array_merge(array($wpdb->posts), $postTypes, $statuses);
         } else {
-            $sql  = 'SELECT ID, post_type FROM %i WHERE post_type IN (' . $typePlaceholders . ') AND post_status IN (' . $statusPlaceholders . ') AND ID > %d ORDER BY ID ASC LIMIT %d';
+            // Cursor: deterministic ID ASC pages via ID > %d LIMIT %d.
+            $sql = 'SELECT ID, post_type FROM %i WHERE post_type IN ('
+                . $typeIn
+                . ') AND post_status IN ('
+                . $statusIn
+                . ') AND ID > %d ORDER BY ID ASC LIMIT %d';
             $args = array_merge(array($wpdb->posts), $postTypes, $statuses, array($cursor, $limit));
         }
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $wpdb->prepare() has no array placeholder. stringPlaceholders() contributes only %s tokens; post types, statuses, cursor, and limit are prepare arguments.
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, PluginCheck.Security.DirectDB.UnescapedDBParameter -- IN lists need N×%s; $typeIn/$statusIn are count-derived "%s" tokens only (see stringPlaceholders). Values bound via prepare: %i table, %s types/statuses, %d cursor/limit.
         $rows = $wpdb->get_results($wpdb->prepare($sql, ...$args), ARRAY_A);
 
         return is_array($rows) ? $rows : array();
     }
 
     /**
-     * Comma-separated %s tokens for a variable IN list. Never contains values.
+     * Sanitize and drop empty slugs before they become prepare arguments.
+     *
+     * @param string[] $values
+     * @return list<string>
+     */
+    private function normalizeSlugs(array $values): array
+    {
+        $clean = array();
+
+        foreach ($values as $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $slug = sanitize_key($value);
+            if ($slug !== '') {
+                $clean[] = $slug;
+            }
+        }
+
+        return array_values($clean);
+    }
+
+    /**
+     * Comma-separated prepare placeholders for a variable-length string IN list.
+     *
+     * Output is exclusively the characters %, s, and , in the form
+     * "%s" / "%s,%s" / … — never caller-supplied values or SQL keywords.
      */
     private function stringPlaceholders(int $count): string
     {
@@ -102,6 +154,7 @@ final class WpAuditPostScanner implements AuditPostScanner
 
         $placeholders = implode(',', array_fill(0, $count, '%s'));
 
+        // Fail closed if the fragment is ever anything other than %s tokens.
         return preg_match('/^%s(?:,%s)*$/', $placeholders) === 1 ? $placeholders : '';
     }
 }

@@ -310,6 +310,85 @@ final class AcfSaveValidatorCoreTest extends TestCase
         }
     }
 
+    public function testAcfBoundarySanitizesNestedPayloadAndKeepsFailingEquals(): void
+    {
+        $GLOBALS['contentlatch_test_acf_ajax_nonce'] = true;
+        $previous = $_POST;
+        $_POST = array(
+            'post_ID'     => '42',
+            'post_type'   => 'post',
+            'post_status' => 'auto-draft',
+            'publish'     => 'Publish',
+            'action'      => 'acf/validate_save_post',
+            'acf'         => array(
+                'field_ingredients' => "safe\nline<script>alert(1)</script>",
+                'field_type'        => 'Seasoning<img onerror=alert(1)>',
+            ),
+        );
+
+        try {
+            $this->hookValidator(array(
+                RuleFactory::rule(array(
+                    'postType'    => 'post',
+                    'conditions'  => array(),
+                    'validations' => array(
+                        RuleFactory::validation(array(
+                            'field'  => new \ContentLatch\Domain\FieldRef('field_type', 'product_type', 'Product Type'),
+                            'type'   => 'allowed_values',
+                            'params' => array('values' => array('sauce')),
+                        )),
+                    ),
+                )),
+            ))->onValidateSavePost();
+
+            $this->assertNotSame(array(), $this->errors);
+            $this->assertStringContainsString('Product Type', $this->errors[0]['message']);
+            $src = (string) file_get_contents(dirname(__DIR__, 4) . '/includes/Infrastructure/ACF/AcfSaveValidator.php');
+            $this->assertStringContainsString('IncomingSubmissionSanitizer::acfTree', $src);
+            $this->assertStringNotContainsString("\$request['acf'] = wp_unslash(\$_POST['acf'])", $src);
+            $this->assertStringNotContainsString('update_field', $src);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_acf_ajax_nonce']);
+        }
+    }
+
+    public function testAcfBoundaryScriptOnlyRequiredFieldStillBlocks(): void
+    {
+        $GLOBALS['contentlatch_test_acf_ajax_nonce'] = true;
+        $previous = $_POST;
+        $_POST = array(
+            'post_ID'     => '42',
+            'post_type'   => 'post',
+            'post_status' => 'auto-draft',
+            'publish'     => 'Publish',
+            'action'      => 'acf/validate_save_post',
+            'acf'         => array(
+                'field_ingredients' => '<script>alert(1)</script>',
+            ),
+        );
+
+        try {
+            $this->hookValidator(array(
+                RuleFactory::rule(array(
+                    'postType'    => 'post',
+                    'conditions'  => array(),
+                    'validations' => array(
+                        RuleFactory::validation(array(
+                            'field' => new \ContentLatch\Domain\FieldRef('field_ingredients', 'ingredients', 'Ingredients'),
+                        )),
+                    ),
+                )),
+            ))->onValidateSavePost();
+
+            $this->assertNotSame(array(), $this->errors);
+            $this->assertStringContainsString('Ingredients', $this->errors[0]['message']);
+        } finally {
+            $_POST = $previous;
+            unset($GLOBALS['contentlatch_test_acf_ajax_nonce']);
+        }
+    }
+
     /**
      * @param array<int, mixed> $rules
      */

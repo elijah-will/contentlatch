@@ -24,7 +24,8 @@ final class AuditAjaxController
 
     /**
      * @param callable(): bool       $canManage
-     * @param callable(string): bool $verifyNonce
+     * @param callable(string): bool $verifyNonce Used by dispatch() unit tests only.
+     *                                           WordPress AJAX entry points call check_ajax_referer().
      */
     /**
      * @var array<string, mixed>|null
@@ -116,16 +117,16 @@ final class AuditAjaxController
      */
     private function dispatchAction(string $action): array
     {
-        $denied = $this->authorize();
+        $denied = $this->authorizeDispatched();
         if ($denied !== null) {
             return $denied;
         }
 
         return match ($action) {
-            self::ACTION_START  => $this->handle(fn () => array('run' => $this->runPayload($this->audit->start($this->currentUserId())))),
-            self::ACTION_BATCH  => $this->handle(fn () => array('run' => $this->runPayload($this->audit->processBatch($this->runId())))),
-            self::ACTION_CANCEL => $this->handle(fn () => array('run' => $this->runPayload($this->audit->cancel($this->runId())))),
-            self::ACTION_STATUS => $this->handle(function (): array {
+            self::ACTION_START  => $this->handleDispatched(fn () => array('run' => $this->runPayload($this->audit->start($this->currentUserId())))),
+            self::ACTION_BATCH  => $this->handleDispatched(fn () => array('run' => $this->runPayload($this->audit->processBatch($this->runId())))),
+            self::ACTION_CANCEL => $this->handleDispatched(fn () => array('run' => $this->runPayload($this->audit->cancel($this->runId())))),
+            self::ACTION_STATUS => $this->handleDispatched(function (): array {
                 $runId = $this->postedInt('run_id');
                 $run   = $runId > 0 ? $this->audit->getRun($runId) : $this->audit->getActiveRun();
 
@@ -141,17 +142,42 @@ final class AuditAjaxController
     }
 
     /**
+     * WordPress wp_ajax_* entry: capability + check_ajax_referer before the handler runs.
+     *
      * @param callable(): array<string, mixed> $handler
      */
     private function respond(callable $handler): void
     {
-        $payload = $this->handle($handler);
+        $denied = $this->authorizeWordPressAjax();
+        if ($denied !== null) {
+            $this->sendJson($denied);
+
+            return;
+        }
+
+        try {
+            $this->sendJson(array_merge(array('ok' => true), $handler()));
+        } catch (AuditException $exception) {
+            $this->sendJson(array('ok' => false, 'message' => $exception->getMessage()));
+        } finally {
+            // Clear the verified request bag captured by authorizeWordPressAjax().
+            $this->dispatched = null;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function sendJson(array $payload): void
+    {
         if (!function_exists('wp_send_json')) {
             return;
         }
 
         if (!($payload['ok'] ?? false)) {
             wp_send_json($payload, 400);
+
+            return;
         }
 
         wp_send_json($payload);
@@ -161,13 +187,8 @@ final class AuditAjaxController
      * @param callable(): array<string, mixed> $handler
      * @return array<string, mixed>
      */
-    private function handle(callable $handler): array
+    private function handleDispatched(callable $handler): array
     {
-        $denied = $this->authorize();
-        if ($denied !== null) {
-            return $denied;
-        }
-
         try {
             return array_merge(array('ok' => true), $handler());
         } catch (AuditException $exception) {
@@ -190,16 +211,53 @@ final class AuditAjaxController
     }
 
     /**
+     * Production AJAX authorization. Does not use injected nonce callbacks.
+     *
+     * After check_ajax_referer succeeds, copies needed $_POST fields into
+     * $this->dispatched in this same method so handlers never read $_POST
+     * outside a verified scope (Plugin Check / WPCS).
+     *
      * @return array{ok: false, message: string}|null
      */
-    private function authorize(): ?array
+    private function authorizeWordPressAjax(): ?array
     {
         $canManage = $this->canManage;
         if (!is_callable($canManage) || !$canManage()) {
             return array('ok' => false, 'message' => __('You are not allowed to run ContentLatch audits.', 'contentlatch'));
         }
 
-        $nonce = $this->postedNonce();
+        if (check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false) === false) {
+            return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentlatch'));
+        }
+
+        $this->dispatched = array(
+            '_wpnonce' => isset($_POST['_wpnonce'])
+                ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
+                : '',
+            'run_id'   => isset($_POST['run_id'])
+                ? absint(wp_unslash((string) $_POST['run_id']))
+                : 0,
+            'user_id'  => isset($_POST['user_id'])
+                ? absint(wp_unslash((string) $_POST['user_id']))
+                : 0,
+        );
+
+        return null;
+    }
+
+    /**
+     * Unit-test dispatch() authorization via request array + optional verifyNonce double.
+     *
+     * @return array{ok: false, message: string}|null
+     */
+    private function authorizeDispatched(): ?array
+    {
+        $canManage = $this->canManage;
+        if (!is_callable($canManage) || !$canManage()) {
+            return array('ok' => false, 'message' => __('You are not allowed to run ContentLatch audits.', 'contentlatch'));
+        }
+
+        $nonce  = $this->postedNonce();
         $verify = $this->verifyNonce;
         if (!is_callable($verify) || !$verify($nonce)) {
             return array('ok' => false, 'message' => __('Invalid audit nonce.', 'contentlatch'));
@@ -210,30 +268,12 @@ final class AuditAjaxController
 
     private function postedNonce(): string
     {
-        if ($this->dispatched !== null) {
-            return sanitize_text_field((string) ($this->dispatched['_wpnonce'] ?? ''));
-        }
-
-        if (function_exists('check_ajax_referer')) {
-            check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false);
-        }
-
-        return isset($_POST['_wpnonce'])
-            ? sanitize_text_field(wp_unslash((string) $_POST['_wpnonce']))
-            : '';
+        return sanitize_text_field((string) ($this->dispatched['_wpnonce'] ?? ''));
     }
 
     private function postedInt(string $key): int
     {
-        if ($this->dispatched !== null) {
-            return absint($this->dispatched[$key] ?? 0);
-        }
-
-        if (function_exists('check_ajax_referer')) {
-            check_ajax_referer(ContentAuditService::NONCE_ACTION, '_wpnonce', false);
-        }
-
-        return isset($_POST[$key]) ? absint(wp_unslash((string) $_POST[$key])) : 0;
+        return absint($this->dispatched[$key] ?? 0);
     }
 
     /**
