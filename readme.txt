@@ -4,7 +4,7 @@ Tags: acf, validation, content audit, quality control, content governance
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -158,7 +158,17 @@ Uninstalling removes ContentLatch rules, audit data, and the ContentLatch manage
 
 Yes. ContentLatch validates supported Core and ACF fields in both the Classic Editor and the block editor on the supported save paths.
 
+== Screenshots ==
+
+1. Create custom content rules with conditional logic, field validation, and blocking or warning severity.
+2. Manage governance rules across post types, with severity controls, activation status, and audit findings.
+3. Prevent noncompliant content updates and highlight missing required fields directly in the WordPress block editor.
+4. Audit existing content against active rules, review blocking issues and warnings, and navigate to affected content.
+
 == Changelog ==
+
+= 1.0.1 =
+* Fix misleading admin notice that implied Advanced Custom Fields was required for all ContentLatch features. ACF remains optional for WordPress Core field validation; a warning is shown only when an installed ACF version is older than 6.0.
 
 = 1.0.0 =
 * Initial public release.

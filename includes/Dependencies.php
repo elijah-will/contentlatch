@@ -29,29 +29,44 @@ final class Dependencies
         return version_compare($wp_version, Plugin::MIN_WP, '>=');
     }
 
+    public function acfIsInstalled(): bool
+    {
+        return defined('ACF_VERSION');
+    }
+
     public function acfMeetsMinimum(): bool
     {
-        if (!defined('ACF_VERSION')) {
+        if (!$this->acfIsInstalled()) {
             return false;
         }
 
         return version_compare((string) ACF_VERSION, Plugin::MIN_ACF, '>=');
     }
 
+    /**
+     * True when PHP and WordPress meet ContentLatch minimums.
+     *
+     * ACF is optional: Core validation boots without it. ACF availability is
+     * gated separately via acfMeetsMinimum() in AcfIntegration.
+     */
     public function canBootIntegrations(): bool
     {
-        return $this->phpMeetsMinimum()
-            && $this->wordpressMeetsMinimum()
-            && $this->acfMeetsMinimum();
+        return $this->phpMeetsMinimum() && $this->wordpressMeetsMinimum();
     }
 
     public function registerAdminNotices(): void
     {
-        if ($this->canBootIntegrations()) {
+        if (!$this->phpMeetsMinimum() || !$this->wordpressMeetsMinimum()) {
+            add_action('admin_notices', array($this, 'renderAdminNotice'));
+
             return;
         }
 
-        add_action('admin_notices', array($this, 'renderAdminNotice'));
+        // ACF absent: no notice (Core features remain available).
+        // ACF present but too old: warn that only ACF integration is unavailable.
+        if ($this->acfIsInstalled() && !$this->acfMeetsMinimum()) {
+            add_action('admin_notices', array($this, 'renderAdminNotice'));
+        }
     }
 
     public function renderAdminNotice(): void
@@ -60,7 +75,29 @@ final class Dependencies
             return;
         }
 
-        echo '<div class="notice notice-error"><p>' . esc_html($this->noticeMessage()) . '</p></div>';
+        $message = $this->noticeMessage();
+        if ($message === '') {
+            return;
+        }
+
+        printf(
+            '<div class="notice %1$s"><p>%2$s</p></div>',
+            esc_attr($this->noticeClass()),
+            esc_html($message)
+        );
+    }
+
+    public function noticeClass(): string
+    {
+        if (!$this->phpMeetsMinimum() || !$this->wordpressMeetsMinimum()) {
+            return 'notice-error';
+        }
+
+        if ($this->acfIsInstalled() && !$this->acfMeetsMinimum()) {
+            return 'notice-warning';
+        }
+
+        return 'notice-error';
     }
 
     public function noticeMessage(): string
@@ -81,14 +118,14 @@ final class Dependencies
             );
         }
 
-        if (!defined('ACF_VERSION')) {
-            return __('ContentLatch requires Advanced Custom Fields 6.0 or higher (Free or Pro).', 'contentlatch');
+        if ($this->acfIsInstalled() && !$this->acfMeetsMinimum()) {
+            return sprintf(
+                /* translators: %s: minimum ACF version */
+                __('ContentLatch ACF integration requires Advanced Custom Fields %s or newer. WordPress Core field validation remains available.', 'contentlatch'),
+                Plugin::MIN_ACF
+            );
         }
 
-        return sprintf(
-            /* translators: %s: minimum ACF version */
-            __('ContentLatch requires Advanced Custom Fields %s or higher (Free or Pro).', 'contentlatch'),
-            Plugin::MIN_ACF
-        );
+        return '';
     }
 }

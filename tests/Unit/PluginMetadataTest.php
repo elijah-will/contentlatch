@@ -20,9 +20,9 @@ final class PluginMetadataTest extends TestCase
         $ignore = (string) file_get_contents($root . '/.distignore');
         $license = (string) file_get_contents($root . '/license.txt');
 
-        $this->assertSame('1.0.0', Plugin::VERSION);
-        $this->assertMatchesRegularExpression('/^\s*\*\s*Version:\s*1\.0\.0\s*$/m', $header);
-        $this->assertStringContainsString('Stable tag: 1.0.0', $readme);
+        $this->assertSame('1.0.1', Plugin::VERSION);
+        $this->assertMatchesRegularExpression('/^\s*\*\s*Version:\s*1\.0\.1\s*$/m', $header);
+        $this->assertStringContainsString('Stable tag: 1.0.1', $readme);
         $this->assertMatchesRegularExpression('/^\s*\*\s*Requires at least:\s*6\.6\s*$/m', $header);
         $this->assertMatchesRegularExpression('/^\s*\*\s*Requires PHP:\s*8\.1\s*$/m', $header);
         $this->assertMatchesRegularExpression('/^\s*\*\s*Text Domain:\s*contentlatch\s*$/m', $header);

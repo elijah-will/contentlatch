@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ContentLatch
  * Description:       Define content rules for WordPress Core and ACF fields, then validate before publication.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.6
  * Requires PHP:      8.1
  * Author:            ContentLatch

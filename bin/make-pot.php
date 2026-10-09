@@ -31,7 +31,7 @@ $command = array_merge($wpCmd, array(
     '--slug=contentlatch',
     '--domain=contentlatch',
     '--exclude=vendor,tests,node_modules,.git,bin',
-    '--headers={"Project-Id-Version":"ContentLatch 1.0.0","Report-Msgid-Bugs-To":""}',
+    '--headers={"Project-Id-Version":"ContentLatch 1.0.1","Report-Msgid-Bugs-To":""}',
 ));
 
 $cmd = implode(' ', array_map('escapeshellarg', $command));

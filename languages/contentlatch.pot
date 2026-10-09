@@ -2,7 +2,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: ContentLatch 1.0.0\n"
+"Project-Id-Version: ContentLatch 1.0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -639,14 +639,14 @@ msgstr[1] ""
 
 #. translators: %s: minimum PHP version
 #: includes/Activator.php:28
-#: includes/Dependencies.php:71
+#: includes/Dependencies.php:108
 #, php-format
 msgid "ContentLatch requires PHP %s or higher."
 msgstr ""
 
 #. translators: %s: minimum WordPress version
 #: includes/Activator.php:43
-#: includes/Dependencies.php:79
+#: includes/Dependencies.php:116
 #, php-format
 msgid "ContentLatch requires WordPress %s or higher."
 msgstr ""
@@ -1653,14 +1653,10 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
-#: includes/Dependencies.php:85
-msgid "ContentLatch requires Advanced Custom Fields 6.0 or higher (Free or Pro)."
-msgstr ""
-
 #. translators: %s: minimum ACF version
-#: includes/Dependencies.php:90
+#: includes/Dependencies.php:124
 #, php-format
-msgid "ContentLatch requires Advanced Custom Fields %s or higher (Free or Pro)."
+msgid "ContentLatch ACF integration requires Advanced Custom Fields %s or newer. WordPress Core field validation remains available."
 msgstr ""
 
 #: includes/Infrastructure/ACF/SaveWarningNotifier.php:451
