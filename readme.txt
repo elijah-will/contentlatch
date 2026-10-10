@@ -63,7 +63,7 @@ Supported structures:
 
 Not supported in V1 (examples): Relationship, Post Object, Page Link, Taxonomy, User, Checkbox, Gallery, Image, File, Link, Google Map, oEmbed, multi-select Select, deeper than two Repeater levels, Repeater → Group, Repeater inside Flexible Content, nested Flexible Content, and Clone → Clone / Repeater / Flexible Content.
 
-Requires Advanced Custom Fields 6.0 or higher (Free or Pro). Repeater, Flexible Content, and Clone require ACF Pro.
+ACF field validation requires Advanced Custom Fields 6.0 or higher (Free or Pro). Repeater, Flexible Content, and Clone require ACF Pro. WordPress Core field validation works without ACF.
 
 = Conditions (WHEN) =
 
@@ -138,9 +138,9 @@ Deactivating the plugin without deleting it keeps this data.
 
 == Frequently Asked Questions ==
 
-= Does ContentLatch require ACF Pro? =
+= Does ContentLatch require Advanced Custom Fields (ACF)? =
 
-ACF 6.0 or higher is required. Free ACF covers supported scalar fields and Groups. Repeater, Flexible Content, and Clone require ACF Pro.
+No. ContentLatch works with WordPress Core fields without ACF installed. To validate ACF fields, Advanced Custom Fields 6.0 or higher (Free or Pro) is required. ACF Pro is required for Repeater, Flexible Content, and Clone fields.
 
 = Can I create a rule with only a WHEN condition? =
 

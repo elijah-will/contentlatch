@@ -10,7 +10,7 @@ See `readme.txt` for the full WordPress.org product description, supported field
 
 - PHP 8.1+
 - WordPress 6.6+
-- Advanced Custom Fields 6.0+ (Free or Pro). Repeater, Flexible Content, and Clone require ACF Pro.
+- Advanced Custom Fields 6.0+ (Free or Pro) for ACF field validation only. WordPress Core field validation works without ACF. Repeater, Flexible Content, and Clone require ACF Pro.
 
 ## Development
 
