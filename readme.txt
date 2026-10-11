@@ -160,10 +160,10 @@ Yes. ContentLatch validates supported Core and ACF fields in both the Classic Ed
 
 == Screenshots ==
 
-1. Create custom content rules with conditional logic, field validation, and blocking or warning severity.
-2. Manage governance rules across post types, with severity controls, activation status, and audit findings.
-3. Prevent noncompliant content updates and highlight missing required fields directly in the WordPress block editor.
-4. Audit existing content against active rules, review blocking issues and warnings, and navigate to affected content.
+1. Create conditional WHEN/THEN validation rules for WordPress Core and ACF fields.
+2. Manage active and inactive rules, review blocking and warning severity, and see affected content.
+3. Prevent publishing when required fields are missing, with clear validation errors in the WordPress block editor.
+4. Audit existing content, filter blocking issues and warnings, and navigate directly to affected posts.
 
 == Changelog ==
 
