@@ -327,6 +327,67 @@ final class IncomingSaveEvaluatorTest extends TestCase
         $this->assertSame(array(), $evaluation->results);
     }
 
+    public function testMixedCoreWhenAcfThenUsesStoredTitleWhenCorePayloadAbsentAndFailsShortAcf(): void
+    {
+        $GLOBALS['contentlatch_test_post_fields'][82] = array('post_title' => 'Published Post Title');
+
+        $evaluation = $this->mixed(array($this->titleWhenAcfMinLengthRule()))->evaluate(
+            82,
+            'product',
+            null,
+            array('field_ingredients' => 'test description')
+        );
+
+        $this->assertTrue($evaluation->isFailed());
+        $this->assertSame('field_ingredients', $evaluation->results[0]->fieldId);
+        $this->assertSame('min_length', $evaluation->results[0]->code);
+    }
+
+    public function testMixedCoreWhenAcfThenUsesStoredTitleWhenCorePayloadAbsentAndPassesValidAcf(): void
+    {
+        $GLOBALS['contentlatch_test_post_fields'][82] = array('post_title' => 'Published Post Title');
+
+        $evaluation = $this->mixed(array($this->titleWhenAcfMinLengthRule()))->evaluate(
+            82,
+            'product',
+            null,
+            array('field_ingredients' => str_repeat('a', 120))
+        );
+
+        $this->assertTrue($evaluation->isPassed());
+        $this->assertFalse($evaluation->isFailed());
+    }
+
+    public function testMixedCoreWhenAcfThenSkipsWhenStoredTitleEmptyAndCorePayloadAbsent(): void
+    {
+        $GLOBALS['contentlatch_test_post_fields'][82] = array('post_title' => '');
+
+        $evaluation = $this->mixed(array($this->titleWhenAcfMinLengthRule()))->evaluate(
+            82,
+            'product',
+            null,
+            array('field_ingredients' => 'test description')
+        );
+
+        $this->assertTrue($evaluation->isNotEvaluated());
+        $this->assertCount(1, $evaluation->results);
+        $this->assertTrue($evaluation->results[0]->isSkipped());
+        $this->assertSame('conditions_not_met', $evaluation->results[0]->code);
+        $this->assertFalse($evaluation->isFailed());
+    }
+
+    public function testPureCoreThenStillSkippedWhenCorePayloadAbsentEvenWithStoredTitle(): void
+    {
+        $GLOBALS['contentlatch_test_post_fields'][82] = array('post_title' => '');
+
+        $evaluation = $this->mixed(array(
+            $this->requiredRule(CoreCatalogFixtures::titleRef(), array('postType' => 'product')),
+        ))->evaluate(82, 'product', null, array('field_type' => 'Seasoning'));
+
+        $this->assertTrue($evaluation->isNotEvaluated());
+        $this->assertSame(array(), $evaluation->results);
+    }
+
     public function testAcfRulesStillEvaluateWhenCorePayloadIsAbsent(): void
     {
         $evaluation = $this->mixed(array(
@@ -524,6 +585,27 @@ final class IncomingSaveEvaluatorTest extends TestCase
                 ),
             ),
             $overrides
+        ));
+    }
+
+    private function titleWhenAcfMinLengthRule(): Rule
+    {
+        return RuleFactory::rule(array(
+            'postType'   => 'product',
+            'conditions' => array(
+                RuleFactory::condition(array(
+                    'field'    => CoreCatalogFixtures::titleRef(),
+                    'operator' => 'is_not_empty',
+                    'operand'  => null,
+                )),
+            ),
+            'validations' => array(
+                RuleFactory::validation(array(
+                    'field'  => RuleFactory::field('field_ingredients', 'ingredients', 'Ingredients'),
+                    'type'   => 'min_length',
+                    'params' => array('min' => 120),
+                )),
+            ),
         ));
     }
 

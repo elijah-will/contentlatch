@@ -10,6 +10,13 @@
  * so an existing featured image is not treated as empty when Gutenberg leaves
  * featured_media out of the request. Explicit empty submissions still win.
  *
+ * Gutenberg ACF validate_save_post AJAX often includes ACF values but no Core
+ * title/content fields. Mixed rules that WHEN on Core and THEN on ACF may still
+ * evaluate: Core conditions resolve from stored post values when postId > 0,
+ * while ACF validations use the incoming ACF payload. Pure Core THEN rules
+ * still require an incoming Core payload so ACF-only AJAX cannot false-block
+ * on stored Core alone.
+ *
  * @package ContentLatch
  */
 
@@ -52,10 +59,18 @@ final class IncomingSaveEvaluator
         $hasAcf  = is_array($acfPayload);
         $coreTypes = $this->core->fieldTypesForPostType($postType);
         $acfTypes  = $this->acf->fieldTypesForPostType($postType);
+        $allowStoredCoreConditions = !$hasCore && $hasAcf && $postId > 0;
 
         $rules = array();
         foreach ($this->repository->findActiveForPostType($postType) as $rule) {
-            if ($this->ruleIsCovered($rule, $coreTypes, $acfTypes, $hasCore, $hasAcf)) {
+            if ($this->ruleIsCovered(
+                $rule,
+                $coreTypes,
+                $acfTypes,
+                $hasCore,
+                $hasAcf,
+                $allowStoredCoreConditions
+            )) {
                 $rules[] = $rule;
             }
         }
@@ -71,6 +86,8 @@ final class IncomingSaveEvaluator
             if ($postId > 0) {
                 $providers[] = $this->core->storedProvider($postId, $postType, $fieldTypes);
             }
+        } elseif ($allowStoredCoreConditions && $this->rulesReferenceCoreConditions($rules, $coreTypes)) {
+            $providers[] = $this->core->storedProvider($postId, $postType, $fieldTypes);
         }
         if ($hasAcf) {
             $providers[] = $this->acf->incomingProvider($acfPayload, $postType, $fieldTypes);
@@ -91,8 +108,10 @@ final class IncomingSaveEvaluator
         array $acfTypes,
         bool $hasCore,
         bool $hasAcf,
+        bool $allowStoredCoreConditions,
     ): bool {
-        foreach ($this->ruleFieldIds($rule) as $id => $_true) {
+        foreach ($rule->validations as $validation) {
+            $id = $validation->field->resolutionId();
             if (isset($coreTypes[$id]) && !$hasCore) {
                 return false;
             }
@@ -101,7 +120,34 @@ final class IncomingSaveEvaluator
             }
         }
 
+        foreach ($rule->conditions as $condition) {
+            $id = $condition->field->resolutionId();
+            if (isset($coreTypes[$id]) && !$hasCore && !$allowStoredCoreConditions) {
+                return false;
+            }
+            if (isset($acfTypes[$id]) && !$hasAcf) {
+                return false;
+            }
+        }
+
         return true;
+    }
+
+    /**
+     * @param Rule[]                $rules
+     * @param array<string, string> $coreTypes
+     */
+    private function rulesReferenceCoreConditions(array $rules, array $coreTypes): bool
+    {
+        foreach ($rules as $rule) {
+            foreach ($rule->conditions as $condition) {
+                if (isset($coreTypes[$condition->field->resolutionId()])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
