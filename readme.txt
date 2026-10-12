@@ -4,7 +4,7 @@ Tags: acf, validation, content audit, quality control, content governance
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,6 +166,9 @@ Yes. ContentLatch validates supported Core and ACF fields in both the Classic Ed
 4. Audit existing content, filter blocking issues and warnings, and navigate directly to affected posts.
 
 == Changelog ==
+
+= 1.0.2 =
+* Fix mixed WordPress Core/ACF validation rules being skipped during Gutenberg ACF AJAX validation when the request does not include Core field values. Core WHEN conditions can use stored post values while ACF THEN validations evaluate incoming submitted values.
 
 = 1.0.1 =
 * Fix misleading admin notice that implied Advanced Custom Fields was required for all ContentLatch features. ACF remains optional for WordPress Core field validation; a warning is shown only when an installed ACF version is older than 6.0.
