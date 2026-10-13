@@ -13,6 +13,8 @@ defined('ABSPATH') || exit;
 
 interface AuditStoreInterface
 {
+    public const MAX_FINDINGS_BATCH_SIZE = 500;
+
     /**
      * @param string[] $postTypes
      */
@@ -45,6 +47,19 @@ interface AuditStoreInterface
      * @return AuditFinding[]
      */
     public function findFindings(int $runId, ?string $severity = null): array;
+
+    /**
+     * Retrieve one bounded batch in ascending finding-ID order, across severities.
+     *
+     * Start with afterId 0, then pass the last returned finding ID. Negative
+     * cursors become 0; limits are clamped to 1..MAX_FINDINGS_BATCH_SIZE.
+     * The caller selects and validates the run (including completed status).
+     * An empty array means a successful query found no remaining findings.
+     *
+     * @return AuditFinding[]
+     * @throws \ContentLatch\Application\Exception\AuditException If the query fails.
+     */
+    public function findFindingsAfterId(int $runId, int $afterId, int $limit): array;
 
     /**
      * @return AuditFinding[]

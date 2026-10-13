@@ -179,6 +179,19 @@ final class InMemoryAuditStore implements AuditStoreInterface
         return $matches;
     }
 
+    public function findFindingsAfterId(int $runId, int $afterId, int $limit): array
+    {
+        $afterId = max(0, $afterId);
+        $limit   = max(1, min(self::MAX_FINDINGS_BATCH_SIZE, $limit));
+        $matches = array_filter(
+            $this->findings,
+            static fn (AuditFinding $finding): bool => $finding->runId === $runId && $finding->id > $afterId
+        );
+        usort($matches, static fn (AuditFinding $left, AuditFinding $right): int => $left->id <=> $right->id);
+
+        return array_slice($matches, 0, $limit);
+    }
+
     public function queryFindings(AuditFindingQuery $query): array
     {
         $matches = $this->matchingFindings($query);
