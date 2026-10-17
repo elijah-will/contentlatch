@@ -13,6 +13,19 @@ function get_post(int $postId): ?object
 {
     $state = &$GLOBALS['contentlatch_test_export'];
     $state['post_calls'][] = $postId;
+
+    if (isset($state['cache']['posts'][$postId]) && empty($state['read_error']) && empty($state['missing'])) {
+        return $state['cache']['posts'][$postId];
+    }
+
+    // Match wpdb::query(): not-ready returns before flush/num_queries; a real
+    // attempt clears last_error, counts the query, then records a new failure.
+    if (empty($GLOBALS['wpdb']->ready)) {
+        return null;
+    }
+
+    $GLOBALS['wpdb']->num_queries = (int) ($GLOBALS['wpdb']->num_queries ?? 0) + 1;
+    $GLOBALS['wpdb']->last_error  = '';
     if (isset($state['read_error'])) {
         $GLOBALS['wpdb']->last_error = $state['read_error'];
         return null;

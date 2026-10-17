@@ -26,7 +26,7 @@ final class WpAuditExportMetadataTest extends TestCase
     {
         // Namespace doubles must not shadow Core functions in other tests.
         require_once dirname(__DIR__, 3) . '/Support/wordpress-audit-export-functions.php';
-        $GLOBALS['wpdb'] = (object) array('ready' => true, 'last_error' => '');
+        $GLOBALS['wpdb'] = (object) array('ready' => true, 'last_error' => '', 'num_queries' => 0);
         $GLOBALS['contentlatch_test_export'] = array(
             'title' => 'Current "title", café',
             'status' => 'private',
@@ -114,19 +114,84 @@ final class WpAuditExportMetadataTest extends TestCase
         $this->assertSame(array(), $GLOBALS['contentlatch_test_export']['post_calls']);
     }
 
-    #[DataProvider('unavailableDatabases')]
-    public function testDatabaseFailuresAreNotMissingMetadata(bool $ready, string $error): void
+    public function testDatabaseNotReadyIsNotADeletedPost(): void
     {
-        $GLOBALS['wpdb']->ready = $ready;
-        $GLOBALS['wpdb']->last_error = $error;
+        $GLOBALS['wpdb']->ready = false;
+        $GLOBALS['wpdb']->last_error = '';
         $this->expectException(AuditException::class);
         $this->expectExceptionMessage('Could not load audit export metadata.');
         $this->metadata()->post(42);
     }
 
-    public static function unavailableDatabases(): array
+    public function testStaleLastErrorDoesNotFailASuccessfulPostLookup(): void
     {
-        return array('not ready, no last error' => array(false, ''), 'query error' => array(true, 'Sensitive database details'));
+        $GLOBALS['wpdb']->last_error = 'Earlier unrelated query failed';
+        $post = $this->metadata()->post(42);
+
+        $this->assertSame('Current "title", café', $post['title']);
+        $this->assertSame('private', $post['status']);
+        $this->assertSame('', $GLOBALS['wpdb']->last_error);
+        $this->assertSame(1, $GLOBALS['wpdb']->num_queries);
+    }
+
+    public function testStaleLastErrorIsKeptWhenThePostIsAlreadyCached(): void
+    {
+        $cached = (object) array(
+            'ID' => 42,
+            'post_title' => 'Cached title',
+            'post_status' => 'publish',
+        );
+        $GLOBALS['contentlatch_test_export']['cache']['posts'][42] = $cached;
+        $GLOBALS['wpdb']->last_error = 'Earlier unrelated query failed';
+
+        $post = $this->metadata()->post(42);
+
+        $this->assertSame('Cached title', $post['title']);
+        $this->assertSame('publish', $post['status']);
+        $this->assertSame('Earlier unrelated query failed', $GLOBALS['wpdb']->last_error);
+        $this->assertSame(0, $GLOBALS['wpdb']->num_queries);
+    }
+
+    public function testStaleLastErrorDoesNotFailASuccessfulRuleLookup(): void
+    {
+        $rule = RuleFactory::rule(array('id' => 12, 'name' => 'Renamed current rule'));
+        $repository = $this->createMock(RuleRepositoryInterface::class);
+        $repository->expects($this->once())->method('find')->with('12')->willReturn($rule);
+        $GLOBALS['wpdb']->last_error = 'Earlier unrelated query failed';
+
+        $this->assertSame($rule, (new WpAuditExportMetadata($repository))->rule('12'));
+        $this->assertSame('Earlier unrelated query failed', $GLOBALS['wpdb']->last_error);
+        $this->assertSame(0, $GLOBALS['wpdb']->num_queries);
+    }
+
+    public function testRuleQueryFailureIsNotAMissingRule(): void
+    {
+        $repository = $this->createMock(RuleRepositoryInterface::class);
+        $repository->method('find')->willReturnCallback(static function (): null {
+            $GLOBALS['wpdb']->num_queries++;
+            $GLOBALS['wpdb']->last_error = '';
+            $GLOBALS['wpdb']->last_error = 'Sensitive database details';
+
+            return null;
+        });
+
+        try {
+            (new WpAuditExportMetadata($repository))->rule(12);
+            $this->fail('A failed rule query must not look like a deleted rule.');
+        } catch (AuditException $error) {
+            $this->assertSame('Could not load audit export metadata.', $error->getMessage());
+        }
+    }
+
+    public function testDeletedPostWithNoDatabaseFailureRemainsNull(): void
+    {
+        $GLOBALS['contentlatch_test_export']['missing'] = true;
+        $GLOBALS['wpdb']->last_error = 'Earlier unrelated query failed';
+
+        $this->assertNull($this->metadata()->post(42));
+        $this->assertSame('', $GLOBALS['wpdb']->last_error);
+        $this->assertSame(1, $GLOBALS['wpdb']->num_queries);
+        $this->assertSame(array(), $GLOBALS['contentlatch_test_export']['edit_calls']);
     }
 
     public function testPostReadFailureThrowsSafeExceptionAndCleansUp(): void

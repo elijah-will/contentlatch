@@ -72,10 +72,20 @@ final class WpAuditExportMetadata implements AuditExportMetadata
      */
     private function withoutPostCache(int $postId, callable $read): mixed
     {
+        global $wpdb;
+
         try {
-            $this->assertDatabaseReady();
-            $value = $read();
-            $this->assertDatabaseReady();
+            if (!is_object($wpdb) || empty($wpdb->ready)) {
+                throw new AuditException('Could not load audit export metadata.');
+            }
+
+            // A leftover last_error belongs to an earlier query. wpdb::query()
+            // clears it in flush() before recording a failure of the query it
+            // is about to run, and increments num_queries only for that attempt.
+            $errorBefore   = isset($wpdb->last_error) ? (string) $wpdb->last_error : '';
+            $queriesBefore = isset($wpdb->num_queries) ? (int) $wpdb->num_queries : 0;
+            $value         = $read();
+            $this->assertCurrentLookupSucceeded($wpdb, $errorBefore, $queriesBefore);
 
             return $value;
         } finally {
@@ -84,11 +94,25 @@ final class WpAuditExportMetadata implements AuditExportMetadata
         }
     }
 
-    private function assertDatabaseReady(): void
+    /**
+     * Fail when this lookup's database attempt failed. Do not treat an
+     * unchanged last_error as this lookup's failure, and do not clear it.
+     */
+    private function assertCurrentLookupSucceeded(object $wpdb, string $errorBefore, int $queriesBefore): void
     {
-        global $wpdb;
+        if (empty($wpdb->ready)) {
+            throw new AuditException('Could not load audit export metadata.');
+        }
 
-        if (!$wpdb->ready || $wpdb->last_error !== '') {
+        $errorAfter   = isset($wpdb->last_error) ? (string) $wpdb->last_error : '';
+        $queriesAfter = isset($wpdb->num_queries) ? (int) $wpdb->num_queries : $queriesBefore;
+
+        if ($queriesAfter > $queriesBefore && $errorAfter !== '') {
+            throw new AuditException('Could not load audit export metadata.');
+        }
+
+        // Query failures that set last_error without exposing num_queries.
+        if ($errorBefore === '' && $errorAfter !== '') {
             throw new AuditException('Could not load audit export metadata.');
         }
     }
