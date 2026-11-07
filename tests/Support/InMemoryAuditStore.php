@@ -103,7 +103,10 @@ final class InMemoryAuditStore implements AuditStoreInterface
         $latest = null;
 
         foreach ($this->runs as $run) {
-            if ($run->status === AuditRunStatus::Complete) {
+            if ($run->status !== AuditRunStatus::Complete) {
+                continue;
+            }
+            if ($latest === null || $run->id > $latest->id) {
                 $latest = $run;
             }
         }

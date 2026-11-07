@@ -12,6 +12,7 @@ namespace ContentLatch;
 defined('ABSPATH') || exit;
 
 use ContentLatch\Admin\AuditAjaxController;
+use ContentLatch\Admin\AuditExportController;
 use ContentLatch\Admin\AuditPage;
 use ContentLatch\Admin\EditorAuditNotice;
 use ContentLatch\Admin\EditorFieldFocus;
@@ -116,6 +117,7 @@ final class Plugin
         RulesController::register($this->ruleRepository(), $this->ruleCommands(), $this->ruleFactory(), $ruleDrafts);
         AuditPage::register($this->auditService(), $this->ruleRepository());
         AuditAjaxController::register($this->auditService());
+        AuditExportController::register($this->auditService(), $this->ruleRepository());
     }
 
     public function ruleCommands(): RuleCommandService

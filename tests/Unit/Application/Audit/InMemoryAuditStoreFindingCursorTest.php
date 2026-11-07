@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace ContentLatch\Tests\Unit\Application\Audit;
 
 use ContentLatch\Application\Audit\AuditFinding;
+use ContentLatch\Application\Audit\AuditRun;
+use ContentLatch\Application\Audit\AuditRunStatus;
 use ContentLatch\Application\Audit\AuditStoreInterface;
 use ContentLatch\Domain\RuleSeverity;
 use ContentLatch\Tests\Support\InMemoryAuditStore;
@@ -82,6 +84,16 @@ final class InMemoryAuditStoreFindingCursorTest extends TestCase
         );
     }
 
+    public function testLatestCompleteRunIsTheHighestIdRegardlessOfInsertionOrder(): void
+    {
+        $store = new InMemoryAuditStore();
+        $store->runs[4] = $this->auditRun(4, AuditRunStatus::Complete);
+        $store->runs[9] = $this->auditRun(9, AuditRunStatus::Running);
+        $store->runs[2] = $this->auditRun(2, AuditRunStatus::Complete);
+
+        $this->assertSame(4, $store->findLatestCompleteRun()?->id);
+    }
+
     public function testNegativeCursorStartsAtZero(): void
     {
         $store = new InMemoryAuditStore();
@@ -94,6 +106,26 @@ final class InMemoryAuditStoreFindingCursorTest extends TestCase
     private function ids(array $findings): array
     {
         return array_map(static fn (AuditFinding $finding): int => $finding->id, $findings);
+    }
+
+    private function auditRun(int $id, AuditRunStatus $status): AuditRun
+    {
+        return new AuditRun(
+            $id,
+            $status,
+            '2026-10-12 12:00:00',
+            $status === AuditRunStatus::Complete ? '2026-10-12 12:01:00' : null,
+            '2026-10-12 12:01:00',
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            array('post')
+        );
     }
 
     private function finding(int $id, int $runId, RuleSeverity $severity = RuleSeverity::Fail): AuditFinding
