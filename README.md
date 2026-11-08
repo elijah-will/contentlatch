@@ -13,7 +13,7 @@ It is not an AI tool, SEO scanner, malware scanner, spell checker, or content ge
 - **Optional ACF support** — Supported scalar types plus Group; Repeater, Flexible Content, and Clone with ACF Pro (see documentation for limits)
 - **Save-time validation** — Classic Editor and block editor on supported Core and ACF save paths
 - **Blocking and Warning severity** — Blocking can prevent publish / published-or-private updates; Warnings notify without blocking
-- **Content Audit** — Batch evaluation of existing published and private content, with findings and Repeater row context
+- **Content Audit** — Batch evaluation of existing published and private content, with findings, Repeater row context, and CSV export of the currently viewed completed audit (including historical runs; filters do not change the export)
 - **On-site only** — Rules, validation, and audits run on your WordPress site; the plugin does not send plugin data to external services
 
 For supported operators, validators, field limits, and unsupported ACF types, see [`readme.txt`](readme.txt) or the [documentation](https://contentlatch.com/docs/).

@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: ContentLatch 1.0.2\n"
+"Project-Id-Version: ContentLatch 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-28T03:32:12+00:00\n"
+"POT-Creation-Date: 2026-11-08T23:24:55+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: contentlatch\n"
@@ -18,6 +18,7 @@ msgstr ""
 #. Author of the plugin
 #: contentlatch.php
 #: admin/views/partials/page-header.php:17
+#: includes/Admin/AuditExportController.php:466
 #: includes/Admin/RulesPage.php:60
 #: includes/Application/EditorNoticePresentation.php:21
 msgid "ContentLatch"
@@ -28,213 +29,218 @@ msgstr ""
 msgid "Define content rules for WordPress Core and ACF fields, then validate before publication."
 msgstr ""
 
-#: admin/views/audit.php:73
+#: admin/views/audit.php:75
+#: admin/views/audit.php:79
+msgid "Export CSV"
+msgstr ""
+
+#: admin/views/audit.php:93
 #: includes/Admin/AuditPage.php:48
 #: includes/Admin/AuditPage.php:49
 msgid "Audit"
 msgstr ""
 
-#: admin/views/audit.php:74
+#: admin/views/audit.php:94
 msgid "Check your existing content against your active rules."
 msgstr ""
 
-#: admin/views/audit.php:76
-#: admin/views/audit.php:128
+#: admin/views/audit.php:96
+#: admin/views/audit.php:158
 msgid "Run Audit"
 msgstr ""
 
-#: admin/views/audit.php:92
+#: admin/views/audit.php:122
 msgid "Check your content"
 msgstr ""
 
-#: admin/views/audit.php:93
+#: admin/views/audit.php:123
 msgid "Check your existing published and private content against your active rules. ContentLatch only reports issues. It does not change your content."
 msgstr ""
 
-#: admin/views/audit.php:96
+#: admin/views/audit.php:126
 #: admin/views/rule-edit.php:172
 msgid "Applies to"
 msgstr ""
 
-#: admin/views/audit.php:97
+#: admin/views/audit.php:127
 msgid "None with active rules"
 msgstr ""
 
-#: admin/views/audit.php:100
+#: admin/views/audit.php:130
 msgid "Active rules"
 msgstr ""
 
-#: admin/views/audit.php:113
+#: admin/views/audit.php:143
 msgid "Go to Rules"
 msgstr ""
 
-#: admin/views/audit.php:173
+#: admin/views/audit.php:203
 msgid "need attention"
 msgstr ""
 
-#: admin/views/audit.php:176
+#: admin/views/audit.php:206
 msgid "need review"
 msgstr ""
 
-#: admin/views/audit.php:185
+#: admin/views/audit.php:215
 #: includes/Admin/AuditPage.php:106
 msgid "Cancel Audit"
 msgstr ""
 
-#: admin/views/audit.php:190
+#: admin/views/audit.php:220
 #: includes/Admin/AuditPage.php:104
 msgid "Stop audit"
 msgstr ""
 
-#: admin/views/audit.php:193
+#: admin/views/audit.php:223
 #: includes/Admin/AuditPage.php:105
 msgid "Keep running"
 msgstr ""
 
-#: admin/views/audit.php:203
+#: admin/views/audit.php:233
 msgid "This attempt was not used as the latest completed result."
 msgstr ""
 
-#: admin/views/audit.php:206
+#: admin/views/audit.php:236
 msgid "Try again"
 msgstr ""
 
-#: admin/views/audit.php:219
-#: admin/views/audit.php:232
-#: includes/Admin/AuditPage.php:145
+#: admin/views/audit.php:249
+#: admin/views/audit.php:262
+#: includes/Admin/AuditPage.php:165
 msgid "Previous audit"
 msgstr ""
 
-#: admin/views/audit.php:227
+#: admin/views/audit.php:257
 msgid "No completed audit results yet."
 msgstr ""
 
 #. translators: %s: completed date/time
-#: admin/views/audit.php:253
+#: admin/views/audit.php:283
 #, php-format
 msgid "Last completed: %s"
 msgstr ""
 
-#: admin/views/audit.php:256
+#: admin/views/audit.php:286
 msgid "Last completed audit"
 msgstr ""
 
-#: admin/views/audit.php:260
-#: admin/views/audit.php:273
+#: admin/views/audit.php:290
+#: admin/views/audit.php:303
 msgid "Status:"
 msgstr ""
 
-#: admin/views/audit.php:261
-#: admin/views/audit.php:274
+#: admin/views/audit.php:291
+#: admin/views/audit.php:304
 #: includes/Application/StatusPresentation.php:29
 msgid "Completed"
 msgstr ""
 
-#: admin/views/audit.php:264
-#: admin/views/audit.php:277
+#: admin/views/audit.php:294
+#: admin/views/audit.php:307
 msgid "Post types:"
 msgstr ""
 
-#: admin/views/audit.php:268
+#: admin/views/audit.php:298
 msgid "Active rules (current):"
 msgstr ""
 
-#: admin/views/audit.php:283
+#: admin/views/audit.php:313
 msgid "Content items"
 msgstr ""
 
-#: admin/views/audit.php:285
+#: admin/views/audit.php:315
 msgid "How many posts, pages, or other content items this audit checked."
 msgstr ""
 
-#: admin/views/audit.php:287
+#: admin/views/audit.php:317
 msgid "Checked"
 msgstr ""
 
-#: admin/views/audit.php:289
+#: admin/views/audit.php:319
 msgid "Content items that met every applicable rule."
 msgstr ""
 
-#: admin/views/audit.php:291
+#: admin/views/audit.php:321
 msgid "Passed"
 msgstr ""
 
-#: admin/views/audit.php:293
+#: admin/views/audit.php:323
 msgid "Content items with at least one blocking rule problem."
 msgstr ""
 
-#: admin/views/audit.php:295
+#: admin/views/audit.php:325
 #: includes/Application/StatusPresentation.php:33
 msgid "Need attention"
 msgstr ""
 
-#: admin/views/audit.php:297
+#: admin/views/audit.php:327
 msgid "Content items with warnings only. These do not block publishing."
 msgstr ""
 
-#: admin/views/audit.php:299
+#: admin/views/audit.php:329
 #: includes/Application/StatusPresentation.php:34
 msgid "Need review"
 msgstr ""
 
-#: admin/views/audit.php:302
+#: admin/views/audit.php:332
 msgid "Rules did not apply to this content."
 msgstr ""
 
-#: admin/views/audit.php:304
+#: admin/views/audit.php:334
 msgid "Not checked"
 msgstr ""
 
-#: admin/views/audit.php:309
+#: admin/views/audit.php:339
 msgid "Each number is one post, page, or other piece of content."
 msgstr ""
 
-#: admin/views/audit.php:312
+#: admin/views/audit.php:342
 #: includes/Application/AuditPresentation.php:91
 msgid "Issues"
 msgstr ""
 
-#: admin/views/audit.php:314
+#: admin/views/audit.php:344
 msgid "Total rule problems found. One content item can have several issues."
 msgstr ""
 
-#: admin/views/audit.php:316
+#: admin/views/audit.php:346
 msgid "Issues found"
 msgstr ""
 
-#: admin/views/audit.php:318
+#: admin/views/audit.php:348
 msgid "Rule problems that prevent publishing."
 msgstr ""
 
-#: admin/views/audit.php:320
+#: admin/views/audit.php:350
 msgid "Blocking issues"
 msgstr ""
 
-#: admin/views/audit.php:322
+#: admin/views/audit.php:352
 msgid "Rule problems that need review but do not block publishing."
 msgstr ""
 
-#: admin/views/audit.php:324
+#: admin/views/audit.php:354
 msgid "Warnings"
 msgstr ""
 
-#: admin/views/audit.php:326
+#: admin/views/audit.php:356
 msgid "How many content items have at least one issue."
 msgstr ""
 
-#: admin/views/audit.php:328
+#: admin/views/audit.php:358
 msgid "Content items affected"
 msgstr ""
 
-#: admin/views/audit.php:332
+#: admin/views/audit.php:362
 msgid "An issue is one rule problem. One content item can have several issues. Blocking issues prevent publishing. Warnings do not."
 msgstr ""
 
-#: admin/views/audit.php:376
+#: admin/views/audit.php:406
 msgid "All"
 msgstr ""
 
-#: admin/views/audit.php:385
+#: admin/views/audit.php:415
 #: admin/views/rule-edit.php:302
 #: includes/Admin/EditorRestBlockNotice.php:78
 #: includes/Application/EditorNoticePresentation.php:173
@@ -242,7 +248,7 @@ msgstr ""
 msgid "Blocking"
 msgstr ""
 
-#: admin/views/audit.php:394
+#: admin/views/audit.php:424
 #: admin/views/rule-edit.php:309
 #: includes/Application/EditorNoticePresentation.php:170
 #: includes/Application/StatusPresentation.php:28
@@ -250,40 +256,40 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
-#: admin/views/audit.php:401
+#: admin/views/audit.php:431
 msgid "All rules"
 msgstr ""
 
-#: admin/views/audit.php:412
+#: admin/views/audit.php:442
 msgid "All types"
 msgstr ""
 
-#: admin/views/audit.php:421
+#: admin/views/audit.php:451
 msgid "Filter"
 msgstr ""
 
-#: admin/views/audit.php:423
-#: admin/views/audit.php:454
+#: admin/views/audit.php:453
+#: admin/views/audit.php:484
 msgid "Clear filters"
 msgstr ""
 
 #. translators: 1: filtered issue count, 2: distinct posts in the filtered set
-#: admin/views/audit.php:437
+#: admin/views/audit.php:467
 #, php-format
 msgid "Showing %1$d issues for %2$d content items with the current filters."
 msgstr ""
 
-#: admin/views/audit.php:507
-#: admin/views/audit.php:518
-#: admin/views/audit.php:609
-#: admin/views/audit.php:620
+#: admin/views/audit.php:537
+#: admin/views/audit.php:548
+#: admin/views/audit.php:639
+#: admin/views/audit.php:650
 msgid "Previous"
 msgstr ""
 
-#: admin/views/audit.php:519
-#: admin/views/audit.php:526
-#: admin/views/audit.php:621
-#: admin/views/audit.php:628
+#: admin/views/audit.php:549
+#: admin/views/audit.php:556
+#: admin/views/audit.php:651
+#: admin/views/audit.php:658
 msgid "Next"
 msgstr ""
 
@@ -401,7 +407,7 @@ msgstr ""
 
 #: admin/views/rule-edit.php:57
 #: admin/views/rule-edit.php:344
-#: includes/Admin/RulesPage.php:512
+#: includes/Admin/RulesPage.php:518
 msgid "Back to rules"
 msgstr ""
 
@@ -556,7 +562,7 @@ msgid "Rule behavior"
 msgstr ""
 
 #: admin/views/rule-edit.php:298
-#: includes/Application/AuditPresentation.php:386
+#: includes/Application/AuditPresentation.php:401
 msgid "Severity"
 msgstr ""
 
@@ -651,16 +657,62 @@ msgstr ""
 msgid "ContentLatch requires WordPress %s or higher."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:139
+#: includes/Admin/AuditAjaxController.php:140
 msgid "Unknown audit action."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:199
+#: includes/Admin/AuditAjaxController.php:226
+#: includes/Admin/AuditAjaxController.php:257
 msgid "You are not allowed to run ContentLatch audits."
 msgstr ""
 
-#: includes/Admin/AuditAjaxController.php:205
+#: includes/Admin/AuditAjaxController.php:230
+#: includes/Admin/AuditAjaxController.php:263
 msgid "Invalid audit nonce."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:100
+#: includes/Admin/AuditExportController.php:121
+#: includes/Admin/AuditExportController.php:158
+msgid "Could not export the ContentLatch audit."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:168
+msgid "The selected ContentLatch audit has no findings to export."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:169
+msgid "The latest completed ContentLatch audit has no findings to export."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:189
+msgid "You are not allowed to export ContentLatch audits."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:198
+msgid "Missing audit export nonce."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:210
+msgid "Invalid audit export nonce."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:217
+#: includes/Application/Audit/ContentAuditService.php:670
+msgid "Invalid audit run."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:239
+#: includes/Application/Audit/ContentAuditService.php:676
+msgid "Audit run not found."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:245
+msgid "Only completed audits can be exported."
+msgstr ""
+
+#: includes/Admin/AuditExportController.php:259
+msgid "No completed ContentLatch audit is available to export."
 msgstr ""
 
 #. translators: 1: Number of content items checked. 2: Total content items.
@@ -685,7 +737,7 @@ msgstr ""
 msgid "The audit could not continue."
 msgstr ""
 
-#: includes/Admin/AuditPage.php:382
+#: includes/Admin/AuditPage.php:404
 #: includes/Admin/RulesPage.php:178
 msgid "You are not allowed to access this page."
 msgstr ""
@@ -724,50 +776,50 @@ msgid "Go to field: %s"
 msgstr ""
 
 #: includes/Admin/RulesController.php:78
-#: includes/Admin/RulesController.php:108
-#: includes/Admin/RulesController.php:142
-#: includes/Admin/RulesController.php:178
-#: includes/Admin/RulesController.php:555
+#: includes/Admin/RulesController.php:137
+#: includes/Admin/RulesController.php:171
+#: includes/Admin/RulesController.php:207
+#: includes/Admin/RulesController.php:545
 #: includes/Application/RuleCommandService.php:55
 msgid "You are not allowed to manage ContentLatch rules."
 msgstr ""
 
 #: includes/Admin/RulesController.php:91
-#: includes/Admin/RulesController.php:121
-#: includes/Admin/RulesController.php:155
-#: includes/Admin/RulesController.php:191
-#: includes/Admin/RulesController.php:560
+#: includes/Admin/RulesController.php:150
+#: includes/Admin/RulesController.php:184
+#: includes/Admin/RulesController.php:217
+#: includes/Admin/RulesController.php:550
 #: includes/Application/RuleCommandService.php:63
 msgid "Invalid rule management nonce."
 msgstr ""
 
-#: includes/Admin/RulesController.php:216
+#: includes/Admin/RulesController.php:246
 msgid "Unknown rule action."
 msgstr ""
 
-#: includes/Admin/RulesController.php:295
+#: includes/Admin/RulesController.php:325
 msgid "Invalid rule."
 msgstr ""
 
-#: includes/Admin/RulesController.php:305
+#: includes/Admin/RulesController.php:335
 msgid "Rule deleted."
 msgstr ""
 
-#: includes/Admin/RulesController.php:306
-#: includes/Admin/RulesController.php:328
+#: includes/Admin/RulesController.php:336
+#: includes/Admin/RulesController.php:358
 msgid "Rule not found."
 msgstr ""
 
-#: includes/Admin/RulesController.php:334
+#: includes/Admin/RulesController.php:364
 #: includes/Application/RuleDocumentFactory.php:101
 msgid "Invalid rule status."
 msgstr ""
 
-#: includes/Admin/RulesController.php:350
+#: includes/Admin/RulesController.php:380
 msgid "Rule activated."
 msgstr ""
 
-#: includes/Admin/RulesController.php:351
+#: includes/Admin/RulesController.php:381
 msgid "Rule deactivated."
 msgstr ""
 
@@ -838,36 +890,36 @@ msgstr ""
 msgid "Add a WHEN condition or THEN requirement."
 msgstr ""
 
-#: includes/Admin/RulesPage.php:250
+#: includes/Admin/RulesPage.php:252
 msgid "Active Blocking"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:256
+#: includes/Admin/RulesPage.php:258
 msgid "Active Warning"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:262
+#: includes/Admin/RulesPage.php:264
 msgid "Inactive Blocking"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:268
+#: includes/Admin/RulesPage.php:270
 msgid "Inactive Warning"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:340
+#: includes/Admin/RulesPage.php:342
 msgid "None of these rules are active. Inactive rules are not currently being enforced. Activate a rule to allow ContentLatch to validate content."
 msgstr ""
 
-#: includes/Admin/RulesPage.php:349
+#: includes/Admin/RulesPage.php:351
 msgid "No completed audit yet"
 msgstr ""
 
-#: includes/Admin/RulesPage.php:354
+#: includes/Admin/RulesPage.php:356
 msgid "No findings in latest audit"
 msgstr ""
 
 #. translators: %d: number of content items
-#: includes/Admin/RulesPage.php:360
+#: includes/Admin/RulesPage.php:362
 #, php-format
 msgid "%d content item with warnings"
 msgid_plural "%d content items with warnings"
@@ -875,12 +927,16 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: number of content items
-#: includes/Admin/RulesPage.php:372
+#: includes/Admin/RulesPage.php:374
 #, php-format
 msgid "%d content item failing"
 msgid_plural "%d content items failing"
 msgstr[0] ""
 msgstr[1] ""
+
+#: includes/Application/Audit/AuditCsvExporter.php:97
+msgid "(no title)"
+msgstr ""
 
 #. translators: 1: Base validation message. 2: Row token, such as 2 or 2.3.
 #: includes/Application/Audit/AuditRepeaterCoordinates.php:153
@@ -923,7 +979,7 @@ msgstr ""
 #. translators: 1: validation message. 2: 1-based row number.
 #: includes/Application/Audit/ContentAuditService.php:538
 #: includes/Application/EditorAuditIssues.php:125
-#: includes/Infrastructure/ACF/AcfSaveValidator.php:454
+#: includes/Infrastructure/ACF/AcfSaveValidator.php:471
 #, php-format
 msgid "%1$s in row %2$d."
 msgstr ""
@@ -940,14 +996,6 @@ msgstr ""
 #: includes/Infrastructure/WordPress/RestSaveValidator.php:255
 #, php-format
 msgid "%s is required."
-msgstr ""
-
-#: includes/Application/Audit/ContentAuditService.php:670
-msgid "Invalid audit run."
-msgstr ""
-
-#: includes/Application/Audit/ContentAuditService.php:676
-msgid "Audit run not found."
 msgstr ""
 
 #: includes/Application/AuditPresentation.php:31
@@ -1132,59 +1180,71 @@ msgstr ""
 msgid "This is not the current content health result."
 msgstr ""
 
+#: includes/Application/AuditPresentation.php:327
+msgid "Exports all findings from the currently viewed completed audit, regardless of filters."
+msgstr ""
+
+#: includes/Application/AuditPresentation.php:332
+msgid "No findings are available to export from the currently viewed completed audit."
+msgstr ""
+
+#: includes/Application/AuditPresentation.php:337
+msgid "No completed audit is available to export yet."
+msgstr ""
+
 #. translators: %s: Formatted audit date.
-#: includes/Application/AuditPresentation.php:329
+#: includes/Application/AuditPresentation.php:344
 #, php-format
 msgid "Viewing results from %s"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:330
+#: includes/Application/AuditPresentation.php:345
 msgid "Viewing historical audit results"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:335
+#: includes/Application/AuditPresentation.php:350
 msgid "Back to latest audit"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:340
+#: includes/Application/AuditPresentation.php:355
 msgid "Current"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:345
+#: includes/Application/AuditPresentation.php:360
 msgid "Viewing"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:350
+#: includes/Application/AuditPresentation.php:365
 msgid "View results"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:355
+#: includes/Application/AuditPresentation.php:370
 msgid "Audit History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:360
+#: includes/Application/AuditPresentation.php:375
 msgid "Show History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:365
+#: includes/Application/AuditPresentation.php:380
 msgid "Hide History"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:370
+#: includes/Application/AuditPresentation.php:385
 msgid "No audit history yet."
 msgstr ""
 
 #. translators: 1: Count needing attention. 2: Count needing review.
-#: includes/Application/AuditPresentation.php:381
+#: includes/Application/AuditPresentation.php:396
 #, php-format
 msgid "%1$d need attention · %2$d need review"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:391
+#: includes/Application/AuditPresentation.php:406
 msgid "Rule"
 msgstr ""
 
-#: includes/Application/AuditPresentation.php:396
+#: includes/Application/AuditPresentation.php:411
 msgid "Content type"
 msgstr ""
 
@@ -1661,7 +1721,7 @@ msgstr ""
 
 #: includes/Infrastructure/ACF/SaveWarningNotifier.php:451
 #: includes/Infrastructure/ACF/SaveWarningNotifier.php:564
-#: includes/Infrastructure/ACF/SaveWarningNotifier.php:688
+#: includes/Infrastructure/ACF/SaveWarningNotifier.php:692
 msgid "Content warning."
 msgstr ""
 
@@ -1701,4 +1761,8 @@ msgstr ""
 
 #: includes/Infrastructure/WordPress/RulePostType.php:31
 msgid "ContentLatch Rule"
+msgstr ""
+
+#: includes/Infrastructure/WordPress/WpAuditStore.php:327
+msgid "Could not load audit findings."
 msgstr ""

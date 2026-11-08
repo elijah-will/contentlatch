@@ -44,7 +44,7 @@ use ContentLatch\Infrastructure\WordPress\RulePostType;
 
 final class Plugin
 {
-    public const VERSION      = '1.0.2';
+    public const VERSION      = '1.1.0';
     public const MIN_PHP      = '8.1';
     public const MIN_WP       = '6.6';
     public const MIN_ACF      = '6.0.0';
