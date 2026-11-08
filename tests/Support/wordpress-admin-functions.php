@@ -104,7 +104,12 @@ if (!function_exists('admin_url')) {
 if (!function_exists('wp_nonce_url')) {
     function wp_nonce_url(string $url, string $action = '-1'): string
     {
-        unset($action);
+        $action = $action !== '' ? $action : '-1';
+        if (!isset($GLOBALS['contentlatch_test_nonce_actions']) || !is_array($GLOBALS['contentlatch_test_nonce_actions'])) {
+            $GLOBALS['contentlatch_test_nonce_actions'] = array();
+        }
+        $GLOBALS['contentlatch_test_nonce_actions'][$action] = true;
+        $GLOBALS['contentlatch_test_last_nonce_action']      = $action;
 
         return $url . (str_contains($url, '?') ? '&' : '?') . '_wpnonce=testnonce';
     }
@@ -112,21 +117,29 @@ if (!function_exists('wp_nonce_url')) {
 
 if (!function_exists('wp_verify_nonce')) {
     /**
-     * Test double for RulesController admin-post handlers.
-     * Accepts the fixtures used in unit tests; rejects empty/forged values.
+     * Test double for admin-post handlers.
+     * The fixture "ok" is accepted for any action. "testnonce" is accepted only
+     * for an action previously passed to wp_nonce_url, once any action has been issued.
      *
      * @param mixed $nonce
      * @param mixed $action
      */
     function wp_verify_nonce($nonce = '', $action = -1): int|false
     {
-        unset($action);
         $nonce = is_scalar($nonce) ? (string) $nonce : '';
-        if ($nonce === '' || $nonce === '0') {
+        if ($nonce === '' || $nonce === '0' || ($nonce !== 'ok' && $nonce !== 'testnonce')) {
             return false;
         }
 
-        return ($nonce === 'ok' || $nonce === 'testnonce') ? 1 : false;
+        $expected = is_scalar($action) ? (string) $action : '';
+        if ($nonce === 'testnonce') {
+            $issued = $GLOBALS['contentlatch_test_nonce_actions'] ?? array();
+            if (is_array($issued) && $issued !== array() && !isset($issued[$expected])) {
+                return false;
+            }
+        }
+
+        return 1;
     }
 }
 

@@ -122,6 +122,26 @@ final class AuditPage
     }
 
     /**
+     * Export is available for the completed audit currently on screen when that
+     * audit has findings. Filters and other runs do not change this decision.
+     */
+    public static function canExportCsv(?AuditRun $viewedRun, int $findingCount): bool
+    {
+        return $viewedRun !== null
+            && $viewedRun->status === AuditRunStatus::Complete
+            && $viewedRun->id > 0
+            && $findingCount > 0;
+    }
+
+    public static function exportCsvUrl(int $runId): string
+    {
+        return wp_nonce_url(
+            admin_url('admin-post.php?action=' . AuditExportController::ACTION . '&run=' . $runId),
+            AuditExportController::nonceAction($runId)
+        );
+    }
+
+    /**
      * Failed and cancelled runs never become current results.
      */
     public static function resolveResultsRun(?AuditRun $latestComplete, ?AuditRun $requested): ?AuditRun

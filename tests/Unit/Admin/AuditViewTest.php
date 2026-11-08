@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace ContentLatch\Tests\Unit\Admin;
 
+use ContentLatch\Admin\AuditExportController;
 use ContentLatch\Admin\AuditPage;
 use ContentLatch\Application\Audit\AuditFinding;
 use ContentLatch\Application\Audit\AuditFindingQuery;
@@ -25,6 +26,8 @@ final class AuditViewTest extends TestCase
 
         $this->assertStringContainsString('id="contentlatch-audit-start"', $html);
         $this->assertStringContainsString('Run Audit', $html);
+        $this->assertStringContainsString('id="contentlatch-audit-export"', $html);
+        $this->assertStringContainsString('Export CSV', $html);
         $this->assertStringContainsString(AuditPresentation::firstRunHeading(), $html);
         $this->assertStringContainsString(AuditPresentation::firstRunText(), $html);
         $this->assertStringContainsString(AuditPresentation::doesNotModifyContent(), $html);
@@ -35,6 +38,138 @@ final class AuditViewTest extends TestCase
         $this->assertStringNotContainsString('Start Audit', $html);
         $this->assertStringNotContainsString('Statuses:', $html);
         $this->assertStringContainsString('id="contentlatch-audit"', $html);
+        $this->assertDisabledExport($html, AuditPresentation::exportCsvUnavailableNoAuditHelp());
+        $this->assertStringNotContainsString(AuditPresentation::exportCsvUnavailableHelp(), $html);
+    }
+
+    public function testExportCsvIsEnabledForTheLatestCompletedAuditWithFindings(): void
+    {
+        $html = $this->renderAudit($this->completedResults());
+
+        $this->assertEnabledExport($html, 7);
+        $this->assertStringContainsString('id="contentlatch-audit-start"', $html);
+        $this->assertStringContainsString(AuditPresentation::exportCsvHelp(), $html);
+    }
+
+    public function testExportCsvStaysDisabledWhenTheLatestCompletedAuditHasNoFindings(): void
+    {
+        $complete = $this->makeRun(7, AuditRunStatus::Complete, array(
+            'postsScanned' => 12,
+            'postsPassed'  => 12,
+        ));
+
+        $html = $this->renderAudit($this->baseVars(array(
+            'latestComplete'     => $complete,
+            'latestRun'          => $complete,
+            'resultsRun'         => $complete,
+            'allFindingTotal'    => 0,
+            'exportFindingTotal' => 0,
+        )));
+
+        $this->assertDisabledExport($html);
+        $this->assertStringContainsString(AuditPresentation::exportCsvUnavailableHelp(), $html);
+        $this->assertStringContainsString(AuditPresentation::allClearHeading(), $html);
+    }
+
+    public function testExportCsvStaysAvailableWhileANewerAuditIsRunning(): void
+    {
+        $complete = $this->makeRun(7, AuditRunStatus::Complete);
+        $active   = $this->makeRun(8, AuditRunStatus::Running, array(
+            'postsScanned' => 3,
+            'postsTotal'   => 10,
+        ));
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'active'             => $active,
+            'latestComplete'     => $complete,
+            'latestRun'          => $active,
+            'resultsRun'         => $complete,
+            'exportFindingTotal' => 1,
+        )));
+
+        $this->assertEnabledExport($html, 7);
+        $this->assertStringContainsString(AuditPresentation::runningHeading(), $html);
+        $this->assertStringContainsString('disabled="disabled"', $html);
+    }
+
+    public function testExportCsvUsesTheHistoricalAuditBeingViewedAndIgnoresFilters(): void
+    {
+        $latest = $this->makeRun(9, AuditRunStatus::Complete);
+        $older  = $this->makeRun(2, AuditRunStatus::Complete);
+
+        $historical = $this->renderAudit($this->completedResults(array(
+            'latestComplete'  => $latest,
+            'latestRun'       => $latest,
+            'resultsRun'      => $older,
+            'viewingHistory'  => true,
+            'query'           => new AuditFindingQuery(2, 'fail'),
+            'findings'        => array(),
+            'findingTotal'    => 0,
+            'allFindingTotal' => 4,
+            'filterArgs'      => array(
+                'page'     => AuditPage::SLUG,
+                'run'      => '2',
+                'severity' => 'fail',
+            ),
+        )));
+
+        $this->assertEnabledExport($historical, 2);
+        $this->assertStringContainsString('Previous audit', $historical);
+        $this->assertStringNotContainsString('run=9', $this->exportHref($historical));
+        $this->assertStringNotContainsString('severity=', $this->exportHref($historical));
+
+        $filteredEmpty = $this->renderAudit($this->completedResults(array(
+            'query'           => new AuditFindingQuery(7, 'fail'),
+            'findings'        => array(),
+            'findingTotal'    => 0,
+            'allFindingTotal' => 5,
+            'filterArgs'      => array('page' => AuditPage::SLUG, 'severity' => 'fail'),
+        )));
+
+        $this->assertEnabledExport($filteredEmpty, 7);
+        $this->assertStringContainsString(AuditPresentation::filteredEmptyHeading(), $filteredEmpty);
+        $this->assertStringNotContainsString('severity=', $this->exportHref($filteredEmpty));
+    }
+
+    public function testHistoricalAuditWithNoFindingsDoesNotExportAnotherRun(): void
+    {
+        $latest = $this->makeRun(9, AuditRunStatus::Complete);
+        $older  = $this->makeRun(2, AuditRunStatus::Complete);
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete'  => $latest,
+            'latestRun'       => $latest,
+            'resultsRun'      => $older,
+            'viewingHistory'  => true,
+            'query'           => new AuditFindingQuery(2),
+            'findings'        => array(),
+            'findingTotal'    => 0,
+            'allFindingTotal' => 0,
+            'filterArgs'      => array('page' => AuditPage::SLUG, 'run' => '2'),
+        )));
+
+        $this->assertDisabledExport($html);
+        $this->assertStringContainsString('Previous audit', $html);
+        $this->assertStringNotContainsString('run=9', $html);
+    }
+
+    public function testExportCsvDoesNotFallBackToAnOlderNonemptyAudit(): void
+    {
+        $emptyLatest = $this->makeRun(9, AuditRunStatus::Complete);
+
+        $html = $this->renderAudit($this->completedResults(array(
+            'latestComplete'  => $emptyLatest,
+            'latestRun'       => $emptyLatest,
+            'resultsRun'      => $emptyLatest,
+            'viewingHistory'  => false,
+            'query'           => new AuditFindingQuery(9),
+            'findings'        => array(),
+            'findingTotal'    => 0,
+            'allFindingTotal' => 0,
+        )));
+
+        $this->assertDisabledExport($html);
+        $this->assertStringNotContainsString('run=2', $html);
     }
 
     public function testNoActiveRulesExplainsWhyAuditCannotStart(): void
@@ -1284,10 +1419,11 @@ final class AuditViewTest extends TestCase
                 'latestComplete'   => $complete,
                 'latestRun'        => $complete,
                 'resultsRun'       => $complete,
-                'allFindingTotal'  => 1,
-                'allAffectedPosts' => 1,
-                'findingTotal'     => 1,
-                'affectedPosts'    => 1,
+                'allFindingTotal'    => 1,
+                'allAffectedPosts'   => 1,
+                'exportFindingTotal' => 1,
+                'findingTotal'       => 1,
+                'affectedPosts'      => 1,
                 'severityCounts'   => array('fail' => 1, 'warning' => 0),
                 'findings'         => array($this->makeFinding()),
                 'ruleNames'        => array('15' => 'New Tag requires description'),
@@ -1334,25 +1470,80 @@ final class AuditViewTest extends TestCase
                 'findings'         => array(),
                 'findingTotal'     => 0,
                 'affectedPosts'    => 0,
-                'severityCounts'   => array('fail' => 0, 'warning' => 0),
-                'allFindingTotal'  => 0,
-                'allAffectedPosts' => 0,
-                'postTypes'        => array('recipe'),
-                'activeRuleCount'  => 2,
-                'ruleImpacts'      => array(),
-                'ruleNames'        => array(),
-                'fieldLabels'      => array(),
-                'history'          => array(),
-                'historyTotal'     => 0,
-                'historyPaged'     => 1,
-                'historyTotalPages'=> 1,
-                'historyArgs'      => array('page' => AuditPage::SLUG),
-                'paged'            => 1,
-                'totalPages'       => 1,
-                'filterArgs'       => array('page' => AuditPage::SLUG),
+                'severityCounts'     => array('fail' => 0, 'warning' => 0),
+                'allFindingTotal'    => 0,
+                'allAffectedPosts'   => 0,
+                'exportFindingTotal' => 0,
+                'postTypes'          => array('recipe'),
+                'activeRuleCount'    => 2,
+                'ruleImpacts'        => array(),
+                'ruleNames'          => array(),
+                'fieldLabels'        => array(),
+                'history'            => array(),
+                'historyTotal'       => 0,
+                'historyPaged'       => 1,
+                'historyTotalPages'  => 1,
+                'historyArgs'        => array('page' => AuditPage::SLUG),
+                'paged'              => 1,
+                'totalPages'         => 1,
+                'filterArgs'         => array('page' => AuditPage::SLUG),
             ),
             $overrides
         );
+    }
+
+    private function assertEnabledExport(string $html, ?int $runId = null): void
+    {
+        $href = $this->exportHref($html);
+        $this->assertNotSame('', $href);
+        $this->assertStringContainsString('admin-post.php?action=' . AuditExportController::ACTION, $href);
+        $this->assertStringContainsString('_wpnonce=testnonce', $href);
+        $this->assertStringNotContainsString('severity=', $href);
+        $this->assertMatchesRegularExpression('/(?:\?|&)run=[1-9]\d*/', $href);
+        if ($runId !== null) {
+            $this->assertStringContainsString('run=' . $runId, $href);
+            $this->assertSame(
+                AuditExportController::nonceAction($runId),
+                $GLOBALS['contentlatch_test_last_nonce_action'] ?? null
+            );
+        }
+        $this->assertStringContainsString(AuditPresentation::exportCsvHelp(), $html);
+        $this->assertMatchesRegularExpression(
+            '/id="contentlatch-audit-export-note"[^>]*>\s*' . preg_quote(AuditPresentation::exportCsvHelp(), '/') . '/',
+            $html
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/id="contentlatch-audit-export"[^>]*disabled/',
+            $html
+        );
+    }
+
+    private function assertDisabledExport(string $html, ?string $unavailableHelp = null): void
+    {
+        $unavailableHelp ??= AuditPresentation::exportCsvUnavailableHelp();
+
+        $this->assertSame('', $this->exportHref($html));
+        $this->assertStringNotContainsString(
+            'admin-post.php?action=' . AuditExportController::ACTION,
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/id="contentlatch-audit-export"[^>]*disabled="disabled"/',
+            $html
+        );
+        $this->assertStringContainsString(AuditPresentation::exportCsvHelp(), $html);
+        $this->assertStringContainsString($unavailableHelp, $html);
+    }
+
+    private function exportHref(string $html): string
+    {
+        if (preg_match('/<a[^>]*id="contentlatch-audit-export"[^>]*href="([^"]*)"/', $html, $matches) !== 1
+            && preg_match('/<a[^>]*href="([^"]*)"[^>]*id="contentlatch-audit-export"/', $html, $matches) !== 1
+        ) {
+            return '';
+        }
+
+        return html_entity_decode($matches[1], ENT_QUOTES, 'UTF-8');
     }
 
     /**

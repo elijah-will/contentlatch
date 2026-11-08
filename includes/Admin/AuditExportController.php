@@ -1,6 +1,6 @@
 <?php
 /**
- * Authenticated download of the latest completed Content Audit CSV.
+ * Authenticated download of one completed Content Audit CSV.
  *
  * @package ContentLatch
  */
@@ -38,11 +38,15 @@ final class AuditExportController
 
     private bool $downloadStarted = false;
 
+    private bool $exportRunWasRequested = false;
+
+    private int $exportRunId = 0;
+
     /**
-     * @param callable(): bool       $canManage
-     * @param callable(string): bool $verifyNonce
-     * @param callable(): void|null  $finishResponse   Test seam. Production exits.
-     * @param callable(): int|null   $outputBufferFloor Test seam. Production clears every buffer.
+     * @param callable(): bool              $canManage
+     * @param callable(string, string): bool $verifyNonce
+     * @param callable(): void|null         $finishResponse   Test seam. Production exits.
+     * @param callable(): int|null          $outputBufferFloor Test seam. Production clears every buffer.
      */
     public function __construct(
         private ContentAuditService $audit,
@@ -60,18 +64,33 @@ final class AuditExportController
             $audit,
             new AuditCsvExporter(new WpAuditStore(), new WpAuditExportMetadata($rules)),
             array(Capabilities::class, 'currentUserCanManage'),
-            static function (string $nonce): bool {
-                return wp_verify_nonce($nonce, self::NONCE_ACTION) !== false;
+            static function (string $nonce, string $action): bool {
+                return wp_verify_nonce($nonce, $action) !== false;
             }
         );
 
         add_action('admin_post_' . self::ACTION, array($controller, 'export'));
     }
 
+    /**
+     * Nonce action for one export request. A selected run is part of the action
+     * so a nonce issued for one completed audit cannot be reused for another.
+     */
+    public static function nonceAction(int $runId = 0): string
+    {
+        if ($runId > 0) {
+            return self::NONCE_ACTION . ':' . $runId;
+        }
+
+        return self::NONCE_ACTION;
+    }
+
     public function export(): void
     {
-        $this->downloadStarted = false;
-        $stream                = null;
+        $this->downloadStarted       = false;
+        $this->exportRunWasRequested = false;
+        $this->exportRunId           = 0;
+        $stream                      = null;
 
         try {
             $filename = $this->stage($stream);
@@ -109,7 +128,7 @@ final class AuditExportController
     }
 
     /**
-     * Authorize, pin the latest completed run, and finish the CSV before any
+     * Authorize, pin the selected completed run, and finish the CSV before any
      * download header is sent. Returns null when the response was already rejected.
      *
      * @param resource|null $stream
@@ -123,20 +142,14 @@ final class AuditExportController
             return null;
         }
 
-        // WpAuditStore::findLatestCompleteRun() returns null both when no
-        // completed audit exists and when that query fails, because it does
-        // not surface last_error. A failed finding read still throws from
-        // the exporter, so it is not delivered as an empty file.
-        $run = $this->audit->getLatestCompleteRun();
-        if (!$run instanceof AuditRun || $run->status !== AuditRunStatus::Complete || $run->id <= 0) {
-            $this->reject(__('No completed ContentLatch audit is available to export.', 'contentlatch'), 400);
-
+        $run = $this->selectedRun();
+        if (!$run instanceof AuditRun) {
             return null;
         }
 
-        // The id and filename stay pinned to this run. Request filters, pagination,
-        // and historical run ids are never read. The exporter's count, not a
-        // separate COUNT query, decides whether this run has findings.
+        // The id and filename stay pinned to this run. Dashboard filters are
+        // never read. The exporter's count, not a separate COUNT query, decides
+        // whether this run has findings.
         $runId    = $run->id;
         $filename = $this->downloadFilename($run);
 
@@ -151,10 +164,10 @@ final class AuditExportController
         $exported = $this->exporter->export($runId, $stream);
         if ($exported < 1) {
             $this->closeStream($stream);
-            $this->reject(
-                __('The latest completed ContentLatch audit has no findings to export.', 'contentlatch'),
-                400
-            );
+            $message = $this->exportRunWasRequested
+                ? __('The selected ContentLatch audit has no findings to export.', 'contentlatch')
+                : __('The latest completed ContentLatch audit has no findings to export.', 'contentlatch');
+            $this->reject($message, 400);
 
             return null;
         }
@@ -163,7 +176,8 @@ final class AuditExportController
     }
 
     /**
-     * Capability is checked before the nonce is read. No other request field is read.
+     * Capability is checked before any request field is read. The nonce action
+     * includes a well-formed run id, so that id is read only to verify the nonce.
      *
      * @return array{message: string, status: int}|null
      */
@@ -186,15 +200,107 @@ final class AuditExportController
             );
         }
 
-        $verify = $this->verifyNonce;
-        if (!is_callable($verify) || !$verify($nonce)) {
+        $requested = $this->requestedRunId();
+        $action    = $requested['id'] > 0
+            ? self::nonceAction($requested['id'])
+            : self::NONCE_ACTION;
+        $verify    = $this->verifyNonce;
+        if (!is_callable($verify) || !$verify($nonce, $action)) {
             return array(
                 'message' => __('Invalid audit export nonce.', 'contentlatch'),
                 'status'  => 403,
             );
         }
 
+        if ($requested['invalid']) {
+            return array(
+                'message' => __('Invalid audit run.', 'contentlatch'),
+                'status'  => 400,
+            );
+        }
+
+        $this->exportRunWasRequested = $requested['present'];
+        $this->exportRunId           = $requested['id'];
+
         return null;
+    }
+
+    /**
+     * Load the requested completed run, or the latest completed run when no id
+     * was supplied. Invalid and incomplete runs are rejected here and are not
+     * replaced with another audit.
+     */
+    private function selectedRun(): ?AuditRun
+    {
+        if ($this->exportRunWasRequested) {
+            try {
+                $run = $this->audit->getRun($this->exportRunId);
+            } catch (AuditException) {
+                $this->reject(__('Audit run not found.', 'contentlatch'), 400);
+
+                return null;
+            }
+
+            if ($run->status !== AuditRunStatus::Complete || $run->id !== $this->exportRunId) {
+                $this->reject(__('Only completed audits can be exported.', 'contentlatch'), 400);
+
+                return null;
+            }
+
+            return $run;
+        }
+
+        // WpAuditStore::findLatestCompleteRun() returns null both when no
+        // completed audit exists and when that query fails, because it does
+        // not surface last_error. A failed finding read still throws from
+        // the exporter, so it is not delivered as an empty file.
+        $run = $this->audit->getLatestCompleteRun();
+        if (!$run instanceof AuditRun || $run->status !== AuditRunStatus::Complete || $run->id <= 0) {
+            $this->reject(__('No completed ContentLatch audit is available to export.', 'contentlatch'), 400);
+
+            return null;
+        }
+
+        return $run;
+    }
+
+    /**
+     * @return array{present: bool, invalid: bool, id: int}
+     */
+    private function requestedRunId(): array
+    {
+        if (!array_key_exists('run', $_REQUEST)) {
+            return array(
+                'present' => false,
+                'invalid' => false,
+                'id'      => 0,
+            );
+        }
+
+        $raw = $_REQUEST['run'];
+        if (!is_scalar($raw)) {
+            return array(
+                'present' => true,
+                'invalid' => true,
+                'id'      => 0,
+            );
+        }
+
+        $value = (string) wp_unslash((string) $raw);
+        $id    = ctype_digit($value) ? (int) $value : 0;
+        if ($id < 1 || (string) $id !== $value) {
+            return array(
+                'present' => true,
+                'invalid' => true,
+                'id'      => 0,
+            );
+        }
+
+        return array(
+            'present' => true,
+            'invalid' => false,
+            'id'      => $id,
+        );
     }
 
     /** @param resource $stream */

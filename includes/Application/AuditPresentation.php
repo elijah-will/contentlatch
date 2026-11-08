@@ -322,6 +322,21 @@ final class AuditPresentation
         return __('This is not the current content health result.', 'contentlatch');
     }
 
+    public static function exportCsvHelp(): string
+    {
+        return __('Exports all findings from the currently viewed completed audit, regardless of filters.', 'contentlatch');
+    }
+
+    public static function exportCsvUnavailableHelp(): string
+    {
+        return __('No findings are available to export from the currently viewed completed audit.', 'contentlatch');
+    }
+
+    public static function exportCsvUnavailableNoAuditHelp(): string
+    {
+        return __('No completed audit is available to export yet.', 'contentlatch');
+    }
+
     public static function viewingResultsFrom(string $date): string
     {
         return $date !== ''

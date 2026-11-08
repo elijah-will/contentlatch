@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace ContentLatch\Tests\Unit\Admin;
 
 use ContentLatch\Admin\AuditAdminRequest;
+use ContentLatch\Admin\AuditExportController;
 use ContentLatch\Admin\AuditPage;
 use ContentLatch\Application\Audit\AuditFindingQuery;
 use ContentLatch\Application\Audit\AuditRun;
@@ -24,6 +25,41 @@ final class AuditPageTest extends TestCase
         $active = $this->makeRun(1, AuditRunStatus::Running);
 
         $this->assertFalse(AuditPage::canStart($active, array('recipe')));
+    }
+
+    public function testExportCsvRequiresACompletedRunWithFindings(): void
+    {
+        $complete = $this->makeRun(4, AuditRunStatus::Complete);
+        $running  = $this->makeRun(5, AuditRunStatus::Running);
+        $failed   = $this->makeRun(6, AuditRunStatus::Failed);
+
+        $this->assertFalse(AuditPage::canExportCsv(null, 3));
+        $this->assertFalse(AuditPage::canExportCsv($complete, 0));
+        $this->assertFalse(AuditPage::canExportCsv($running, 3));
+        $this->assertFalse(AuditPage::canExportCsv($failed, 3));
+        $this->assertTrue(AuditPage::canExportCsv($complete, 1));
+        $this->assertTrue(AuditPage::canExportCsv($complete, 12));
+    }
+
+    public function testExportCsvUrlUsesTheDedicatedAdminPostActionAndNonce(): void
+    {
+        require_once dirname(__DIR__, 2) . '/Support/wordpress-admin-functions.php';
+        $GLOBALS['contentlatch_test_nonce_actions'] = array();
+
+        $url = AuditPage::exportCsvUrl(4);
+
+        $this->assertStringContainsString('admin-post.php?action=' . AuditExportController::ACTION, $url);
+        $this->assertStringContainsString('run=4', $url);
+        $this->assertStringContainsString('_wpnonce=testnonce', $url);
+        $this->assertStringNotContainsString('severity=', $url);
+        $this->assertSame(AuditExportController::ACTION, AuditExportController::NONCE_ACTION);
+        $this->assertSame(
+            AuditExportController::nonceAction(4),
+            $GLOBALS['contentlatch_test_last_nonce_action'] ?? null
+        );
+        $this->assertNotFalse(wp_verify_nonce('testnonce', AuditExportController::nonceAction(4)));
+        $this->assertFalse(wp_verify_nonce('testnonce', AuditExportController::NONCE_ACTION));
+        $this->assertFalse(wp_verify_nonce('testnonce', AuditExportController::nonceAction(9)));
     }
 
     public function testResultsRunAcceptsOnlyCompleteRequestedRuns(): void

@@ -120,11 +120,12 @@ final class AuditExportControllerTest extends TestCase
         $this->assertStringContainsString("add_action('admin_post_' . self::ACTION", $controller);
         $this->assertStringNotContainsString('admin_post_nopriv_', $controller);
         $this->assertStringContainsString("array(Capabilities::class, 'currentUserCanManage')", $controller);
-        $this->assertStringContainsString('wp_verify_nonce($nonce, self::NONCE_ACTION)', $controller);
+        $this->assertStringContainsString('wp_verify_nonce($nonce, $action)', $controller);
+        $this->assertStringContainsString('self::NONCE_ACTION . \':\' . $runId', $controller);
         $this->assertStringNotContainsString('ContentAuditService::NONCE_ACTION', $controller);
         $this->assertStringNotContainsString('contentlatch_unit_test_', $controller);
         $this->assertStringNotContainsString('countFindings(', $controller);
-        $this->assertSame(array('_wpnonce'), $this->requestKeys($controller));
+        $this->assertSame(array('_wpnonce', 'run'), $this->requestKeys($controller));
     }
 
     public function testMissingCapabilityDoesNotReadAuditsOrOpenAStream(): void
@@ -133,12 +134,13 @@ final class AuditExportControllerTest extends TestCase
         $verified = false;
         $before   = $this->openStreams();
         $this->allowDownload();
+        $_REQUEST['run'] = '8';
         $controller = new AuditExportController(
             $this->service($store),
             new AuditCsvExporter($store, $this->metadata()),
             static fn (): bool => false,
-            static function (string $nonce) use (&$verified): bool {
-                unset($nonce);
+            static function (string $nonce, string $action = '') use (&$verified): bool {
+                unset($nonce, $action);
                 $verified = true;
 
                 return true;
@@ -185,6 +187,7 @@ final class AuditExportControllerTest extends TestCase
         $store = new CountingAuditStore();
         $this->seed($store, array($this->finding(1, 4, 'Visible finding')));
         $_REQUEST['_wpnonce'] = 'forged';
+        $_REQUEST['run']      = '2';
 
         $this->dispatch($this->controller($store));
 
@@ -215,6 +218,7 @@ final class AuditExportControllerTest extends TestCase
         );
         $_POST = array('run_id' => '8');
         $_REQUEST = array_merge($_GET, array('_wpnonce' => 'ok'));
+        $this->assertArrayNotHasKey('run', $_REQUEST);
 
         $expected = $this->rendered($store, $metadata, 4);
         $before   = $this->openStreams();
@@ -239,6 +243,152 @@ final class AuditExportControllerTest extends TestCase
             'Content-Length: ' . strlen($expected),
         ), $GLOBALS['contentlatch_test_headers']);
         $this->assertFileDoesNotExist(sys_get_temp_dir() . '/contentlatch-should-not-exist.csv');
+    }
+
+    public function testHistoricalRunExportsThatRunAndIgnoresFilters(): void
+    {
+        $store    = new InMemoryAuditStore();
+        $metadata = $this->metadata();
+        $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+        $this->seedRun($store, 2, AuditRunStatus::Complete, '2026-01-01 00:00:00', '2026-01-02 00:00:00');
+        $store->findings[] = $this->finding(3, 2, 'HISTORICAL_FAIL');
+        $store->findings[] = $this->finding(4, 2, 'HISTORICAL_WARNING', 43, RuleSeverity::Warning);
+        $this->allowDownload();
+        $_REQUEST['run']       = '2';
+        $_REQUEST['severity']  = 'fail';
+        $_REQUEST['post_type'] = 'page';
+        $_REQUEST['paged']     = '3';
+        $_REQUEST['file']      = sys_get_temp_dir() . '/contentlatch-should-not-exist.csv';
+        $_REQUEST['filename']  = '../wp-content/uploads/evil.csv';
+
+        $expected = $this->rendered($store, $metadata, 2);
+        $this->expectOutputString($expected);
+        $this->dispatch($this->controller(
+            $store,
+            metadata: $metadata,
+            expectedNonceAction: AuditExportController::nonceAction(2),
+        ));
+
+        $this->assertSame('contentlatch_audit_export_csv:2', AuditExportController::nonceAction(2));
+        $this->assertStringContainsString('HISTORICAL_FAIL', $expected);
+        $this->assertStringContainsString('HISTORICAL_WARNING', $expected);
+        $this->assertStringNotContainsString('LATEST_FINDING', $expected);
+        $this->assertSame(
+            'Content-Disposition: attachment; filename="contentlatch-audit-2-2026-01-02.csv"',
+            $GLOBALS['contentlatch_test_headers'][1]
+        );
+        $this->assertFileDoesNotExist(sys_get_temp_dir() . '/contentlatch-should-not-exist.csv');
+    }
+
+    public function testSelectedHistoricalAuditWithNoFindingsDoesNotFallBack(): void
+    {
+        $store = new CountingAuditStore();
+        $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+        $this->seedRun($store, 2, AuditRunStatus::Complete, '2026-01-01 00:00:00', '2026-01-02 00:00:00');
+        $this->allowDownload();
+        $_REQUEST['run'] = '2';
+
+        $this->dispatch($this->controller($store));
+
+        $this->assertRejected('The selected ContentLatch audit has no findings to export.', 400);
+        $this->assertSame(0, $store->completeReads);
+        $this->assertSame(1, $store->batchReads);
+        $this->assertSame(array(), $GLOBALS['contentlatch_test_headers']);
+    }
+
+    public function testInvalidRunIdsAreRejectedWithoutFallingBack(): void
+    {
+        $invalid = array('0', '-3', '2abc', '08', '999999999999999999999', '', '2.5', ' 2', array('2'));
+        foreach ($invalid as $run) {
+            $store = new CountingAuditStore();
+            $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+            $this->allowDownload();
+            $_REQUEST['run'] = $run;
+            unset($GLOBALS['contentlatch_test_wp_die']);
+            $GLOBALS['contentlatch_test_headers'] = array();
+
+            $this->dispatch($this->controller($store));
+
+            $this->assertRejected('Invalid audit run.', 400);
+            $this->assertSame(0, $store->completeReads);
+            $this->assertSame(0, $store->batchReads);
+            $this->assertSame(array(), $GLOBALS['contentlatch_test_headers']);
+        }
+    }
+
+    public function testNonexistentRunIdIsRejectedWithoutFallingBack(): void
+    {
+        $store = new CountingAuditStore();
+        $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+        $this->allowDownload();
+        $_REQUEST['run'] = '99';
+
+        $this->dispatch($this->controller($store));
+
+        $this->assertRejected('Audit run not found.', 400);
+        $this->assertSame(0, $store->completeReads);
+        $this->assertSame(0, $store->batchReads);
+        $this->assertSame(array(), $GLOBALS['contentlatch_test_headers']);
+    }
+
+    public function testIncompleteRunIdsAreRejectedWithoutFallingBack(): void
+    {
+        foreach (array(AuditRunStatus::Running, AuditRunStatus::Failed, AuditRunStatus::Cancelled) as $status) {
+            $store = new CountingAuditStore();
+            $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+            $this->seedRun($store, 8, $status, '2026-12-01 00:00:00', $status === AuditRunStatus::Running ? null : '2026-12-01 01:00:00');
+            $store->inner->findings[] = $this->finding(8, 8, 'INCOMPLETE_FINDING');
+            $this->allowDownload();
+            $_REQUEST['run'] = '8';
+            unset($GLOBALS['contentlatch_test_wp_die']);
+            $GLOBALS['contentlatch_test_headers'] = array();
+
+            $this->dispatch($this->controller($store));
+
+            $this->assertRejected('Only completed audits can be exported.', 400);
+            $this->assertSame(0, $store->completeReads);
+            $this->assertSame(0, $store->batchReads);
+            $this->assertSame(array(), $GLOBALS['contentlatch_test_headers']);
+        }
+    }
+
+    public function testNonceForADifferentRunDoesNotExportEitherAudit(): void
+    {
+        foreach (array(AuditExportController::NONCE_ACTION, AuditExportController::nonceAction(4)) as $accepted) {
+            $store = new CountingAuditStore();
+            $seen  = '';
+            $this->seed($store, array($this->finding(1, 4, 'LATEST_FINDING')));
+            $this->seedRun($store, 2, AuditRunStatus::Complete, '2026-01-01 00:00:00', '2026-01-02 00:00:00');
+            $store->inner->findings[] = $this->finding(3, 2, 'HISTORICAL_FINDING');
+            $this->allowDownload();
+            $_REQUEST['run'] = '2';
+            unset($GLOBALS['contentlatch_test_wp_die']);
+            $GLOBALS['contentlatch_test_headers'] = array();
+            $controller = new AuditExportController(
+                $this->service($store),
+                new AuditCsvExporter($store, $this->metadata()),
+                static fn (): bool => true,
+                static function (string $nonce, string $action = '') use (&$seen, $accepted): bool {
+                    $seen = $action;
+
+                    return $nonce === 'ok' && $action === $accepted;
+                },
+                static function (): void {
+                    throw new AdminResponseEnded('response ended');
+                },
+                static function (): int {
+                    return (int) ($GLOBALS['contentlatch_test_buffer_floor'] ?? 0);
+                }
+            );
+
+            $this->dispatch($controller);
+
+            $this->assertSame(AuditExportController::nonceAction(2), $seen);
+            $this->assertRejected('Invalid audit export nonce.', 403);
+            $this->assertSame(0, $store->completeReads);
+            $this->assertSame(0, $store->batchReads);
+            $this->assertSame(array(), $GLOBALS['contentlatch_test_headers']);
+        }
     }
 
     public function testNoCompletedAuditIsRejected(): void
@@ -317,8 +467,10 @@ final class AuditExportControllerTest extends TestCase
         $this->expectOutputRegex('/\A(?s)(?!.*NEWER_RUN_FINDING).*ORIGINAL_FINDING.*\z/');
         $this->dispatch($this->controller($store));
 
-        $this->assertStringContainsString(
-            'filename="contentlatch-audit-4-2026-11-07.csv"',
+        $this->assertTrue($store->insertedDuringExport);
+        $this->assertSame(99, $store->inner->findLatestCompleteRun()?->id);
+        $this->assertSame(
+            'Content-Disposition: attachment; filename="contentlatch-audit-4-2026-11-07.csv"',
             $GLOBALS['contentlatch_test_headers'][1]
         );
     }
@@ -576,12 +728,22 @@ final class AuditExportControllerTest extends TestCase
         AuditStoreInterface $store,
         bool $allowed = true,
         ?AuditExportMetadata $metadata = null,
+        ?string $expectedNonceAction = null,
     ): AuditExportController {
         return new AuditExportController(
             $this->service($store),
             new AuditCsvExporter($store, $metadata ?? $this->metadata()),
             static fn (): bool => $allowed,
-            static fn (string $nonce): bool => $nonce === 'ok' || $nonce === 'testnonce',
+            static function (string $nonce, string $action = '') use ($expectedNonceAction): bool {
+                if ($nonce !== 'ok' && $nonce !== 'testnonce') {
+                    return false;
+                }
+                if ($expectedNonceAction !== null) {
+                    return $action === $expectedNonceAction;
+                }
+
+                return $action !== '';
+            },
             static function (): void {
                 throw new AdminResponseEnded('response ended');
             },
@@ -871,13 +1033,13 @@ final class CountingAuditStore extends ForwardingAuditStore
 
 final class PinningAuditStore extends ForwardingAuditStore
 {
-    private bool $inserted = false;
+    public bool $insertedDuringExport = false;
 
-    public function countFindings(AuditFindingQuery $query): int
+    public function findFindingsAfterId(int $runId, int $afterId, int $limit): array
     {
-        $count = parent::countFindings($query);
-        if (!$this->inserted) {
-            $this->inserted = true;
+        $findings = parent::findFindingsAfterId($runId, $afterId, $limit);
+        if (!$this->insertedDuringExport) {
+            $this->insertedDuringExport = true;
             $this->inner->runs[99] = new AuditRun(
                 99,
                 AuditRunStatus::Complete,
@@ -909,6 +1071,6 @@ final class PinningAuditStore extends ForwardingAuditStore
             );
         }
 
-        return $count;
+        return $findings;
     }
 }
