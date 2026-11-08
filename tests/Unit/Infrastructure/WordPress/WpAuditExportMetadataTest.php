@@ -11,6 +11,7 @@ namespace ContentLatch\Tests\Unit\Infrastructure\WordPress;
 
 use ContentLatch\Application\Exception\AuditException;
 use ContentLatch\Application\RuleRepositoryInterface;
+use ContentLatch\Domain\Rule;
 use ContentLatch\Infrastructure\WordPress\WpAuditExportMetadata;
 use ContentLatch\Tests\Support\RuleFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -167,7 +168,7 @@ final class WpAuditExportMetadataTest extends TestCase
     public function testRuleQueryFailureIsNotAMissingRule(): void
     {
         $repository = $this->createMock(RuleRepositoryInterface::class);
-        $repository->method('find')->willReturnCallback(static function (): null {
+        $repository->method('find')->willReturnCallback(static function (): ?Rule {
             $GLOBALS['wpdb']->num_queries++;
             $GLOBALS['wpdb']->last_error = '';
             $GLOBALS['wpdb']->last_error = 'Sensitive database details';
