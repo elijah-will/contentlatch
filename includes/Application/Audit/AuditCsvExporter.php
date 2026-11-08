@@ -55,6 +55,7 @@ final class AuditCsvExporter
 
         // One CSV record at a time, so short writes can be detected/retried
         // without accumulating the export or silently losing part of a record.
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- In-memory php://memory record buffer for fputcsv(); WP_Filesystem cannot open PHP stream wrappers.
         $record = fopen('php://memory', 'w+b');
         if ($record === false) {
             throw new AuditException('Could not prepare audit CSV output.');
@@ -126,6 +127,7 @@ final class AuditCsvExporter
 
             return $count;
         } finally {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Releases the php://memory record buffer, not a file.
             fclose($record);
         }
     }
@@ -184,6 +186,7 @@ final class AuditCsvExporter
         while ($offset < $length) {
             // Convert stream warnings into a safe exception; never emit them
             // into a future HTTP response. A zero write must not spin forever.
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writes to the caller-supplied export stream (the php://temp staging stream in production); no file is written.
             $written = @fwrite($stream, substr($bytes, $offset));
             if ($written === false || $written === 0) {
                 throw new AuditException('Could not write audit CSV output.');

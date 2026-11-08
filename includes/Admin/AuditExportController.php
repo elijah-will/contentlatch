@@ -191,8 +191,11 @@ final class AuditExportController
             );
         }
 
-        $raw   = $_REQUEST['_wpnonce'] ?? null;
-        $nonce = is_scalar($raw) ? sanitize_text_field(wp_unslash((string) $raw)) : '';
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- This reads the nonce itself; it is verified below through $this->verifyNonce (wp_verify_nonce() in production).
+        $nonce = isset($_REQUEST['_wpnonce']) && is_scalar($_REQUEST['_wpnonce'])
+            ? sanitize_text_field(wp_unslash((string) $_REQUEST['_wpnonce']))
+            : '';
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
         if ($nonce === '') {
             return array(
                 'message' => __('Missing audit export nonce.', 'contentlatch'),
@@ -269,7 +272,9 @@ final class AuditExportController
      */
     private function requestedRunId(): array
     {
-        if (!array_key_exists('run', $_REQUEST)) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The run id selects the per-run nonce action, so it must be read before verification. It is accepted below only as a canonical positive integer; sanitize_text_field() would loosen that (" 2" becomes "2").
+        $raw = isset($_REQUEST['run']) ? wp_unslash($_REQUEST['run']) : null;
+        if ($raw === null) {
             return array(
                 'present' => false,
                 'invalid' => false,
@@ -277,7 +282,6 @@ final class AuditExportController
             );
         }
 
-        $raw = $_REQUEST['run'];
         if (!is_scalar($raw)) {
             return array(
                 'present' => true,
@@ -286,7 +290,7 @@ final class AuditExportController
             );
         }
 
-        $value = (string) wp_unslash((string) $raw);
+        $value = (string) $raw;
         $id    = ctype_digit($value) ? (int) $value : 0;
         if ($id < 1 || (string) $id !== $value) {
             return array(
@@ -351,6 +355,7 @@ final class AuditExportController
 
         try {
             while (!feof($stream)) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Reads the php://temp staging stream; WP_Filesystem has no stream API.
                 $chunk = fread($stream, 8192);
                 if ($chunk === false) {
                     throw new AuditException('Could not read audit CSV output.');
@@ -364,6 +369,7 @@ final class AuditExportController
                 throw new AuditException('Could not flush audit CSV output.');
             }
         } finally {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the php://output handle opened above, not a file.
             fclose($output);
         }
     }
@@ -374,6 +380,7 @@ final class AuditExportController
         $offset = 0;
         $length = strlen($bytes);
         while ($offset < $length) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Streams the CSV download to php://output; no file is written.
             $written = fwrite($output, substr($bytes, $offset));
             if ($written === false || $written === 0) {
                 throw new AuditException('Could not write audit CSV output.');
@@ -384,6 +391,7 @@ final class AuditExportController
 
     private function openStagingStream(): mixed
     {
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Opens the php://temp staging stream; WP_Filesystem cannot open PHP stream wrappers.
         $stream = fopen(self::STAGING_URI, 'w+b');
         if ($stream === false) {
             return false;
@@ -394,6 +402,7 @@ final class AuditExportController
         $uri      = (string) ($meta['uri'] ?? '');
         $writable = strpbrk($mode, 'waxc+') !== false;
         if (empty($meta['seekable']) || !$writable || !str_contains($uri, 'php://temp')) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Releases the rejected php://temp staging stream, not a file.
             fclose($stream);
 
             return false;
@@ -464,7 +473,7 @@ final class AuditExportController
         wp_die(
             esc_html($message),
             esc_html__('ContentLatch', 'contentlatch'),
-            array('response' => $status)
+            array('response' => (int) $status)
         );
     }
 
@@ -487,6 +496,7 @@ final class AuditExportController
     private function closeStream(mixed &$stream): void
     {
         if (is_resource($stream)) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Releases the php://temp staging stream, not a file.
             fclose($stream);
         }
         $stream = null;
