@@ -4,7 +4,7 @@ Tags: acf, validation, content audit, quality control, content governance
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.0.2
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -106,13 +106,17 @@ Audit evaluates existing published and private content against your active rules
 * Findings identify the affected field and rule.
 * Repeater findings retain row context.
 * Completed audit runs can be reviewed historically.
+* Export CSV downloads findings from the currently viewed completed audit, including historical runs.
+* CSV exports include blocking issues and warnings, with post details, rule information, validation messages, and edit links.
+* Dashboard filters do not change what is exported. Export is unavailable when the viewed audit has no findings.
+* Exported post titles, statuses, and edit URLs reflect current WordPress data.
 * Large sites may take longer because audits process content in batches.
 
 Audit reports issues. It does not change your content.
 
 = Permissions =
 
-Managing rules and running audits requires the ContentLatch management capability (granted to administrators on activation). Editors are validated when they save content they can edit. Blocking rules prevent non-compliant content from being published or updated on the supported save paths.
+Managing rules, running audits, and exporting audit CSV files requires the ContentLatch management capability (granted to administrators on activation). Editors are validated when they save content they can edit. Blocking rules prevent non-compliant content from being published or updated on the supported save paths.
 
 = Privacy =
 
@@ -150,6 +154,10 @@ Yes. When the condition matches, the rule becomes the finding. Use Blocking or W
 
 No. Audit only reports findings against your active rules.
 
+= What does Export CSV include? =
+
+Export CSV downloads all findings from the completed audit you are viewing, including historical audits. Blocking and warning findings are included. Dashboard filters do not change the export. Post titles, statuses, and edit URLs reflect current WordPress data. Export requires the ContentLatch management capability and is unavailable when the viewed audit has no findings.
+
 = What happens when I delete the plugin? =
 
 Uninstalling removes ContentLatch rules, audit data, and the ContentLatch management capability. Deactivation alone does not remove that data.
@@ -166,6 +174,12 @@ Yes. ContentLatch validates supported Core and ACF fields in both the Classic Ed
 4. Audit existing content, filter blocking issues and warnings, and navigate directly to affected posts.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added CSV export for Content Audit findings.
+* Export findings from the latest or historical completed audit.
+* Include blocking issues, warnings, post details, rule information, validation messages, and direct edit links.
+* Added secure, memory-efficient CSV downloads with WordPress permission checks and audit-specific nonces.
 
 = 1.0.2 =
 * Fix mixed WordPress Core/ACF validation rules being skipped during Gutenberg ACF AJAX validation when the request does not include Core field values. Core WHEN conditions can use stored post values while ACF THEN validations evaluate incoming submitted values.
