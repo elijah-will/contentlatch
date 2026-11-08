@@ -51,6 +51,7 @@ $completedAt = $resultsRun !== null
     ? AuditPage::formatRunTime($resultsRun->finishedAt ?? $resultsRun->startedAt)
     : '';
 $canStart    = AuditPage::canStart($active, $postTypes);
+$canExport   = AuditPage::canExportCsv($resultsRun, $allFindingTotal);
 $isFirstRun  = AuditPage::isFirstRun($resultsRun, $active);
 $isRunning   = $active !== null;
 $progressPct = $active !== null ? $active->progressPercent() : null;
@@ -63,6 +64,25 @@ $historyOpen      = $viewingHistory || $historyPaged > 1;
 $typeNames   = array();
 foreach ($postTypes as $type) {
     $typeNames[] = AdminPresentation::postTypeLabel($type);
+}
+$exportUnavailableHelp = $resultsRun === null
+    ? AuditPresentation::exportCsvUnavailableNoAuditHelp()
+    : AuditPresentation::exportCsvUnavailableHelp();
+$exportHelp = $canExport
+    ? AuditPresentation::exportCsvHelp()
+    : $exportUnavailableHelp;
+$exportAction = array(
+    'label'    => __('Export CSV', 'contentlatch'),
+    'attrs'    => array(
+        'id'         => 'contentlatch-audit-export',
+        'title'      => $exportHelp,
+        'aria-label' => __('Export CSV', 'contentlatch') . '. ' . $exportHelp,
+    ),
+    'disabled' => !$canExport,
+);
+if ($canExport && $resultsRun !== null) {
+    // Anchors ignore disabled; only emit the download URL when export is available.
+    $exportAction['href'] = AuditPage::exportCsvUrl($resultsRun->id);
 }
 ?>
 <div class="wrap contentlatch<?php echo $viewingHistory ? ' contentlatch-audit--history' : ''; ?>" id="contentlatch-audit">
@@ -80,9 +100,19 @@ foreach ($postTypes as $type) {
                 ),
                 'disabled' => !$canStart,
             ),
+            'secondary'   => array($exportAction),
         )
     );
     ?>
+
+    <p class="description" id="contentlatch-audit-export-note">
+        <?php
+        echo esc_html(AuditPresentation::exportCsvHelp());
+        if (!$canExport) {
+            echo ' ' . esc_html($exportUnavailableHelp);
+        }
+        ?>
+    </p>
 
     <div id="contentlatch-audit-client-notice" class="notice notice-error inline" hidden>
         <p class="contentlatch-notice-message"></p>

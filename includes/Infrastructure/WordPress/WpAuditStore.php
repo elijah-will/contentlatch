@@ -306,6 +306,35 @@ final class WpAuditStore implements AuditStoreInterface
         return $findings;
     }
 
+    public function findFindingsAfterId(int $runId, int $afterId, int $limit): array
+    {
+        global $wpdb;
+
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                'SELECT * FROM %i WHERE run_id = %d AND id > %d ORDER BY id ASC LIMIT %d',
+                AuditSchema::findingsTable(),
+                $runId,
+                max(0, $afterId),
+                max(1, min(self::MAX_FINDINGS_BATCH_SIZE, $limit))
+            )
+        );
+
+        // get_results() discards query() failures, which may leave last_error empty.
+        if ($result === false || $wpdb->last_error !== '') {
+            $this->logDbError('Could not load audit findings.');
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Escaped at the presentation boundary.
+            throw new AuditException(__('Could not load audit findings.', 'contentlatch'));
+        }
+
+        $findings = array();
+        foreach ($wpdb->last_result as $row) {
+            $findings[] = $this->hydrateFinding(get_object_vars($row));
+        }
+
+        return $findings;
+    }
+
     public function queryFindings(AuditFindingQuery $query): array
     {
         global $wpdb;
