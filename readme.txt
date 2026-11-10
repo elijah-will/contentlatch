@@ -18,6 +18,8 @@ Define the content rules your site requires, then automatically validate content
 
 ContentLatch is not an AI tool, SEO scanner, malware scanner, spell checker, or content generator. It enforces the rules you configure.
 
+Audit existing content, review validation findings, and export results to CSV for reporting and follow-up.
+
 = How it works =
 
 1. Create a rule for a post type.
@@ -28,6 +30,7 @@ ContentLatch is not an AI tool, SEO scanner, malware scanner, spell checker, or 
 6. Blocking findings prevent publishing or updating published/private content.
 7. Warnings alert the editor but do not block publication.
 8. Run an Audit to evaluate existing published and private content against your active rules.
+9. Export findings from the current or a historical completed audit to CSV.
 
 A rule needs at least a WHEN condition or a THEN validation. You may create a condition-only rule (WHEN without THEN). When that condition matches, the rule itself becomes the finding. That is useful for governance rules such as prohibited terminology.
 
@@ -61,7 +64,7 @@ Supported structures:
 * Clone inside Repeater or Flexible Content
 * Repeater → Clone → scalar
 
-Not supported in V1 (examples): Relationship, Post Object, Page Link, Taxonomy, User, Checkbox, Gallery, Image, File, Link, Google Map, oEmbed, multi-select Select, deeper than two Repeater levels, Repeater → Group, Repeater inside Flexible Content, nested Flexible Content, and Clone → Clone / Repeater / Flexible Content.
+Currently unsupported (examples): Relationship, Post Object, Page Link, Taxonomy, User, Checkbox, Gallery, Image, File, Link, Google Map, oEmbed, multi-select Select, deeper than two Repeater levels, Repeater → Group, Repeater inside Flexible Content, nested Flexible Content, and Clone → Clone / Repeater / Flexible Content.
 
 ACF field validation requires Advanced Custom Fields 6.0 or higher (Free or Pro). Repeater, Flexible Content, and Clone require ACF Pro. WordPress Core field validation works without ACF.
 
@@ -86,7 +89,7 @@ Numeric comparisons apply to number and range fields. Date fields support equals
 
 = Severity =
 
-* **Blocking** — Prevents publishing or updating content when the rule fails. In V1, blocking applies to publish and private update flows. Drafts, autosaves, and revisions are not blocked.
+* **Blocking** — Prevents publishing or updating content when the rule fails. Blocking applies to publish and private update flows. Drafts, autosaves, and revisions are not blocked.
 * **Warning** — Shows an editor notice but does not prevent publishing.
 
 = Editors and save paths =
@@ -121,6 +124,10 @@ Managing rules, running audits, and exporting audit CSV files requires the Conte
 = Privacy =
 
 ContentLatch does not send plugin data to external services. Rules, audit results, and validation run on your WordPress site.
+
+= Open Source =
+
+ContentLatch is an open-source WordPress plugin. Its source code is publicly available on [GitHub](https://github.com/elijah-will/contentlatch). Browse the code, follow development, or contribute to the project.
 
 = Uninstall / data removal =
 
@@ -171,7 +178,7 @@ Yes. ContentLatch validates supported Core and ACF fields in both the Classic Ed
 1. Create conditional WHEN/THEN validation rules for WordPress Core and ACF fields.
 2. Manage active and inactive rules, review blocking and warning severity, and see affected content.
 3. Prevent publishing when required fields are missing, with clear validation errors in the WordPress block editor.
-4. Audit existing content, filter blocking issues and warnings, and navigate directly to affected posts.
+4. Audit existing content, review blocking issues and warnings, navigate to affected posts, and export findings from current or historical completed audits to CSV.
 
 == Changelog ==
 
